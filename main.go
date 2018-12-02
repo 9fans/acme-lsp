@@ -11,36 +11,37 @@ func main() {
 		fmt.Printf("usage: %v <command>\n", os.Args[0])
 		os.Exit(2)
 	}
-	conn := runServer()
-	defer conn.Close()
-
-	c, err := newLSPClient(conn)
-	if err != nil {
-		log.Fatalf("failed to create client: %v\n", err)
-	}
-	defer func() {
-		if err := c.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	if os.Args[1] == "watch" {
-		c.Watch()
+		startServers()
+		defer killServers()
+		watch()
 		return
 	}
 	pos, _, err := getAcmePos()
 	if err != nil {
 		log.Fatal(err)
 	}
+	lang := lspLang(string(pos.TextDocument.URI))
+	s, err := startServer(lang, serverCommands[lang])
+	if err != nil {
+		log.Printf("cound not start %v server: %v\n", lang, err)
+		return
+	}
+	defer s.Kill()
+
 	switch os.Args[1] {
 	case "def":
-		err = c.Definition(pos)
+		err = s.lsp.Definition(pos)
 	case "refs":
-		err = c.References(pos, os.Stdout)
+		err = s.lsp.References(pos, os.Stdout)
 	case "hov":
-		err = c.Hover(pos, os.Stdout)
+		err = s.lsp.Hover(pos, os.Stdout)
 	case "comp":
-		err = c.Completion(pos, os.Stdout)
+		err = s.lsp.Completion(pos, os.Stdout)
+	default:
+		log.Printf("unknown command %q\n", os.Args[1])
+		os.Exit(1)
 	}
 	if err != nil {
 		log.Fatalf("%v\n", err)

@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
 var serverCommands = map[string][]string{
@@ -32,41 +34,52 @@ type langServer struct {
 	lsp  *lspClient
 }
 
+func (s *langServer) Kill() {
+	s.lsp.Close()
+	s.conn.Close()
+	s.cmd.Process.Kill()
+}
+
 func startServers() {
 	for lang, args := range serverCommands {
-		p0, p1 := net.Pipe()
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Stdin = p0
-		cmd.Stdout = p0
-		cmd.Stderr = os.Stderr
-		if err := cmd.Start(); err != nil {
-			log.Printf("failed to start %v language server: %v\n", lang, err)
-			continue
-		}
-		go func() {
-			if err := cmd.Wait(); err != nil {
-				log.Fatal(err)
-			}
-		}()
-		lsp, err := newLSPClient(p1)
+		s, err := startServer(lang, args)
 		if err != nil {
-			cmd.Process.Kill()
-			log.Printf("failed to connect to %v server: %v\n", lang, err)
+			log.Printf("cound not start %v server: %v\n", lang, err)
 			continue
 		}
-		servers[lang] = &langServer{
-			cmd:  cmd,
-			conn: p1,
-			lsp:  lsp,
-		}
+		servers[lang] = s
 	}
 }
 
-func stopServers() {
+func startServer(lang string, args []string) (*langServer, error) {
+	p0, p1 := net.Pipe()
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdin = p0
+	cmd.Stdout = p0
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute %v server: %v\n", lang, err)
+	}
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			log.Printf("%v server failed: %v\n", lang, err)
+		}
+	}()
+	lsp, err := newLSPClient(p1)
+	if err != nil {
+		cmd.Process.Kill()
+		return nil, errors.Wrapf(err, "failed to connect to %v server: %v\n", lang, err)
+	}
+	return &langServer{
+		cmd:  cmd,
+		conn: p1,
+		lsp:  lsp,
+	}, nil
+}
+
+func killServers() {
 	for _, c := range servers {
-		c.lsp.Close()
-		c.conn.Close()
-		c.cmd.Process.Kill()
+		c.Kill()
 	}
 }
 

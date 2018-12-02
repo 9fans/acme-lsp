@@ -92,7 +92,8 @@ func notifyPosChange(ch chan<- *focusWin) {
 			fw.mu.Lock()
 			lang := lspLang(ev.Name)
 			//fmt.Printf("event: %v lang=%v\n", ev, lang)
-			if ev.Op == "focus" && lang != "" {
+			_, ok := servers[lang]
+			if ok && ev.Op == "focus" && ok {
 				fw.lang = lang
 				fw.id = ev.ID
 			} else {
@@ -102,7 +103,7 @@ func notifyPosChange(ch chan<- *focusWin) {
 
 		case <-ticker.C:
 			fw.mu.Lock()
-			if fw.lang == "go" && fw.Update() && pos[fw.id] != fw.q0 {
+			if fw.Update() && pos[fw.id] != fw.q0 {
 				fmt.Printf("Watch: id=%v q0=%v\n", fw.id, fw.q0)
 				fmt.Printf("Watch: pos=%v\n", fw.pos)
 				pos[fw.id] = fw.q0
@@ -175,7 +176,7 @@ func (w *outputWin) Update(fw *focusWin, c *lspClient) {
 	w.Ctl("clean")
 }
 
-func (c *lspClient) Watch() {
+func watch() {
 	w, err := newOutputWin()
 	if err != nil {
 		log.Fatalf("failed to create acme window: %v\n", err)
@@ -191,7 +192,12 @@ loop:
 		case fw := <-fch:
 			fw.mu.Lock()
 			fmt.Printf("pos change: %v\n", fw)
-			w.Update(fw, c)
+			s, ok := servers[fw.lang]
+			if !ok {
+				log.Printf("unsupported lang %q\n", fw.lang)
+			} else {
+				w.Update(fw, s.lsp)
+			}
 			fw.mu.Unlock()
 
 		case ev := <-w.event:
