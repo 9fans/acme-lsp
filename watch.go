@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -35,6 +34,12 @@ type focusWin struct {
 	name string
 	w    *win
 	mu   sync.Mutex
+}
+
+func newFocusWin() *focusWin {
+	var fw focusWin
+	fw.Reset()
+	return &fw
 }
 
 func (fw *focusWin) Reset() {
@@ -70,6 +75,42 @@ func (fw *focusWin) Update() bool {
 	fw.name = name
 	fw.w = w
 	return true
+}
+
+func notifyPosChange(ch chan<- *focusWin) {
+	fw := newFocusWin()
+	logch := make(chan *acme.LogEvent, 0)
+	go watchLog(logch)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	pos := make(map[int]int, 0) // winid -> q0
+
+	for {
+		select {
+		case ev := <-logch:
+			fw.mu.Lock()
+			lang := lspLang(ev.Name)
+			//fmt.Printf("event: %v lang=%v\n", ev, lang)
+			if ev.Op == "focus" && lang != "" {
+				fw.lang = lang
+				fw.id = ev.ID
+			} else {
+				fw.Reset()
+			}
+			fw.mu.Unlock()
+
+		case <-ticker.C:
+			fw.mu.Lock()
+			if fw.lang == "go" && fw.Update() && pos[fw.id] != fw.q0 {
+				fmt.Printf("Watch: id=%v q0=%v\n", fw.id, fw.q0)
+				fmt.Printf("Watch: pos=%v\n", fw.pos)
+				pos[fw.id] = fw.q0
+				ch <- fw
+			}
+			fw.mu.Unlock()
+		}
+	}
 }
 
 type outputWin struct {
@@ -141,40 +182,20 @@ func (c *lspClient) Watch() {
 	}
 	defer w.Close()
 
-	var fw focusWin
-	fw.Reset()
-
-	logch := make(chan *acme.LogEvent, 0)
-	go watchLog(logch)
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	fch := make(chan *focusWin, 0)
+	go notifyPosChange(fch)
 
 loop:
 	for {
 		select {
-		case ev := <-logch:
-			//fmt.Printf("event: %v\n", ev)
+		case fw := <-fch:
 			fw.mu.Lock()
-			if ev.Op == "focus" && strings.HasSuffix(ev.Name, ".go") {
-				fw.lang = "go"
-				fw.id = ev.ID
-			} else {
-				fw.Reset()
-			}
-			fw.mu.Unlock()
-
-		case <-ticker.C:
-			fw.mu.Lock()
-			if fw.lang == "go" && fw.Update() {
-				fmt.Printf("Watch: id=%v q0=%v\n", fw.id, fw.q0)
-				fmt.Printf("Watch: pos=%v\n", fw.pos)
-				w.Update(&fw, c)
-			}
+			fmt.Printf("pos change: %v\n", fw)
+			w.Update(fw, c)
 			fw.mu.Unlock()
 
 		case ev := <-w.event:
 			if ev.C1 == 'M' && ev.C2 == 'x' && string(ev.Text) == "Del" {
-				w.Close()
 				break loop
 			}
 			w.WriteEvent(ev)
