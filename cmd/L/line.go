@@ -26,6 +26,8 @@ func getNewlineOffsets(r io.Reader) (nlOffsets, error) {
 	return off, nil
 }
 
+// LineToOffset returns the rune offset within the file given the
+// line number and rune offset within the line.
 func (off nlOffsets) LineToOffset(line, col int) int {
 	if line >= len(off) {
 		panic("bad line number")
@@ -33,6 +35,8 @@ func (off nlOffsets) LineToOffset(line, col int) int {
 	return off[line] + col
 }
 
+// OffsetToLine returns the line number and rune offset within the line
+// given rune offset within the file.
 func (off nlOffsets) OffsetToLine(offset int) (line, col int) {
 	for i, o := range off {
 		if o > offset {

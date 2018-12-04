@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -35,10 +34,11 @@ func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
 		return nil, "", err
 	}
 
-	line, col, err := offsetToLine(w.FileReadWriter("body"), q0)
+	off, err := getNewlineOffsets(w.FileReadWriter("body"))
 	if err != nil {
 		return nil, "", err
 	}
+	line, col := off.OffsetToLine(q0)
 	fname, err := w.Filename()
 	if err != nil {
 		return nil, "", err
@@ -52,37 +52,6 @@ func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
 			Character: col,
 		},
 	}, fname, nil
-}
-
-// OffsetToLine returns the line number and rune offset within the line
-// given rune offset within reader r.
-func offsetToLine(rd io.Reader, q int) (line int, col int, err error) {
-	br := bufio.NewReader(rd)
-	wasnl := true
-	line = -1
-	for ; q >= 0; q-- {
-		r, _, err := br.ReadRune()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return 0, 0, err
-		}
-		if wasnl {
-			line++
-			col = 0
-			wasnl = false
-		} else {
-			col++
-		}
-		if r == '\n' {
-			wasnl = true
-		}
-	}
-	if line == -1 { // empty file
-		line = 0
-	}
-	return
 }
 
 type win struct {

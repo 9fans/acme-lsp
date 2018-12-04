@@ -11,7 +11,7 @@ import (
 )
 
 var serverCommands = map[string][]string{
-	"go":     {"go-langserver"},
+	"go":     {"go-langserver", "-gocodecompletion"},
 	"python": {"pyls"},
 }
 
