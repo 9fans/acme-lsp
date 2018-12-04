@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"9fans.net/go/plan9"
@@ -72,13 +71,13 @@ func (c *lspClient) Plumb(data []byte) error {
 }
 
 func (c *lspClient) PlumbLocation(loc *lsp.Location) error {
-	fn := strings.TrimPrefix(string(loc.URI), "file://")
+	fn := uriToFilename(string(loc.URI))
 	a := fmt.Sprintf("%v:%v", fn, loc.Range.Start)
 	return c.Plumb([]byte(a))
 }
 
 func locToLink(l *lsp.Location) string {
-	p := strings.TrimPrefix(string(l.URI), "file://")
+	p := uriToFilename(string(l.URI))
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
@@ -151,6 +150,19 @@ func (c *lspClient) SignatureHelp(pos *lsp.TextDocumentPositionParams, w io.Writ
 		fmt.Fprintf(w, "%v\n", sig.Documentation)
 	}
 	return nil
+}
+
+func (c *lspClient) Rename(pos *lsp.TextDocumentPositionParams, newname string) error {
+	params := &lsp.RenameParams{
+		TextDocument: pos.TextDocument,
+		Position:     pos.Position,
+		NewName:      newname,
+	}
+	var we lsp.WorkspaceEdit
+	if err := c.rpc.Call(c.ctx, "textDocument/rename", params, &we); err != nil {
+		return err
+	}
+	return applyAcmeEdits(&we)
 }
 
 func (c *lspClient) DidOpen(filename string, body []byte) error {

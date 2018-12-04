@@ -3,11 +3,15 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 
 	"9fans.net/go/acme"
+	"github.com/pkg/errors"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -30,7 +34,6 @@ func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	//fmt.Printf("q0=%v q1=%v\n", q0, q1)
 
 	line, col, err := offsetToLine(w.FileReadWriter("body"), q0)
 	if err != nil {
@@ -145,4 +148,74 @@ func (f *winFile) Read(b []byte) (int, error) {
 
 func (f *winFile) Write(b []byte) (int, error) {
 	return f.w.Write(f.name, b)
+}
+
+func (w *win) DoEdits(edits []lsp.TextEdit, off nlOffsets) error {
+	sort.Slice(edits, func(i, j int) bool {
+		pi := edits[i].Range.Start
+		pj := edits[j].Range.Start
+		if pi.Line == pj.Line {
+			return pi.Character < pj.Character
+		}
+		return pi.Line < pj.Line
+	})
+
+	w.Ctl("nomark")
+	w.Ctl("mark")
+
+	delta := 0
+	for _, e := range edits {
+		soff := off.LineToOffset(e.Range.Start.Line, e.Range.Start.Character)
+		eoff := off.LineToOffset(e.Range.End.Line, e.Range.End.Character)
+		err := w.Addr("#%d,#%d", soff+delta, eoff+delta)
+		if err != nil {
+			return errors.Wrapf(err, "failed to write to addr for winid=%v", w.ID())
+		}
+		_, err = w.Write("data", []byte(e.NewText))
+		if err != nil {
+			return errors.Wrapf(err, "failed to write new text to data file")
+		}
+		delta += len(e.NewText) - (eoff - soff)
+	}
+	return nil
+}
+
+func uriToFilename(uri string) string {
+	return strings.TrimPrefix(uri, "file://")
+}
+
+func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
+	wins, err := acme.Windows()
+	if err != nil {
+		return errors.Wrapf(err, "failed to read list of acme index")
+	}
+	winid := make(map[string]int, len(wins))
+	for _, info := range wins {
+		winid[info.Name] = info.ID
+	}
+
+	for uri := range we.Changes {
+		fname := uriToFilename(uri)
+		if _, ok := winid[fname]; !ok {
+			return fmt.Errorf("%v: not open in acme", fname)
+		}
+	}
+	for uri, edits := range we.Changes {
+		fname := uriToFilename(uri)
+		id := winid[fname]
+		w, err := openWin(id)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open window %v", id)
+		}
+		off, err := getNewlineOffsets(w.FileReadWriter("body"))
+		if err != nil {
+			return errors.Wrapf(err, "failed to obtain newline offsets for window %v", id)
+		}
+		err = w.DoEdits(edits, off)
+		if err != nil {
+			return errors.Wrapf(err, "failed to apply edits to window %v", id)
+		}
+		w.CloseFiles()
+	}
+	return nil
 }

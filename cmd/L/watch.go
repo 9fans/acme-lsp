@@ -91,9 +91,8 @@ func notifyPosChange(ch chan<- *focusWin) {
 		case ev := <-logch:
 			fw.mu.Lock()
 			lang := lspLang(ev.Name)
-			//fmt.Printf("event: %v lang=%v\n", ev, lang)
 			_, ok := servers[lang]
-			if ok && ev.Op == "focus" && ok {
+			if ok && ev.Op == "focus" {
 				fw.lang = lang
 				fw.id = ev.ID
 			} else {
