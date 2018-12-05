@@ -36,9 +36,9 @@ List of sub-commands:
 		the cursor.
 
 	watch <command>
-		The command arguement can be either "comp", "hov" or "sig". A
+		The command argument can be either "comp", "hov" or "sig". A
 		new window is created where the output of the given command
-		is shown each time cursor positon is changed.
+		is shown each time cursor position is changed.
 
 */
 package main
