@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 )
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
@@ -16,6 +17,20 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Run \"go doc github.com/fhs/acme-lsp/cmd/L\" for more detailed usage help.\n")
 	os.Exit(2)
+}
+
+func readCurrentWinBody() ([]byte, error) {
+	id, err := strconv.Atoi(os.Getenv("winid"))
+	if err != nil {
+		return nil, err
+	}
+	w, err := openWin(id)
+	if err != nil {
+		return nil, err
+	}
+	defer w.CloseFiles()
+
+	return w.ReadAll("body")
 }
 
 func main() {
@@ -41,10 +56,25 @@ func main() {
 	lang := lspLang(string(pos.TextDocument.URI))
 	s, err := startServer(lang, serverCommands[lang])
 	if err != nil {
-		log.Printf("cound not start %v server: %v\n", lang, err)
-		return
+		log.Fatalf("cound not start %v server: %v\n", lang, err)
 	}
 	defer s.Kill()
+
+	b, err := readCurrentWinBody()
+	if err != nil {
+		log.Fatalf("failed to read source body: %v\n", err)
+	}
+	fname := uriToFilename(string(pos.TextDocument.URI))
+	err = s.lsp.DidOpen(fname, b)
+	if err != nil {
+		log.Fatalf("DidOpen failed: %v\n", err)
+	}
+	defer func() {
+		err = s.lsp.DidClose(fname)
+		if err != nil {
+			log.Printf("DidClose failed: %v\n", err)
+		}
+	}()
 
 	switch os.Args[1] {
 	case "comp":
