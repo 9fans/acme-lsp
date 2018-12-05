@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"sync"
@@ -103,8 +102,6 @@ func notifyPosChange(ch chan<- *focusWin) {
 		case <-ticker.C:
 			fw.mu.Lock()
 			if fw.Update() && pos[fw.id] != fw.q0 {
-				fmt.Printf("Watch: id=%v q0=%v\n", fw.id, fw.q0)
-				fmt.Printf("Watch: pos=%v\n", fw.pos)
 				pos[fw.id] = fw.q0
 				ch <- fw
 			}
@@ -137,7 +134,7 @@ func (w *outputWin) Close() {
 	w.CloseFiles()
 }
 
-func (w *outputWin) Update(fw *focusWin, c *lspClient) {
+func (w *outputWin) Update(fw *focusWin, c *lspClient, cmd string) {
 	b, err := fw.w.ReadAll("body")
 	if err != nil {
 		log.Printf("failed to read source body: %v\n", err)
@@ -156,26 +153,30 @@ func (w *outputWin) Update(fw *focusWin, c *lspClient) {
 	}()
 
 	w.Clear()
-	/*
+	switch cmd {
+	case "comp":
 		err = c.Completion(fw.pos, w.body)
 		if err != nil {
 			log.Printf("Completion failed: %v\n", err)
 		}
-		fmt.Fprintf(w.body, "---\n")
+
+	case "sig":
 		err = c.SignatureHelp(fw.pos, w.body)
 		if err != nil {
 			log.Printf("SignatureHelp failed: %v\n", err)
 		}
-		fmt.Fprintf(w.body, "---\n")
-	*/
-	err = c.Hover(fw.pos, w.body)
-	if err != nil {
-		log.Printf("Hover failed: %v\n", err)
+	case "hov":
+		err = c.Hover(fw.pos, w.body)
+		if err != nil {
+			log.Printf("Hover failed: %v\n", err)
+		}
+	default:
+		log.Fatalf("invalid command %q\n", cmd)
 	}
 	w.Ctl("clean")
 }
 
-func watch() {
+func watch(cmd string) {
 	w, err := newOutputWin()
 	if err != nil {
 		log.Fatalf("failed to create acme window: %v\n", err)
@@ -190,12 +191,11 @@ loop:
 		select {
 		case fw := <-fch:
 			fw.mu.Lock()
-			fmt.Printf("pos change: %v\n", fw)
 			s, ok := servers[fw.lang]
 			if !ok {
 				log.Printf("unsupported lang %q\n", fw.lang)
 			} else {
-				w.Update(fw, s.lsp)
+				w.Update(fw, s.lsp, cmd)
 			}
 			fw.mu.Unlock()
 

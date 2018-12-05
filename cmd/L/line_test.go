@@ -47,7 +47,6 @@ func TestLineOffsets(t *testing.T) {
 			t.Errorf("failed to compute file offsets: %v", err)
 			continue
 		}
-		t.Logf("off = %v\n", off)
 		if o := off.LineToOffset(tc.line, tc.col); o != tc.offset {
 			t.Errorf("LineToOffset(%v, %v) = %v; expected %v\n",
 				tc.line, tc.col, o, tc.offset)

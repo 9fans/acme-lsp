@@ -11,6 +11,7 @@ import (
 )
 
 var serverCommands = map[string][]string{
+	//"go":     {"golsp"}, 	// golang.org/x/tools/cmd/golsp -- not ready
 	"go":     {"go-langserver", "-gocodecompletion"},
 	"python": {"pyls"},
 }
@@ -56,7 +57,9 @@ func startServer(lang string, args []string) (*langServer, error) {
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = p0
 	cmd.Stdout = p0
-	cmd.Stderr = os.Stderr
+	if *debug {
+		cmd.Stderr = os.Stderr
+	}
 	if err := cmd.Start(); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute %v server: %v\n", lang, err)
 	}
