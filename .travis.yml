@@ -1,0 +1,6 @@
+language: go
+
+script:
+ - go install -v ./...
+ - test `gofmt -l -s . | wc -l` = 0
+ - go test -v ./...
