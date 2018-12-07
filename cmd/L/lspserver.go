@@ -11,7 +11,9 @@ import (
 )
 
 var serverCommands = map[string][]string{
-	//"go":     {"golsp"}, 	// golang.org/x/tools/cmd/golsp -- not ready
+	// golang.org/x/tools/cmd/golsp is not ready. It hasn't implmented
+	// hover, references, and rename yet.
+	//"go": {"golsp"},
 	"go":     {"go-langserver", "-gocodecompletion"},
 	"python": {"pyls"},
 }

@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"9fans.net/go/plan9"
@@ -20,8 +23,27 @@ type lspHandler struct {
 	mu sync.Mutex
 }
 
-func (lsp *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
-	fmt.Printf("Handle: got request %#v\n", req)
+func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+	if strings.HasPrefix(req.Method, "$/") {
+		// Ignore server dependent notifications
+		if *debug {
+			fmt.Printf("Handle: got request %#v\n", req)
+		}
+		return
+	}
+	switch req.Method {
+	case "textDocument/publishDiagnostics":
+		var params lsp.PublishDiagnosticsParams
+		if err := json.Unmarshal(*req.Params, &params); err != nil {
+			log.Printf("diagnostics unmarshal failed: %v\n", err)
+			return
+		}
+		for _, diag := range params.Diagnostics {
+			fmt.Printf("Diagnostic: %v: %#v\n", params.URI, diag)
+		}
+	default:
+		fmt.Printf("Handle: got request %#v\n", req)
+	}
 }
 
 type lspClient struct {
