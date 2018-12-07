@@ -20,6 +20,9 @@ List of sub-commands:
 		Find where identifier at the cursor position is define and
 		send the location to the plumber.
 
+	fmt
+		Format current window buffer.
+
 	hov
 		Show more information about the identifier under the cursor
 		("hover").

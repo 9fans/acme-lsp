@@ -172,19 +172,22 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	for uri, edits := range we.Changes {
 		fname := uriToFilename(uri)
 		id := winid[fname]
-		w, err := openWin(id)
-		if err != nil {
-			return errors.Wrapf(err, "failed to open window %v", id)
-		}
-		off, err := getNewlineOffsets(w.FileReadWriter("body"))
-		if err != nil {
-			return errors.Wrapf(err, "failed to obtain newline offsets for window %v", id)
-		}
-		err = w.DoEdits(edits, off)
-		if err != nil {
+		if err := applyWinEdits(id, edits); err != nil {
 			return errors.Wrapf(err, "failed to apply edits to window %v", id)
 		}
-		w.CloseFiles()
 	}
 	return nil
+}
+
+func applyWinEdits(id int, edits []lsp.TextEdit) error {
+	w, err := openWin(id)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open window %v", id)
+	}
+	defer w.CloseFiles()
+	off, err := getNewlineOffsets(w.FileReadWriter("body"))
+	if err != nil {
+		return errors.Wrapf(err, "failed to obtain newline offsets for window %v", id)
+	}
+	return w.DoEdits(edits, off)
 }

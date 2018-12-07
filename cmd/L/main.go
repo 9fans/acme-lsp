@@ -85,6 +85,8 @@ func main() {
 		err = s.lsp.Completion(pos, os.Stdout)
 	case "def":
 		err = s.lsp.Definition(pos)
+	case "fmt":
+		err = s.lsp.Format(pos)
 	case "hov":
 		err = s.lsp.Hover(pos, os.Stdout)
 	case "refs":
