@@ -117,7 +117,7 @@ func (c *lspClient) Definition(pos *lsp.TextDocumentPositionParams) error {
 }
 
 func (c *lspClient) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	var hov lsp.Hover
+	var hov Hover
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
 		return err
 	}

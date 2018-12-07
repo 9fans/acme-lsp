@@ -54,7 +54,11 @@ func main() {
 		log.Fatal(err)
 	}
 	lang := lspLang(string(pos.TextDocument.URI))
-	s, err := startServer(lang, serverCommands[lang])
+	cmd, ok := serverCommands[lang]
+	if !ok {
+		log.Fatalf("unknown language %q\n", lang)
+	}
+	s, err := startServer(lang, cmd)
 	if err != nil {
 		log.Fatalf("cound not start %v server: %v\n", lang, err)
 	}
