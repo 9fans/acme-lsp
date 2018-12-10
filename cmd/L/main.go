@@ -40,7 +40,7 @@ func main() {
 	if len(os.Args) < 2 {
 		usage()
 	}
-	if os.Args[1] == "watch" {
+	if os.Args[1] == "win" {
 		if len(os.Args) < 3 {
 			usage()
 		}

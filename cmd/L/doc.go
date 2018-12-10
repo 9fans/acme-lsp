@@ -38,7 +38,7 @@ List of sub-commands:
 		Show signature help for the function, method, etc. under
 		the cursor.
 
-	watch <command>
+	win <command>
 		The command argument can be either "comp", "hov" or "sig". A
 		new window is created where the output of the given command
 		is shown each time cursor position is changed.
