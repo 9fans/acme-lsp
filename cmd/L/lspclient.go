@@ -7,9 +7,7 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -189,17 +187,13 @@ func (c *lspClient) Rename(pos *lsp.TextDocumentPositionParams, newname string) 
 	return applyAcmeEdits(&we)
 }
 
-func (c *lspClient) Format(pos *lsp.TextDocumentPositionParams) error {
+func (c *lspClient) Format(pos *lsp.TextDocumentPositionParams, id int) error {
 	params := &lsp.DocumentFormattingParams{
 		TextDocument: pos.TextDocument,
 	}
 	var edits []lsp.TextEdit
 	if err := c.rpc.Call(c.ctx, "textDocument/formatting", params, &edits); err != nil {
 		return err
-	}
-	id, err := strconv.Atoi(os.Getenv("winid"))
-	if err != nil {
-		return errors.Wrapf(err, "invalid $winid")
 	}
 	if err := applyWinEdits(id, edits); err != nil {
 		return errors.Wrapf(err, "failed to apply edits to window %v", id)

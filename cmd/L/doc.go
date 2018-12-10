@@ -27,6 +27,9 @@ List of sub-commands:
 		Show more information about the identifier under the cursor
 		("hover").
 
+	monitor
+		Format window buffer after each Put.
+
 	refs
 		List locations where the identifier under the cursor is used
 		("references").

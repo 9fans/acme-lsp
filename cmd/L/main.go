@@ -6,6 +6,9 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"9fans.net/go/acme"
+	"github.com/pkg/errors"
 )
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
@@ -49,7 +52,17 @@ func main() {
 		watch(os.Args[2])
 		return
 	}
-	pos, _, err := getAcmePos()
+	if os.Args[1] == "monitor" {
+		startServers()
+		defer killServers()
+		monitor()
+		return
+	}
+	id, err := strconv.Atoi(os.Getenv("winid"))
+	if err != nil {
+		log.Fatalf("failed to parse $winid: %v\n", err)
+	}
+	pos, _, err := getAcmeWinPos(id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,7 +99,7 @@ func main() {
 	case "def":
 		err = s.lsp.Definition(pos)
 	case "fmt":
-		err = s.lsp.Format(pos)
+		err = s.lsp.Format(pos, id)
 	case "hov":
 		err = s.lsp.Hover(pos, os.Stdout)
 	case "refs":
@@ -104,5 +117,56 @@ func main() {
 	}
 	if err != nil {
 		log.Fatalf("%v\n", err)
+	}
+}
+
+func formatWin(id int) error {
+	pos, _, err := getAcmeWinPos(id)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get selection of window %v\n", id)
+	}
+	lang := lspLang(string(pos.TextDocument.URI))
+	s, ok := servers[lang]
+	if !ok {
+		return errors.Wrapf(err, "unknown language %q\n", lang)
+	}
+	w, err := openWin(id)
+	if err != nil {
+		return err
+	}
+	b, err := w.ReadAll("body")
+	if err != nil {
+		log.Fatalf("failed to read source body: %v\n", err)
+	}
+	fname := uriToFilename(string(pos.TextDocument.URI))
+	err = s.lsp.DidOpen(fname, b)
+	if err != nil {
+		log.Fatalf("DidOpen failed: %v\n", err)
+	}
+	defer func() {
+		err = s.lsp.DidClose(fname)
+		if err != nil {
+			log.Printf("DidClose failed: %v\n", err)
+		}
+	}()
+	return s.lsp.Format(pos, id)
+}
+
+func monitor() {
+	alog, err := acme.Log()
+	if err != nil {
+		panic(err)
+	}
+	defer alog.Close()
+	for {
+		ev, err := alog.Read()
+		if err != nil {
+			panic(err)
+		}
+		if ev.Op == "put" {
+			if err = formatWin(ev.ID); err != nil {
+				log.Printf("formating window %v failed: %v\n", ev.ID)
+			}
+		}
 	}
 }

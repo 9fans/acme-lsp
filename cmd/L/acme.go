@@ -120,6 +120,9 @@ func (f *winFile) Write(b []byte) (int, error) {
 }
 
 func (w *win) DoEdits(edits []lsp.TextEdit, off nlOffsets) error {
+	if len(edits) == 0 {
+		return nil
+	}
 	sort.Slice(edits, func(i, j int) bool {
 		pi := edits[i].Range.Start
 		pj := edits[j].Range.Start
