@@ -28,21 +28,23 @@ func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
 		return nil, "", err
 	}
 	defer w.CloseFiles()
+	return w.Position()
+}
 
+func (w *win) Position() (*lsp.TextDocumentPositionParams, string, error) {
+	fname, err := w.Filename()
+	if err != nil {
+		return nil, "", err
+	}
 	q0, _, err := w.ReadDotAddr()
 	if err != nil {
 		return nil, "", err
 	}
-
 	off, err := getNewlineOffsets(w.FileReadWriter("body"))
 	if err != nil {
 		return nil, "", err
 	}
 	line, col := off.OffsetToLine(q0)
-	fname, err := w.Filename()
-	if err != nil {
-		return nil, "", err
-	}
 	return &lsp.TextDocumentPositionParams{
 		TextDocument: lsp.TextDocumentIdentifier{
 			URI: lsp.DocumentURI("file://" + fname),
@@ -52,6 +54,14 @@ func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
 			Character: col,
 		},
 	}, fname, nil
+}
+
+func (w *win) DocumentURI() (lsp.DocumentURI, string, error) {
+	fname, err := w.Filename()
+	if err != nil {
+		return "", "", err
+	}
+	return lsp.DocumentURI("file://" + fname), fname, nil
 }
 
 type win struct {

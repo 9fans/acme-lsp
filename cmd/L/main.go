@@ -99,7 +99,7 @@ func main() {
 	case "def":
 		err = s.lsp.Definition(pos)
 	case "fmt":
-		err = s.lsp.Format(pos, id)
+		err = s.lsp.Format(pos.TextDocument.URI, id)
 	case "hov":
 		err = s.lsp.Hover(pos, os.Stdout)
 	case "refs":
@@ -121,35 +121,32 @@ func main() {
 }
 
 func formatWin(id int) error {
-	pos, _, err := getAcmeWinPos(id)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get selection of window %v\n", id)
-	}
-	lang := lspLang(string(pos.TextDocument.URI))
-	s, ok := servers[lang]
-	if !ok {
-		return errors.Wrapf(err, "unknown language %q\n", lang)
-	}
 	w, err := openWin(id)
 	if err != nil {
 		return err
+	}
+	uri, fname, err := w.DocumentURI()
+	if err != nil {
+		return err
+	}
+	lang := lspLang(string(uri))
+	s, ok := servers[lang]
+	if !ok {
+		return errors.Wrapf(err, "unknown language %q\n", lang)
 	}
 	b, err := w.ReadAll("body")
 	if err != nil {
 		log.Fatalf("failed to read source body: %v\n", err)
 	}
-	fname := uriToFilename(string(pos.TextDocument.URI))
-	err = s.lsp.DidOpen(fname, b)
-	if err != nil {
+	if err := s.lsp.DidOpen(fname, b); err != nil {
 		log.Fatalf("DidOpen failed: %v\n", err)
 	}
 	defer func() {
-		err = s.lsp.DidClose(fname)
-		if err != nil {
+		if err := s.lsp.DidClose(fname); err != nil {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
-	return s.lsp.Format(pos, id)
+	return s.lsp.Format(uri, id)
 }
 
 func monitor() {

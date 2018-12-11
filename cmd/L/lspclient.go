@@ -187,9 +187,11 @@ func (c *lspClient) Rename(pos *lsp.TextDocumentPositionParams, newname string) 
 	return applyAcmeEdits(&we)
 }
 
-func (c *lspClient) Format(pos *lsp.TextDocumentPositionParams, id int) error {
+func (c *lspClient) Format(uri lsp.DocumentURI, id int) error {
 	params := &lsp.DocumentFormattingParams{
-		TextDocument: pos.TextDocument,
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: uri,
+		},
 	}
 	var edits []lsp.TextEdit
 	if err := c.rpc.Call(c.ctx, "textDocument/formatting", params, &edits); err != nil {
