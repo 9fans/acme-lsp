@@ -162,7 +162,7 @@ func monitor() {
 		}
 		if ev.Op == "put" {
 			if err = formatWin(ev.ID); err != nil {
-				log.Printf("formating window %v failed: %v\n", ev.ID)
+				log.Printf("formating window %v failed: %v\n", ev.ID, err)
 			}
 		}
 	}
