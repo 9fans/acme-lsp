@@ -60,7 +60,7 @@ func newLSPClient(conn net.Conn) (*lspClient, error) {
 	rpc := jsonrpc2.NewConn(ctx, stream, &lspHandler{})
 
 	initp := &lsp.InitializeParams{
-		RootURI: "file:///",
+		RootURI: filenameToURI("/"),
 	}
 	initr := &lsp.InitializeResult{}
 	if err := rpc.Call(ctx, "initialize", initp, initr); err != nil {
@@ -94,13 +94,13 @@ func (c *lspClient) Plumb(data []byte) error {
 }
 
 func (c *lspClient) PlumbLocation(loc *lsp.Location) error {
-	fn := uriToFilename(string(loc.URI))
+	fn := uriToFilename(loc.URI)
 	a := fmt.Sprintf("%v:%v", fn, loc.Range.Start)
 	return c.Plumb([]byte(a))
 }
 
 func locToLink(l *lsp.Location) string {
-	p := uriToFilename(string(l.URI))
+	p := uriToFilename(l.URI)
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
@@ -212,7 +212,7 @@ func (c *lspClient) DidOpen(filename string, body []byte) error {
 	}
 	params := &lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
-			URI:        lsp.DocumentURI("file://" + filename),
+			URI:        filenameToURI(filename),
 			LanguageID: lang,
 			Version:    0,
 			Text:       string(body),
@@ -224,7 +224,7 @@ func (c *lspClient) DidOpen(filename string, body []byte) error {
 func (c *lspClient) DidClose(filename string) error {
 	params := &lsp.DidCloseTextDocumentParams{
 		TextDocument: lsp.TextDocumentIdentifier{
-			URI: lsp.DocumentURI("file://" + filename),
+			URI: filenameToURI(filename),
 		},
 	}
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)

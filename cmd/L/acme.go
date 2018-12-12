@@ -31,39 +31,6 @@ func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
 	return w.Position()
 }
 
-func (w *win) Position() (*lsp.TextDocumentPositionParams, string, error) {
-	fname, err := w.Filename()
-	if err != nil {
-		return nil, "", err
-	}
-	q0, _, err := w.ReadDotAddr()
-	if err != nil {
-		return nil, "", err
-	}
-	off, err := getNewlineOffsets(w.FileReadWriter("body"))
-	if err != nil {
-		return nil, "", err
-	}
-	line, col := off.OffsetToLine(q0)
-	return &lsp.TextDocumentPositionParams{
-		TextDocument: lsp.TextDocumentIdentifier{
-			URI: lsp.DocumentURI("file://" + fname),
-		},
-		Position: lsp.Position{
-			Line:      line,
-			Character: col,
-		},
-	}, fname, nil
-}
-
-func (w *win) DocumentURI() (lsp.DocumentURI, string, error) {
-	fname, err := w.Filename()
-	if err != nil {
-		return "", "", err
-	}
-	return lsp.DocumentURI("file://" + fname), fname, nil
-}
-
 type win struct {
 	*acme.Win
 }
@@ -96,6 +63,14 @@ func (w *win) Filename() (string, error) {
 	return string(tag[:i]), nil
 }
 
+func (w *win) DocumentURI() (lsp.DocumentURI, string, error) {
+	fname, err := w.Filename()
+	if err != nil {
+		return "", "", err
+	}
+	return filenameToURI(fname), fname, nil
+}
+
 // ReadDotAddr returns the address of current selection.
 func (w *win) ReadDotAddr() (q0, q1 int, err error) {
 	_, _, err = w.ReadAddr() // open addr file
@@ -107,6 +82,31 @@ func (w *win) ReadDotAddr() (q0, q1 int, err error) {
 		return 0, 0, err
 	}
 	return w.ReadAddr()
+}
+
+func (w *win) Position() (*lsp.TextDocumentPositionParams, string, error) {
+	fname, err := w.Filename()
+	if err != nil {
+		return nil, "", err
+	}
+	q0, _, err := w.ReadDotAddr()
+	if err != nil {
+		return nil, "", err
+	}
+	off, err := getNewlineOffsets(w.FileReadWriter("body"))
+	if err != nil {
+		return nil, "", err
+	}
+	line, col := off.OffsetToLine(q0)
+	return &lsp.TextDocumentPositionParams{
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: filenameToURI(fname),
+		},
+		Position: lsp.Position{
+			Line:      line,
+			Character: col,
+		},
+	}, fname, nil
 }
 
 func (w *win) FileReadWriter(filename string) io.ReadWriter {
@@ -162,8 +162,12 @@ func (w *win) DoEdits(edits []lsp.TextEdit, off nlOffsets) error {
 	return nil
 }
 
-func uriToFilename(uri string) string {
-	return strings.TrimPrefix(uri, "file://")
+func uriToFilename(uri lsp.DocumentURI) string {
+	return strings.TrimPrefix(string(uri), "file://")
+}
+
+func filenameToURI(fname string) lsp.DocumentURI {
+	return lsp.DocumentURI("file://" + fname)
 }
 
 func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
@@ -177,13 +181,13 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	}
 
 	for uri := range we.Changes {
-		fname := uriToFilename(uri)
+		fname := uriToFilename(lsp.DocumentURI(uri))
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
 	for uri, edits := range we.Changes {
-		fname := uriToFilename(uri)
+		fname := uriToFilename(lsp.DocumentURI(uri))
 		id := winid[fname]
 		if err := applyWinEdits(id, edits); err != nil {
 			return errors.Wrapf(err, "failed to apply edits to window %v", id)

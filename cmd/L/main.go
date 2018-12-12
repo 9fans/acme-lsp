@@ -81,7 +81,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read source body: %v\n", err)
 	}
-	fname := uriToFilename(string(pos.TextDocument.URI))
+	fname := uriToFilename(pos.TextDocument.URI)
 	err = s.lsp.DidOpen(fname, b)
 	if err != nil {
 		log.Fatalf("DidOpen failed: %v\n", err)
