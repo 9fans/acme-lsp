@@ -14,6 +14,7 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
+	lsp1 "github.com/fhs/acme-lsp/lsp"
 	"github.com/pkg/errors"
 	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
@@ -117,7 +118,7 @@ func (c *lspClient) Definition(pos *lsp.TextDocumentPositionParams) error {
 }
 
 func (c *lspClient) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	var hov Hover
+	var hov lsp1.Hover
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
 		return err
 	}

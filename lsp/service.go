@@ -1,4 +1,9 @@
-package main
+// Package lsp defines some structs for Language Server Protocol.
+//
+// Currently, we only redefine some structs here because of an upstream bug:
+// https://github.com/sourcegraph/go-lsp/issues/2
+//
+package lsp
 
 import (
 	"encoding/json"
@@ -6,9 +11,6 @@ import (
 
 	lsp "github.com/sourcegraph/go-lsp"
 )
-
-// We redefine some structs here because of an upstream bug:
-// https://github.com/sourcegraph/go-lsp/issues/2
 
 type Hover struct {
 	Contents MarkedStringList `json:"contents"`
