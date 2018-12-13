@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	"9fans.net/go/acme"
 	"github.com/pkg/errors"
@@ -20,20 +19,6 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Run \"go doc github.com/fhs/acme-lsp/cmd/L\" for more detailed usage help.\n")
 	os.Exit(2)
-}
-
-func readCurrentWinBody() ([]byte, error) {
-	id, err := strconv.Atoi(os.Getenv("winid"))
-	if err != nil {
-		return nil, err
-	}
-	w, err := openWin(id)
-	if err != nil {
-		return nil, err
-	}
-	defer w.CloseFiles()
-
-	return w.ReadAll("body")
 }
 
 func main() {
@@ -58,37 +43,30 @@ func main() {
 		monitor()
 		return
 	}
-	id, err := strconv.Atoi(os.Getenv("winid"))
+	w, err := openCurrentWin()
 	if err != nil {
-		log.Fatalf("failed to parse $winid: %v\n", err)
+		log.Fatalf("failed to to open current window: %v\n", err)
 	}
-	pos, _, err := getAcmeWinPos(id)
+	defer w.CloseFiles()
+	pos, fname, err := w.Position()
 	if err != nil {
 		log.Fatal(err)
 	}
-	lang := lspLang(string(pos.TextDocument.URI))
-	cmd, ok := serverCommands[lang]
-	if !ok {
-		log.Fatalf("unknown language %q\n", lang)
-	}
-	s, err := startServer(lang, cmd)
+	s, err := startServerForFile(fname)
 	if err != nil {
-		log.Fatalf("cound not start %v server: %v\n", lang, err)
+		log.Fatalf("cound not start language server: %v\n", err)
 	}
 	defer s.Kill()
 
-	b, err := readCurrentWinBody()
+	b, err := w.ReadAll("body")
 	if err != nil {
 		log.Fatalf("failed to read source body: %v\n", err)
 	}
-	fname := uriToFilename(pos.TextDocument.URI)
-	err = s.lsp.DidOpen(fname, b)
-	if err != nil {
+	if err = s.lsp.DidOpen(fname, b); err != nil {
 		log.Fatalf("DidOpen failed: %v\n", err)
 	}
 	defer func() {
-		err = s.lsp.DidClose(fname)
-		if err != nil {
+		if err = s.lsp.DidClose(fname); err != nil {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
@@ -99,7 +77,7 @@ func main() {
 	case "def":
 		err = s.lsp.Definition(pos)
 	case "fmt":
-		err = s.lsp.Format(pos.TextDocument.URI, id)
+		err = s.lsp.Format(pos.TextDocument.URI, w.ID())
 	case "hov":
 		err = s.lsp.Hover(pos, os.Stdout)
 	case "refs":
@@ -129,7 +107,7 @@ func formatWin(id int) error {
 	if err != nil {
 		return err
 	}
-	lang := lspLang(string(uri))
+	lang := lspLang(fname)
 	s, ok := servers[lang]
 	if !ok {
 		return errors.Wrapf(err, "unknown language %q\n", lang)

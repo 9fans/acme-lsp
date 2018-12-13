@@ -82,6 +82,15 @@ func startServer(lang string, args []string) (*langServer, error) {
 	}, nil
 }
 
+func startServerForFile(filename string) (*langServer, error) {
+	lang := lspLang(filename)
+	cmd, ok := serverCommands[lang]
+	if !ok {
+		return nil, errors.New("unknown language " + lang)
+	}
+	return startServer(lang, cmd)
+}
+
 func killServers() {
 	for _, c := range servers {
 		c.Kill()

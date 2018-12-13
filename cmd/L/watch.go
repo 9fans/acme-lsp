@@ -65,7 +65,7 @@ func (fw *focusWin) Update() bool {
 	if q0 == fw.q0 {
 		return false
 	}
-	pos, name, err := getAcmeWinPos(fw.id)
+	pos, name, err := w.Position()
 	if err != nil {
 		return false
 	}

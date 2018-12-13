@@ -14,23 +14,6 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func getAcmePos() (*lsp.TextDocumentPositionParams, string, error) {
-	id, err := strconv.Atoi(os.Getenv("winid"))
-	if err != nil {
-		return nil, "", err
-	}
-	return getAcmeWinPos(id)
-}
-
-func getAcmeWinPos(id int) (*lsp.TextDocumentPositionParams, string, error) {
-	w, err := openWin(id)
-	if err != nil {
-		return nil, "", err
-	}
-	defer w.CloseFiles()
-	return w.Position()
-}
-
 type win struct {
 	*acme.Win
 }
@@ -49,6 +32,14 @@ func openWin(id int) (*win, error) {
 		return nil, err
 	}
 	return &win{w}, err
+}
+
+func openCurrentWin() (*win, error) {
+	id, err := strconv.Atoi(os.Getenv("winid"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse $winid")
+	}
+	return openWin(id)
 }
 
 func (w *win) Filename() (string, error) {
