@@ -16,3 +16,5 @@ However, basic commands seem to be working with [go-langserver](https://github.c
 ## See also
 
 * https://github.com/davidrjenni/A - Similar tool but only for Go programming language
+* https://godoc.org/9fans.net/go/acme/acmego - Similar to `L monitor` sub-command but only for Go
+* https://godoc.org/github.com/fhs/misc/cmd/acmepy - Python formatter based on acmego
