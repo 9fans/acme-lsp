@@ -89,10 +89,9 @@ func notifyPosChange(ch chan<- *focusWin) {
 		select {
 		case ev := <-logch:
 			fw.mu.Lock()
-			lang := lspLang(ev.Name)
-			_, ok := servers[lang]
-			if ok && ev.Op == "focus" {
-				fw.lang = lang
+			si := findServer(ev.Name)
+			if si != nil && ev.Op == "focus" {
+				fw.lang = si.lang
 				fw.id = ev.ID
 			} else {
 				fw.Reset()
@@ -191,9 +190,9 @@ loop:
 		select {
 		case fw := <-fch:
 			fw.mu.Lock()
-			s, ok := servers[fw.lang]
-			if !ok {
-				log.Printf("unsupported lang %q\n", fw.lang)
+			s, err := startServerForFile(fw.name)
+			if err != nil {
+				log.Printf("failed to start language server: %v\n", err)
 			} else {
 				w.Update(fw, s.lsp, cmd)
 			}

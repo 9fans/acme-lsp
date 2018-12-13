@@ -107,10 +107,9 @@ func formatWin(id int) error {
 	if err != nil {
 		return err
 	}
-	lang := lspLang(fname)
-	s, ok := servers[lang]
-	if !ok {
-		return errors.Wrapf(err, "unknown language %q\n", lang)
+	s, err := startServerForFile(fname)
+	if err != nil {
+		return errors.Wrapf(err, "formatting window %v failed", id)
 	}
 	b, err := w.ReadAll("body")
 	if err != nil {

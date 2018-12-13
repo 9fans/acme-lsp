@@ -1,35 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"regexp"
 
 	"github.com/pkg/errors"
 )
 
-var serverCommands = map[string][]string{
+type serverInfo struct {
+	re   *regexp.Regexp
+	lang string
+	args []string
+	srv  *langServer
+}
+
+var serverList = []serverInfo{
 	// golang.org/x/tools/cmd/golsp is not ready. It hasn't implmented
 	// hover, references, and rename yet.
-	//"go": {"golsp"},
-	"go":     {"go-langserver", "-gocodecompletion"},
-	"python": {"pyls"},
+	//{regexp.MustCompile(`\.go$`), "go",{"golsp"}, nil},
+	{regexp.MustCompile(`\.go$`), "go", []string{"go-langserver", "-gocodecompletion"}, nil},
+	{regexp.MustCompile(`\.py$`), "python", []string{"pyls"}, nil},
 }
 
-func lspLang(filename string) string {
-	ext := filepath.Ext(filename)
-	switch ext {
-	case ".go":
-		return "go"
-	case ".py":
-		return "python"
+func findServer(filename string) *serverInfo {
+	for i, si := range serverList {
+		if si.re.MatchString(filename) {
+			return &serverList[i]
+		}
 	}
-	return ""
+	return nil
 }
-
-var servers = make(map[string]*langServer, 0)
 
 type langServer struct {
 	cmd  *exec.Cmd
@@ -38,18 +42,26 @@ type langServer struct {
 }
 
 func (s *langServer) Close() {
-	s.lsp.Close()
-	s.conn.Close()
+	if s != nil {
+		s.lsp.Close()
+		s.conn.Close()
+	}
 }
 
 func startServers() {
-	for lang, args := range serverCommands {
-		s, err := startServer(lang, args)
-		if err != nil {
-			log.Printf("cound not start %v server: %v\n", lang, err)
+	langDone := make(map[string]bool, len(serverList))
+
+	for i, si := range serverList {
+		if langDone[si.lang] {
 			continue
 		}
-		servers[lang] = s
+		s, err := startServer(si.lang, si.args)
+		if err != nil {
+			log.Printf("cound not start %v server: %v\n", si.lang, err)
+			continue
+		}
+		serverList[i].srv = s
+		langDone[si.lang] = true
 	}
 }
 
@@ -82,41 +94,23 @@ func startServer(lang string, args []string) (*langServer, error) {
 }
 
 func startServerForFile(filename string) (*langServer, error) {
-	lang := lspLang(filename)
-	cmd, ok := serverCommands[lang]
-	if !ok {
-		return nil, errors.New("unknown language " + lang)
+	si := findServer(filename)
+	if si == nil {
+		return nil, errors.New(fmt.Sprintf("unknown language server for %v", filename))
 	}
-	return startServer(lang, cmd)
+	if si.srv != nil {
+		return si.srv, nil
+	}
+	srv, err := startServer(si.lang, si.args)
+	if err != nil {
+		return nil, err
+	}
+	si.srv = srv
+	return srv, nil
 }
 
 func killServers() {
-	for _, c := range servers {
-		c.Close()
+	for _, si := range serverList {
+		si.srv.Close()
 	}
-}
-
-func runServer() net.Conn {
-	p0, p1 := net.Pipe()
-	cmd := exec.Command("go-langserver", "-gocodecompletion")
-	cmd.Stdin = p0
-	cmd.Stdout = p0
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-	go func() {
-		if err := cmd.Wait(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-	return p1
-}
-
-func dialServer() net.Conn {
-	conn, err := net.Dial("tcp", "localhost:4389")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return conn
 }
