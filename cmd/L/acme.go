@@ -120,7 +120,7 @@ func (f *winFile) Write(b []byte) (int, error) {
 	return f.w.Write(f.name, b)
 }
 
-func (w *win) DoEdits(edits []lsp.TextEdit, off nlOffsets) error {
+func (w *win) Edit(edits []lsp.TextEdit) error {
 	if len(edits) == 0 {
 		return nil
 	}
@@ -132,6 +132,14 @@ func (w *win) DoEdits(edits []lsp.TextEdit, off nlOffsets) error {
 		}
 		return pi.Line < pj.Line
 	})
+	_, err := w.Seek("body", 0, 0)
+	if err != nil {
+		return errors.Wrapf(err, "seed failed for window %v", w.ID())
+	}
+	off, err := getNewlineOffsets(w.FileReadWriter("body"))
+	if err != nil {
+		return errors.Wrapf(err, "failed to obtain newline offsets for window %v", w.ID())
+	}
 
 	w.Ctl("nomark")
 	w.Ctl("mark")
@@ -151,6 +159,10 @@ func (w *win) DoEdits(edits []lsp.TextEdit, off nlOffsets) error {
 		delta += len(e.NewText) - (eoff - soff)
 	}
 	return nil
+}
+
+type Editor interface {
+	Edit(edits []lsp.TextEdit) error
 }
 
 func uriToFilename(uri lsp.DocumentURI) string {
@@ -180,22 +192,14 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	for uri, edits := range we.Changes {
 		fname := uriToFilename(lsp.DocumentURI(uri))
 		id := winid[fname]
-		if err := applyWinEdits(id, edits); err != nil {
+		w, err := openWin(id)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open window %v", id)
+		}
+		if err := w.Edit(edits); err != nil {
 			return errors.Wrapf(err, "failed to apply edits to window %v", id)
 		}
+		w.CloseFiles()
 	}
 	return nil
-}
-
-func applyWinEdits(id int, edits []lsp.TextEdit) error {
-	w, err := openWin(id)
-	if err != nil {
-		return errors.Wrapf(err, "failed to open window %v", id)
-	}
-	defer w.CloseFiles()
-	off, err := getNewlineOffsets(w.FileReadWriter("body"))
-	if err != nil {
-		return errors.Wrapf(err, "failed to obtain newline offsets for window %v", id)
-	}
-	return w.DoEdits(edits, off)
 }

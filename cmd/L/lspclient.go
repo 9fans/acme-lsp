@@ -193,7 +193,7 @@ func (c *lspClient) Rename(pos *lsp.TextDocumentPositionParams, newname string) 
 	return applyAcmeEdits(&we)
 }
 
-func (c *lspClient) Format(uri lsp.DocumentURI, id int) error {
+func (c *lspClient) Format(uri lsp.DocumentURI, e Editor) error {
 	params := &lsp.DocumentFormattingParams{
 		TextDocument: lsp.TextDocumentIdentifier{
 			URI: uri,
@@ -203,8 +203,8 @@ func (c *lspClient) Format(uri lsp.DocumentURI, id int) error {
 	if err := c.rpc.Call(c.ctx, "textDocument/formatting", params, &edits); err != nil {
 		return err
 	}
-	if err := applyWinEdits(id, edits); err != nil {
-		return errors.Wrapf(err, "failed to apply edits to window %v", id)
+	if err := e.Edit(edits); err != nil {
+		return errors.Wrapf(err, "failed to apply edits")
 	}
 	return nil
 }

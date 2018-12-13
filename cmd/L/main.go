@@ -77,7 +77,7 @@ func main() {
 	case "def":
 		err = s.lsp.Definition(pos)
 	case "fmt":
-		err = s.lsp.Format(pos.TextDocument.URI, w.ID())
+		err = s.lsp.Format(pos.TextDocument.URI, w)
 	case "hov":
 		err = s.lsp.Hover(pos, os.Stdout)
 	case "refs":
@@ -124,7 +124,7 @@ func formatWin(id int) error {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
-	return s.lsp.Format(uri, id)
+	return s.lsp.Format(uri, w)
 }
 
 func monitor() {
