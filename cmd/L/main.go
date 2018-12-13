@@ -56,7 +56,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("cound not start language server: %v\n", err)
 	}
-	defer s.Kill()
+	defer s.Close()
 
 	b, err := w.ReadAll("body")
 	if err != nil {

@@ -139,6 +139,11 @@ func (c *lspClient) References(pos *lsp.TextDocumentPositionParams, w io.Writer)
 	if err := c.rpc.Call(c.ctx, "textDocument/references", rp, &loc); err != nil {
 		return err
 	}
+	if len(loc) == 0 {
+		fmt.Printf("No references found.\n")
+		return nil
+	}
+	fmt.Printf("References:\n")
 	for _, l := range loc {
 		fmt.Fprintf(w, " %v\n", locToLink(&l))
 	}

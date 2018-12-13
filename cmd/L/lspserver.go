@@ -37,10 +37,9 @@ type langServer struct {
 	lsp  *lspClient
 }
 
-func (s *langServer) Kill() {
+func (s *langServer) Close() {
 	s.lsp.Close()
 	s.conn.Close()
-	s.cmd.Process.Kill()
 }
 
 func startServers() {
@@ -93,7 +92,7 @@ func startServerForFile(filename string) (*langServer, error) {
 
 func killServers() {
 	for _, c := range servers {
-		c.Kill()
+		c.Close()
 	}
 }
 
