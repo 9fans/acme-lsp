@@ -14,7 +14,6 @@ import (
 
 type serverInfo struct {
 	re   *regexp.Regexp
-	lang string
 	args []string
 	srv  *langServer
 }
@@ -22,9 +21,9 @@ type serverInfo struct {
 var serverList = []serverInfo{
 	// golang.org/x/tools/cmd/golsp is not ready. It hasn't implmented
 	// hover, references, and rename yet.
-	//{regexp.MustCompile(`\.go$`), "go",{"golsp"}, nil},
-	{regexp.MustCompile(`\.go$`), "go", []string{"go-langserver", "-gocodecompletion"}, nil},
-	{regexp.MustCompile(`\.py$`), "python", []string{"pyls"}, nil},
+	//{regexp.MustCompile(`\.go$`), []string{"golsp"}, nil},
+	{regexp.MustCompile(`\.go$`), []string{"go-langserver", "-gocodecompletion"}, nil},
+	{regexp.MustCompile(`\.py$`), []string{"pyls"}, nil},
 }
 
 func findServer(filename string) *serverInfo {
@@ -49,24 +48,7 @@ func (s *langServer) Close() {
 	}
 }
 
-func startServers() {
-	langDone := make(map[string]bool, len(serverList))
-
-	for i, si := range serverList {
-		if langDone[si.lang] {
-			continue
-		}
-		s, err := startServer(si.lang, si.args)
-		if err != nil {
-			log.Printf("cound not start %v server: %v\n", si.lang, err)
-			continue
-		}
-		serverList[i].srv = s
-		langDone[si.lang] = true
-	}
-}
-
-func startServer(lang string, args []string) (*langServer, error) {
+func startServer(args []string) (*langServer, error) {
 	p0, p1 := net.Pipe()
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = p0
@@ -75,17 +57,17 @@ func startServer(lang string, args []string) (*langServer, error) {
 		cmd.Stderr = os.Stderr
 	}
 	if err := cmd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %v server: %v\n", lang, err)
+		return nil, errors.Wrapf(err, "failed to execute language server: %v")
 	}
 	go func() {
 		if err := cmd.Wait(); err != nil {
-			log.Printf("%v server failed: %v\n", lang, err)
+			log.Printf("wait failed: %v\n", err)
 		}
 	}()
 	lsp, err := newLSPClient(p1)
 	if err != nil {
 		cmd.Process.Kill()
-		return nil, errors.Wrapf(err, "failed to connect to %v server: %v\n", lang, err)
+		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
 	}
 	return &langServer{
 		cmd:  cmd,
@@ -102,7 +84,7 @@ func startServerForFile(filename string) (*langServer, error) {
 	if si.srv != nil {
 		return si.srv, nil
 	}
-	srv, err := startServer(si.lang, si.args)
+	srv, err := startServer(si.args)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +92,7 @@ func startServerForFile(filename string) (*langServer, error) {
 	return srv, nil
 }
 
-func killServers() {
+func closeServers() {
 	for _, si := range serverList {
 		si.srv.Close()
 	}

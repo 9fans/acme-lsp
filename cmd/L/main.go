@@ -41,15 +41,13 @@ func main() {
 		if flag.NArg() < 2 {
 			usage()
 		}
-		startServers()
-		defer killServers()
 		watch(flag.Arg(1))
+		closeServers()
 		return
 
 	case "monitor":
-		startServers()
-		defer killServers()
 		monitor()
+		closeServers()
 		return
 
 	case "servers":

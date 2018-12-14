@@ -26,7 +26,6 @@ func watchLog(ch chan<- *acme.LogEvent) {
 }
 
 type focusWin struct {
-	lang string
 	id   int
 	q0   int
 	pos  *lsp.TextDocumentPositionParams
@@ -42,7 +41,6 @@ func newFocusWin() *focusWin {
 }
 
 func (fw *focusWin) Reset() {
-	fw.lang = ""
 	fw.id = -1
 	fw.q0 = -1
 	fw.pos = nil
@@ -91,7 +89,6 @@ func notifyPosChange(ch chan<- *focusWin) {
 			fw.mu.Lock()
 			si := findServer(ev.Name)
 			if si != nil && ev.Op == "focus" {
-				fw.lang = si.lang
 				fw.id = ev.ID
 			} else {
 				fw.Reset()
