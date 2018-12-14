@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 
 	"9fans.net/go/acme"
 	"github.com/pkg/errors"
 )
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
+var extraServers serverFlag
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: %v <command> [args...]\n", os.Args[0])
@@ -23,24 +26,34 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
+	flag.Var(&extraServers, "server", `set language server for regex match (e.g. '\.go$:golsp')`)
 	flag.Parse()
 
-	if len(os.Args) < 2 {
+	if len(extraServers) > 0 {
+		// give priority to user-defined servers
+		serverList = append(extraServers, serverList...)
+	}
+	if flag.NArg() < 1 {
 		usage()
 	}
-	if os.Args[1] == "win" {
-		if len(os.Args) < 3 {
+	switch flag.Arg(0) {
+	case "win":
+		if flag.NArg() < 2 {
 			usage()
 		}
 		startServers()
 		defer killServers()
-		watch(os.Args[2])
+		watch(flag.Arg(1))
 		return
-	}
-	if os.Args[1] == "monitor" {
+
+	case "monitor":
 		startServers()
 		defer killServers()
 		monitor()
+		return
+
+	case "servers":
+		printServerList()
 		return
 	}
 	w, err := openCurrentWin()
@@ -71,7 +84,7 @@ func main() {
 		}
 	}()
 
-	switch os.Args[1] {
+	switch flag.Arg(0) {
 	case "comp":
 		err = s.lsp.Completion(pos, os.Stdout)
 	case "def":
@@ -83,14 +96,14 @@ func main() {
 	case "refs":
 		err = s.lsp.References(pos, os.Stdout)
 	case "rn":
-		if len(os.Args) < 3 {
+		if flag.NArg() < 2 {
 			usage()
 		}
-		err = s.lsp.Rename(pos, os.Args[2])
+		err = s.lsp.Rename(pos, flag.Arg(1))
 	case "sig":
 		err = s.lsp.SignatureHelp(pos, os.Stdout)
 	default:
-		log.Printf("unknown command %q\n", os.Args[1])
+		log.Printf("unknown command %q\n", flag.Arg(0))
 		os.Exit(1)
 	}
 	if err != nil {
@@ -143,4 +156,26 @@ func monitor() {
 			}
 		}
 	}
+}
+
+type serverFlag []serverInfo
+
+func (sf *serverFlag) String() string {
+	return fmt.Sprintf("%v", []serverInfo(*sf))
+}
+
+func (sf *serverFlag) Set(val string) error {
+	f := strings.SplitN(val, ":", 2)
+	if len(f) != 2 {
+		return errors.New("bad flag value")
+	}
+	re, err := regexp.Compile(f[0])
+	if err != nil {
+		return err
+	}
+	*sf = append(*sf, serverInfo{
+		re:   re,
+		args: strings.Fields(f[1]),
+	})
+	return nil
 }

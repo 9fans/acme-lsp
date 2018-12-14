@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -112,5 +113,11 @@ func startServerForFile(filename string) (*langServer, error) {
 func killServers() {
 	for _, si := range serverList {
 		si.srv.Close()
+	}
+}
+
+func printServerList() {
+	for _, si := range serverList {
+		fmt.Printf("%v %v\n", si.re, strings.Join(si.args, " "))
 	}
 }

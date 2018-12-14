@@ -9,7 +9,7 @@ L depends on one or more language servers already being installed
 in the system.  See this page of a list of language servers:
 https://microsoft.github.io/language-server-protocol/implementors/servers/.
 
-	Usage: L <sub-command> [args...]
+	Usage: L [flags] <sub-command> [args...]
 
 List of sub-commands:
 
@@ -36,6 +36,9 @@ List of sub-commands:
 
 	rn <newname>
 		Rename the identifier under the cursor to newname.
+
+	servers
+		Print list of known language servers.
 
 	sig
 		Show signature help for the function, method, etc. under
