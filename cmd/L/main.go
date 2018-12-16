@@ -120,7 +120,7 @@ func formatWin(id int) error {
 	}
 	s, err := startServerForFile(fname)
 	if err != nil {
-		return errors.Wrapf(err, "formatting window %v failed", id)
+		return nil // unknown language server
 	}
 	b, err := w.ReadAll("body")
 	if err != nil {
