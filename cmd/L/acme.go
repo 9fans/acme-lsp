@@ -161,7 +161,7 @@ func (w *win) Edit(edits []lsp.TextEdit) error {
 	return nil
 }
 
-type Editor interface {
+type editor interface {
 	Edit(edits []lsp.TextEdit) error
 }
 

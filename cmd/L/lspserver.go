@@ -80,7 +80,7 @@ func startServer(args []string) (*langServer, error) {
 func startServerForFile(filename string) (*langServer, error) {
 	si := findServer(filename)
 	if si == nil {
-		return nil, errors.New(fmt.Sprintf("unknown language server for %v", filename))
+		return nil, fmt.Errorf("unknown language server for %v", filename)
 	}
 	if si.srv != nil {
 		return si.srv, nil

@@ -214,7 +214,7 @@ func (c *lspClient) Rename(pos *lsp.TextDocumentPositionParams, newname string) 
 	return applyAcmeEdits(&we)
 }
 
-func (c *lspClient) Format(uri lsp.DocumentURI, e Editor) error {
+func (c *lspClient) Format(uri lsp.DocumentURI, e editor) error {
 	params := &lsp.DocumentFormattingParams{
 		TextDocument: lsp.TextDocumentIdentifier{
 			URI: uri,
