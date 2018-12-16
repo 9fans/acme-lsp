@@ -10,8 +10,7 @@ Documentation: https://godoc.org/github.com/fhs/acme-lsp/cmd/L
 
 ## Status
 
-**This project is currently very experimental.**
-However, basic commands seem to be working with [go-langserver](https://github.com/sourcegraph/go-langserver) and [pyls](https://github.com/palantir/python-language-server). Other language servers need to be tested.
+Basic commands are working with [go-langserver](https://github.com/sourcegraph/go-langserver) and [pyls](https://github.com/palantir/python-language-server). Other language servers need to be tested.
 
 ## See also
 

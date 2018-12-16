@@ -24,7 +24,7 @@ var serverList = []serverInfo{
 	//{regexp.MustCompile(`\.go$`), []string{"golsp"}, nil},
 	{regexp.MustCompile(`\.go$`), []string{"go-langserver", "-gocodecompletion"}, nil},
 	{regexp.MustCompile(`\.py$`), []string{"pyls"}, nil},
-	{regexp.MustCompile(`\.c$`), []string{"cquery"}, nil},
+	//{regexp.MustCompile(`\.c$`), []string{"cquery"}, nil},
 }
 
 func findServer(filename string) *serverInfo {
@@ -58,7 +58,7 @@ func startServer(args []string) (*langServer, error) {
 		cmd.Stderr = os.Stderr
 	}
 	if err := cmd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute language server: %v")
+		return nil, errors.Wrapf(err, "failed to execute language server")
 	}
 	go func() {
 		if err := cmd.Wait(); err != nil {
