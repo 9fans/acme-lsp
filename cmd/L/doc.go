@@ -52,5 +52,9 @@ List of sub-commands:
 		new window is created where the output of the given command
 		is shown each time cursor position is changed.
 
+  -debug
+    	turn on debugging prints
+  -server value
+    	set language server for regex match (e.g. '\.go$:golsp')
 */
 package main
