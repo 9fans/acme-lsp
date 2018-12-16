@@ -44,6 +44,9 @@ List of sub-commands:
 		Show signature help for the function, method, etc. under
 		the cursor.
 
+	syms
+		List symbols in the current file.
+
 	win <command>
 		The command argument can be either "comp", "hov" or "sig". A
 		new window is created where the output of the given command

@@ -24,6 +24,7 @@ var serverList = []serverInfo{
 	//{regexp.MustCompile(`\.go$`), []string{"golsp"}, nil},
 	{regexp.MustCompile(`\.go$`), []string{"go-langserver", "-gocodecompletion"}, nil},
 	{regexp.MustCompile(`\.py$`), []string{"pyls"}, nil},
+	{regexp.MustCompile(`\.c$`), []string{"cquery"}, nil},
 }
 
 func findServer(filename string) *serverInfo {

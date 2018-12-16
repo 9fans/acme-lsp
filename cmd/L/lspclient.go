@@ -150,6 +150,27 @@ func (c *lspClient) References(pos *lsp.TextDocumentPositionParams, w io.Writer)
 	return nil
 }
 
+func (c *lspClient) Symbols(uri lsp.DocumentURI, w io.Writer) error {
+	params := &lsp.DocumentSymbolParams{
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: uri,
+		},
+	}
+	var syms []lsp.SymbolInformation
+	if err := c.rpc.Call(c.ctx, "textDocument/documentSymbol", params, &syms); err != nil {
+		return err
+	}
+	if len(syms) == 0 {
+		fmt.Printf("No symbols found.\n")
+		return nil
+	}
+	fmt.Printf("Symbols:\n")
+	for _, s := range syms {
+		fmt.Fprintf(w, " %v %v %v %v\n", s.ContainerName, s.Name, s.Kind, locToLink(&s.Location))
+	}
+	return nil
+}
+
 func (c *lspClient) Completion(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
 	comp := &lsp.CompletionParams{
 		TextDocumentPositionParams: *pos,

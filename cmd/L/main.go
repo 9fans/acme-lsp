@@ -100,6 +100,8 @@ func main() {
 		err = s.lsp.Rename(pos, flag.Arg(1))
 	case "sig":
 		err = s.lsp.SignatureHelp(pos, os.Stdout)
+	case "syms":
+		err = s.lsp.Symbols(pos.TextDocument.URI, os.Stdout)
 	default:
 		log.Printf("unknown command %q\n", flag.Arg(0))
 		os.Exit(1)
