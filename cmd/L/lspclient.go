@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -143,6 +144,19 @@ func (c *lspClient) References(pos *lsp.TextDocumentPositionParams, w io.Writer)
 		fmt.Printf("No references found.\n")
 		return nil
 	}
+	sort.Slice(loc, func(i, j int) bool {
+		a := loc[i]
+		b := loc[j]
+		n := strings.Compare(string(a.URI), string(b.URI))
+		if n == 0 {
+			m := a.Range.Start.Line - b.Range.Start.Line
+			if m == 0 {
+				return a.Range.Start.Character < b.Range.Start.Character
+			}
+			return m < 0
+		}
+		return n < 0
+	})
 	fmt.Printf("References:\n")
 	for _, l := range loc {
 		fmt.Fprintf(w, " %v\n", locToLink(&l))
