@@ -15,16 +15,24 @@ import (
 type serverInfo struct {
 	re   *regexp.Regexp
 	args []string
+	addr string
 	srv  *langServer
+}
+
+func (si *serverInfo) Connect() (*langServer, error) {
+	if len(si.addr) > 0 {
+		return dialServer(si.addr)
+	}
+	return startServer(si.args)
 }
 
 var serverList = []serverInfo{
 	// golang.org/x/tools/cmd/golsp is not ready. It hasn't implmented
 	// hover, references, and rename yet.
-	//{regexp.MustCompile(`\.go$`), []string{"golsp"}, nil},
-	{regexp.MustCompile(`\.go$`), []string{"go-langserver", "-gocodecompletion"}, nil},
-	{regexp.MustCompile(`\.py$`), []string{"pyls"}, nil},
-	//{regexp.MustCompile(`\.c$`), []string{"cquery"}, nil},
+	//{regexp.MustCompile(`\.go$`), []string{"golsp"}, "", nil},
+	{regexp.MustCompile(`\.go$`), []string{"go-langserver", "-gocodecompletion"}, "", nil},
+	{regexp.MustCompile(`\.py$`), []string{"pyls"}, "", nil},
+	//{regexp.MustCompile(`\.c$`), []string{"cquery"}, "", nil},
 }
 
 func findServer(filename string) *serverInfo {
@@ -77,20 +85,35 @@ func startServer(args []string) (*langServer, error) {
 	}, nil
 }
 
+func dialServer(addr string) (*langServer, error) {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	lsp, err := newLSPClient(conn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
+	}
+	return &langServer{
+		cmd:  nil,
+		conn: conn,
+		lsp:  lsp,
+	}, nil
+}
+
 func startServerForFile(filename string) (*langServer, error) {
 	si := findServer(filename)
 	if si == nil {
 		return nil, fmt.Errorf("unknown language server for %v", filename)
 	}
-	if si.srv != nil {
-		return si.srv, nil
+	if si.srv == nil {
+		srv, err := si.Connect()
+		if err != nil {
+			return nil, err
+		}
+		si.srv = srv
 	}
-	srv, err := startServer(si.args)
-	if err != nil {
-		return nil, err
-	}
-	si.srv = srv
-	return srv, nil
+	return si.srv, nil
 }
 
 func closeServers() {

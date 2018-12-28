@@ -69,7 +69,8 @@ List of sub-commands:
 `
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
-var extraServers serverFlag
+var userServers serverFlag
+var dialServers dialFlag
 
 func usage() {
 	os.Stderr.Write([]byte(mainDoc))
@@ -80,12 +81,17 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	flag.Var(&extraServers, "server", `set language server for regex match (e.g. '\.go$:golsp')`)
+	flag.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:golsp')`)
+	flag.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
 	flag.Parse()
 
-	if len(extraServers) > 0 {
+	if len(userServers) > 0 {
 		// give priority to user-defined servers
-		serverList = append(extraServers, serverList...)
+		serverList = append(userServers, serverList...)
+	}
+	if len(dialServers) > 0 {
+		// give priority to user-defined servers
+		serverList = append(dialServers, serverList...)
 	}
 	if flag.NArg() < 1 {
 		usage()
@@ -230,6 +236,28 @@ func (sf *serverFlag) Set(val string) error {
 	*sf = append(*sf, serverInfo{
 		re:   re,
 		args: strings.Fields(f[1]),
+	})
+	return nil
+}
+
+type dialFlag []serverInfo
+
+func (sf *dialFlag) String() string {
+	return fmt.Sprintf("%v", []serverInfo(*sf))
+}
+
+func (sf *dialFlag) Set(val string) error {
+	f := strings.SplitN(val, ":", 2)
+	if len(f) != 2 {
+		return errors.New("bad flag value")
+	}
+	re, err := regexp.Compile(f[0])
+	if err != nil {
+		return err
+	}
+	*sf = append(*sf, serverInfo{
+		re:   re,
+		addr: f[1],
 	})
 	return nil
 }

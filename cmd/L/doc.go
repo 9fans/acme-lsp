@@ -54,7 +54,9 @@ List of sub-commands:
 
   -debug
     	turn on debugging prints
+  -dial value
+    	language server address for filename match (e.g. '\.go$:localhost:4389')
   -server value
-    	set language server for regex match (e.g. '\.go$:golsp')
+    	language server command for filename match (e.g. '\.go$:golsp')
 */
 package main
