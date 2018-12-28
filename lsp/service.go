@@ -46,3 +46,31 @@ func (r *MarkedStringList) UnmarshalJSON(data []byte) error {
 	*r = make(MarkedStringList, 1)
 	return json.Unmarshal(data, &(*r)[0])
 }
+
+type ShowMessageParams struct {
+	Type    MessageType `json:"type"`
+	Message string      `json:"message"`
+}
+
+type MessageType int
+
+const (
+	MTError   MessageType = 1
+	MTWarning             = 2
+	Info                  = 3
+	Log                   = 4
+)
+
+func (mt MessageType) String() string {
+	switch mt {
+	case MTError:
+		return "Error"
+	case MTWarning:
+		return "Warning"
+	case Info:
+		return "Info"
+	case Log:
+		return "Log"
+	}
+	panic("unreached")
+}
