@@ -52,6 +52,11 @@ type ShowMessageParams struct {
 	Message string      `json:"message"`
 }
 
+type LogMessageParams struct {
+	Type    MessageType `json:"type"`
+	Message string      `json:"message"`
+}
+
 type MessageType int
 
 const (

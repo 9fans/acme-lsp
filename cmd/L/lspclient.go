@@ -50,6 +50,13 @@ func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 			return
 		}
 		fmt.Printf("LSP %v: %v\n", params.Type, params.Message)
+	case "window/logMessage":
+		var params lsp1.LogMessageParams
+		if err := json.Unmarshal(*req.Params, &params); err != nil {
+			log.Printf("window/logMessage unmarshal failed: %v\n", err)
+			return
+		}
+		fmt.Printf("LSP %v: %v\n", params.Type, params.Message)
 
 	default:
 		fmt.Printf("Handle: got request %#v\n", req)
