@@ -124,6 +124,10 @@ func closeServers() {
 
 func printServerList() {
 	for _, si := range serverList {
-		fmt.Printf("%v %v\n", si.re, strings.Join(si.args, " "))
+		if len(si.addr) > 0 {
+			fmt.Printf("%v %v\n", si.re, si.addr)
+		} else {
+			fmt.Printf("%v %v\n", si.re, strings.Join(si.args, " "))
+		}
 	}
 }
