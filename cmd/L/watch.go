@@ -76,12 +76,12 @@ func (fw *focusWin) Update() bool {
 
 func notifyPosChange(ch chan<- *focusWin) {
 	fw := newFocusWin()
-	logch := make(chan *acme.LogEvent, 0)
+	logch := make(chan *acme.LogEvent)
 	go watchLog(logch)
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	pos := make(map[int]int, 0) // winid -> q0
+	pos := make(map[int]int) // winid -> q0
 
 	for {
 		select {
@@ -179,7 +179,7 @@ func watch(cmd string) {
 	}
 	defer w.Close()
 
-	fch := make(chan *focusWin, 0)
+	fch := make(chan *focusWin)
 	go notifyPosChange(fch)
 
 loop:

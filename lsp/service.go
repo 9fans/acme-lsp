@@ -60,10 +60,10 @@ type LogMessageParams struct {
 type MessageType int
 
 const (
-	MTError   MessageType = 1
-	MTWarning             = 2
-	Info                  = 3
-	Log                   = 4
+	MTError MessageType = 1 + iota
+	MTWarning
+	Info
+	Log
 )
 
 func (mt MessageType) String() string {

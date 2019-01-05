@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
@@ -21,9 +20,7 @@ import (
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-type lspHandler struct {
-	mu sync.Mutex
-}
+type lspHandler struct{}
 
 func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
 	if strings.HasPrefix(req.Method, "$/") {
