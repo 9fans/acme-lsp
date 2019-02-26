@@ -69,6 +69,7 @@ List of sub-commands:
 `
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
+var rootdir = flag.String("rootdir", "/", "root directory used for LSP initialization")
 var userServers serverFlag
 var dialServers dialFlag
 
