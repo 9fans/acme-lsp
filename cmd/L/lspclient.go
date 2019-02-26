@@ -37,8 +37,15 @@ func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 			log.Printf("diagnostics unmarshal failed: %v\n", err)
 			return
 		}
+		if len(params.Diagnostics) > 0 {
+			fmt.Printf("LSP Diagnostics:\n")
+		}
 		for _, diag := range params.Diagnostics {
-			fmt.Printf("LSP Diagnostic: %v: %#v\n", params.URI, diag)
+			loc := &lsp.Location{
+				URI:   params.URI,
+				Range: diag.Range,
+			}
+			fmt.Printf(" %v: %v\n", locToLink(loc), diag.Message)
 		}
 	case "window/showMessage":
 		var params lsp1.ShowMessageParams
