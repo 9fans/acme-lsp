@@ -82,7 +82,7 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	flag.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:golsp')`)
+	flag.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
 	flag.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
 	flag.Parse()
 

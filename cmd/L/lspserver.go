@@ -27,9 +27,9 @@ func (si *serverInfo) Connect() (*langServer, error) {
 }
 
 var serverList = []serverInfo{
-	// golang.org/x/tools/cmd/golsp is not ready. It hasn't implmented
-	// hover, references, and rename yet.
-	//{regexp.MustCompile(`\.go$`), []string{"golsp"}, "", nil},
+	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
+	// references, and rename yet.
+	//{regexp.MustCompile(`\.go$`), []string{"gopls"}, "", nil},
 	{regexp.MustCompile(`\.go$`), []string{"go-langserver", "-gocodecompletion"}, "", nil},
 	{regexp.MustCompile(`\.py$`), []string{"pyls"}, "", nil},
 	//{regexp.MustCompile(`\.c$`), []string{"cquery"}, "", nil},
