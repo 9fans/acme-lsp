@@ -14,9 +14,8 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
-	lsp1 "github.com/fhs/acme-lsp/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/pkg/errors"
-	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
@@ -48,14 +47,14 @@ func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 			fmt.Printf(" %v: %v\n", locToLink(loc), diag.Message)
 		}
 	case "window/showMessage":
-		var params lsp1.ShowMessageParams
+		var params lsp.ShowMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			log.Printf("window/showMessage unmarshal failed: %v\n", err)
 			return
 		}
 		fmt.Printf("LSP %v: %v\n", params.Type, params.Message)
 	case "window/logMessage":
-		var params lsp1.LogMessageParams
+		var params lsp.LogMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			log.Printf("window/logMessage unmarshal failed: %v\n", err)
 			return
@@ -142,7 +141,7 @@ func (c *lspClient) Definition(pos *lsp.TextDocumentPositionParams) error {
 }
 
 func (c *lspClient) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	var hov lsp1.Hover
+	var hov lsp.Hover
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
 		return err
 	}

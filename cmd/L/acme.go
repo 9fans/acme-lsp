@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"9fans.net/go/acme"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/pkg/errors"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type win struct {

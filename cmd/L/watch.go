@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"9fans.net/go/acme"
-	lsp "github.com/sourcegraph/go-lsp"
+	"github.com/fhs/acme-lsp/internal/lsp"
 )
 
 func watchLog(ch chan<- *acme.LogEvent) {
