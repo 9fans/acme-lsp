@@ -532,9 +532,9 @@ type DocumentFormattingParams struct {
 }
 
 type FormattingOptions struct {
-	TabSize      int    `json:"tabSize"`
-	InsertSpaces bool   `json:"insertSpaces"`
-	Key          string `json:"key"`
+	TabSize      int                    `json:"tabSize"`
+	InsertSpaces bool                   `json:"insertSpaces"`
+	Key          map[string]interface{} `json:"key"`
 }
 
 type RenameParams struct {

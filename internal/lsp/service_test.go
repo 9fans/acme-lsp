@@ -173,6 +173,42 @@ func TestHover(t *testing.T) {
 	}
 }
 
+func TestFormattingOptions(t *testing.T) {
+	tests := []struct {
+		data []byte
+		opt  FormattingOptions
+	}{
+		{
+			data: []byte(`{"tabSize":0,"insertSpaces":false,"key":{}}`),
+			opt: FormattingOptions{
+				TabSize:      0,
+				InsertSpaces: false,
+				Key:          map[string]interface{}{},
+			},
+		},
+	}
+	for _, test := range tests {
+		var opt FormattingOptions
+		if err := json.Unmarshal(test.data, &opt); err != nil {
+			t.Errorf("json.Unmarshal %q error: %s", test.data, err)
+			continue
+		}
+		if !reflect.DeepEqual(test.opt, opt) {
+			t.Errorf("Unmarshaled %q, expected %#v, but got %#v", string(test.data), test.opt, opt)
+			continue
+		}
+
+		marshaled, err := json.Marshal(&test.opt)
+		if err != nil {
+			t.Errorf("json.Marshal error: %s", err)
+			continue
+		}
+		if string(marshaled) != string(test.data) {
+			t.Errorf("Marshaled result expected %s, but got %s", string(test.data), string(marshaled))
+		}
+	}
+}
+
 func TestMessageTypeString(t *testing.T) {
 	for _, test := range []struct {
 		m MessageType

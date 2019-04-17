@@ -152,7 +152,7 @@ func main() {
 	case "def":
 		err = plumbDefinition(s.lsp, pos)
 	case "fmt":
-		err = s.lsp.Format(pos.TextDocument.URI, w)
+		err = s.lsp.FormatInEditor(pos.TextDocument.URI, w)
 	case "hov":
 		err = s.lsp.Hover(pos, os.Stdout)
 	case "refs":
@@ -219,7 +219,7 @@ func formatWin(id int) error {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
-	return s.lsp.Format(uri, w)
+	return s.lsp.FormatInEditor(uri, w)
 }
 
 func monitor() {

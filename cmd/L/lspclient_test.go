@@ -56,23 +56,34 @@ func testGoHover(t *testing.T, want string, command []string) {
 		}
 	}()
 
-	pos := &lsp.TextDocumentPositionParams{
-		TextDocument: lsp.TextDocumentIdentifier{
-			URI: lsp.DocumentURI(filenameToURI(gofile)),
-		},
-		Position: lsp.Position{
-			Line:      5,
-			Character: 10,
-		},
-	}
-	var b bytes.Buffer
-	if err := srv.lsp.Hover(pos, &b); err != nil {
-		t.Fatalf("Hover failed: %v", err)
-	}
-	got := b.String()
-	if want != got {
-		t.Errorf("hover result is %q; expected %q", got, want)
-	}
+	t.Run("Format", func(t *testing.T) {
+		uri := lsp.DocumentURI(filenameToURI(gofile))
+		edits, err := srv.lsp.Format(uri)
+		if err != nil {
+			t.Fatalf("Format failed: %v", err)
+		}
+		t.Logf("Format returned %v edits\n", len(edits))
+	})
+
+	t.Run("Hover", func(t *testing.T) {
+		pos := &lsp.TextDocumentPositionParams{
+			TextDocument: lsp.TextDocumentIdentifier{
+				URI: lsp.DocumentURI(filenameToURI(gofile)),
+			},
+			Position: lsp.Position{
+				Line:      5,
+				Character: 10,
+			},
+		}
+		var b bytes.Buffer
+		if err := srv.lsp.Hover(pos, &b); err != nil {
+			t.Fatalf("Hover failed: %v", err)
+		}
+		got := b.String()
+		if want != got {
+			t.Errorf("hover result is %q; expected %q", got, want)
+		}
+	})
 }
 
 func TestGopls(t *testing.T) {
@@ -128,25 +139,36 @@ func testPythonHover(t *testing.T, want string, command []string) {
 		}
 	}()
 
-	pos := &lsp.TextDocumentPositionParams{
-		TextDocument: lsp.TextDocumentIdentifier{
-			URI: lsp.DocumentURI(filenameToURI(pyfile)),
-		},
-		Position: lsp.Position{
-			Line:      5,
-			Character: 16,
-		},
-	}
-	var b bytes.Buffer
-	if err := srv.lsp.Hover(pos, &b); err != nil {
-		t.Fatalf("Hover failed: %v", err)
-	}
-	got := b.String()
-	// May not be an exact match.
-	// Perhaps depending on if it's Python 2 or 3?
-	if !strings.Contains(got, want) {
-		t.Errorf("hover result is %q does not contain %q", got, want)
-	}
+	t.Run("Format", func(t *testing.T) {
+		uri := lsp.DocumentURI(filenameToURI(pyfile))
+		edits, err := srv.lsp.Format(uri)
+		if err != nil {
+			t.Fatalf("Format failed: %v", err)
+		}
+		t.Logf("Format returned %v edits\n", len(edits))
+	})
+
+	t.Run("Hover", func(t *testing.T) {
+		pos := &lsp.TextDocumentPositionParams{
+			TextDocument: lsp.TextDocumentIdentifier{
+				URI: lsp.DocumentURI(filenameToURI(pyfile)),
+			},
+			Position: lsp.Position{
+				Line:      5,
+				Character: 16,
+			},
+		}
+		var b bytes.Buffer
+		if err := srv.lsp.Hover(pos, &b); err != nil {
+			t.Fatalf("Hover failed: %v", err)
+		}
+		got := b.String()
+		// May not be an exact match.
+		// Perhaps depending on if it's Python 2 or 3?
+		if !strings.Contains(got, want) {
+			t.Errorf("hover result is %q does not contain %q", got, want)
+		}
+	})
 }
 
 func TestPyls(t *testing.T) {
