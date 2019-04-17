@@ -9,6 +9,9 @@ import (
 	"strings"
 
 	"9fans.net/go/acme"
+	"9fans.net/go/plan9"
+	"9fans.net/go/plumb"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/pkg/errors"
 )
 
@@ -147,7 +150,7 @@ func main() {
 	case "comp":
 		err = s.lsp.Completion(pos, os.Stdout)
 	case "def":
-		err = s.lsp.Definition(pos)
+		err = plumbDefinition(s.lsp, pos)
 	case "fmt":
 		err = s.lsp.Format(pos.TextDocument.URI, w)
 	case "hov":
@@ -170,6 +173,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
+}
+
+func plumbDefinition(c *lspClient, pos *lsp.TextDocumentPositionParams) error {
+	p, err := plumb.Open("send", plan9.OWRITE)
+	if err != nil {
+		return errors.Wrap(err, "failed to open plumber")
+	}
+	defer p.Close()
+	locations, err := c.Definition(pos)
+	for _, loc := range locations {
+		err := plumbLocation(p, &loc)
+		if err != nil {
+			return errors.Wrap(err, "failed to plumb location")
+		}
+	}
+	return nil
 }
 
 func formatWin(id int) error {

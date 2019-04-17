@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strings"
 
-	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp"
@@ -69,8 +68,6 @@ func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 type lspClient struct {
 	rpc *jsonrpc2.Conn
 	ctx context.Context
-
-	plumber *client.Fid
 }
 
 func newLSPClient(conn net.Conn) (*lspClient, error) {
@@ -89,37 +86,28 @@ func newLSPClient(conn net.Conn) (*lspClient, error) {
 	if err := rpc.Call(ctx, "initialize", initp, initr); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}
-	p, err := plumb.Open("send", plan9.OWRITE)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to open plumber")
-	}
 	return &lspClient{
-		rpc:     rpc,
-		ctx:     ctx,
-		plumber: p,
+		rpc: rpc,
+		ctx: ctx,
 	}, nil
 }
 
 func (c *lspClient) Close() error {
-	c.plumber.Close()
 	return c.rpc.Close()
 }
 
-func (c *lspClient) Plumb(data []byte) error {
+func plumbLocation(p *client.Fid, loc *lsp.Location) error {
+	fn := uriToFilename(loc.URI)
+	a := fmt.Sprintf("%v:%v", fn, loc.Range.Start)
+
 	m := &plumb.Message{
 		Src:  "L",
 		Dst:  "edit",
 		Dir:  "/",
 		Type: "text",
-		Data: data,
+		Data: []byte(a),
 	}
-	return m.Send(c.plumber)
-}
-
-func (c *lspClient) PlumbLocation(loc *lsp.Location) error {
-	fn := uriToFilename(loc.URI)
-	a := fmt.Sprintf("%v:%v", fn, loc.Range.Start)
-	return c.Plumb([]byte(a))
+	return m.Send(p)
 }
 
 func locToLink(l *lsp.Location) string {
@@ -129,15 +117,12 @@ func locToLink(l *lsp.Location) string {
 		l.Range.End.Line+1, l.Range.End.Character+1)
 }
 
-func (c *lspClient) Definition(pos *lsp.TextDocumentPositionParams) error {
+func (c *lspClient) Definition(pos *lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
 	loc := make([]lsp.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/definition", pos, &loc); err != nil {
-		return err
+		return nil, err
 	}
-	for _, l := range loc {
-		c.PlumbLocation(&l)
-	}
-	return nil
+	return loc, nil
 }
 
 func (c *lspClient) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
