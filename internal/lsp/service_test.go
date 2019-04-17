@@ -172,3 +172,21 @@ func TestHover(t *testing.T) {
 		}
 	}
 }
+
+func TestMessageTypeString(t *testing.T) {
+	for _, test := range []struct {
+		m MessageType
+		s string
+	}{
+		{MTError, "Error"},
+		{MTWarning, "Warning"},
+		{Info, "Info"},
+		{Log, "Log"},
+	} {
+		s := test.m.String()
+		if s != test.s {
+			t.Errorf("String representation of MessageType(%v) is %v; expected %v",
+				int(test.m), s, test.s)
+		}
+	}
+}

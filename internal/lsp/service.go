@@ -575,6 +575,20 @@ const (
 	Log                   = 4
 )
 
+func (mt MessageType) String() string {
+	switch mt {
+	case MTError:
+		return "Error"
+	case MTWarning:
+		return "Warning"
+	case Info:
+		return "Info"
+	case Log:
+		return "Log"
+	}
+	panic("unreached")
+}
+
 type ShowMessageParams struct {
 	Type    MessageType `json:"type"`
 	Message string      `json:"message"`
