@@ -1,6 +1,13 @@
 language: go
 
+env:
+  global:
+    - GO111MODULE=on
+
 script:
+ - go get golang.org/x/tools/cmd/gopls
+ - go get github.com/sourcegraph/go-langserver
+ - sudo pip install python-language-server
  - go install -v ./...
  - test `gofmt -l -s . | wc -l` = 0
- - go test -v ./...
+ - go test -race -v ./...

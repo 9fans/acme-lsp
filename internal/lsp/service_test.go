@@ -58,23 +58,39 @@ func TestTextDocumentSyncOptionsOrKind_MarshalUnmarshalJSON(t *testing.T) {
 	}
 }
 
-func TestMarkedString_MarshalUnmarshalJSON(t *testing.T) {
+func TestMarkupContent_MarshalUnmarshalJSON(t *testing.T) {
 	tests := []struct {
-		data []byte
-		want MarkedString
+		data        []byte
+		want        MarkupContent
+		skipMarshal bool
 	}{{
-		data: []byte(`{"language":"go","value":"foo"}`),
-		want: MarkedString{Language: "go", Value: "foo", isRawString: false},
+		data:        []byte(`{"language":"go","value":"foo"}`),
+		want:        MarkupContent{Kind: PlainText, Value: "foo"},
+		skipMarshal: true,
 	}, {
-		data: []byte(`{"language":"","value":"foo"}`),
-		want: MarkedString{Language: "", Value: "foo", isRawString: false},
+		data:        []byte(`{"language":"","value":"foo"}`),
+		want:        MarkupContent{Kind: PlainText, Value: "foo"},
+		skipMarshal: true,
 	}, {
-		data: []byte(`"foo"`),
-		want: MarkedString{Language: "", Value: "foo", isRawString: true},
+		data:        []byte(`"foo"`),
+		want:        MarkupContent{Kind: PlainText, Value: "foo"},
+		skipMarshal: true,
+	}, {
+		data:        []byte(`["foo", "bar"]`),
+		want:        MarkupContent{Kind: PlainText, Value: "foo\nbar"},
+		skipMarshal: true,
+	}, {
+		data:        []byte(`[{"language":"go","value":"foo"},{"language":"go","value":"bar"}]`),
+		want:        MarkupContent{Kind: PlainText, Value: "foo\nbar"},
+		skipMarshal: true,
+	}, {
+		data:        []byte(`{"kind":"markdown","value":"foo"}`),
+		want:        MarkupContent{Kind: Markdown, Value: "foo"},
+		skipMarshal: false,
 	}}
 
 	for _, test := range tests {
-		var m MarkedString
+		var m MarkupContent
 		if err := json.Unmarshal(test.data, &m); err != nil {
 			t.Errorf("json.Unmarshal error: %s", err)
 			continue
@@ -84,13 +100,15 @@ func TestMarkedString_MarshalUnmarshalJSON(t *testing.T) {
 			continue
 		}
 
-		marshaled, err := json.Marshal(m)
-		if err != nil {
-			t.Errorf("json.Marshal error: %s", err)
-			continue
-		}
-		if string(marshaled) != string(test.data) {
-			t.Errorf("Marshaled result expected %s, but got %s", string(test.data), string(marshaled))
+		if !test.skipMarshal {
+			marshaled, err := json.Marshal(m)
+			if err != nil {
+				t.Errorf("json.Marshal error: %s", err)
+				continue
+			}
+			if string(marshaled) != string(test.data) {
+				t.Errorf("Marshaled result expected %s, but got %s", string(test.data), string(marshaled))
+			}
 		}
 	}
 }
@@ -102,23 +120,42 @@ func TestHover(t *testing.T) {
 		skipUnmarshal bool
 		skipMarshal   bool
 	}{{
-		data: []byte(`{"contents":[{"language":"go","value":"foo"}]}`),
-		want: Hover{Contents: []MarkedString{{Language: "go", Value: "foo", isRawString: false}}},
+		data:        []byte(`{"contents":[{"language":"go","value":"foo"}]}`),
+		want:        Hover{Contents: MarkupContent{Kind: PlainText, Value: "foo"}},
+		skipMarshal: true,
 	}, {
-		data:          []byte(`{"contents":[]}`),
-		want:          Hover{Contents: nil},
-		skipUnmarshal: true, // testing we don't marshal nil
+		data: []byte(`{"contents":{"kind":"markdown","value":"foo"},"range":{"start":{"line":42,"character":5},"end":{"line":42,"character":12}}}`),
+		want: Hover{
+			Contents: MarkupContent{
+				Kind:  Markdown,
+				Value: "foo",
+			},
+			Range: &Range{
+				Start: Position{
+					Line:      42,
+					Character: 5,
+				},
+				End: Position{
+					Line:      42,
+					Character: 12,
+				},
+			},
+		},
 	}}
 
 	for _, test := range tests {
 		if !test.skipUnmarshal {
 			var h Hover
 			if err := json.Unmarshal(test.data, &h); err != nil {
-				t.Errorf("json.Unmarshal error: %s", err)
+				t.Errorf("json.Unmarshal %q error: %s", test.data, err)
 				continue
 			}
-			if !reflect.DeepEqual(test.want, h) {
-				t.Errorf("Unmarshaled %q, expected %+v, but got %+v", string(test.data), test.want, h)
+			if !reflect.DeepEqual(test.want.Contents, h.Contents) {
+				t.Errorf("Unmarshaled %q, expected %#v, but got %#v", string(test.data), test.want.Contents, h.Contents)
+				continue
+			}
+			if !reflect.DeepEqual(test.want.Range, h.Range) {
+				t.Errorf("Unmarshaled %q, expected %#v, but got %#v", string(test.data), test.want.Range, h.Range)
 				continue
 			}
 		}

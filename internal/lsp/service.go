@@ -317,58 +317,59 @@ type CompletionParams struct {
 }
 
 type Hover struct {
-	Contents []MarkedString `json:"contents"`
-	Range    *Range         `json:"range,omitempty"`
+	Contents MarkupContent `json:"contents"`
+	Range    *Range        `json:"range,omitempty"`
 }
 
-type hover Hover
+type MarkupKind string
 
-func (h Hover) MarshalJSON() ([]byte, error) {
-	if h.Contents == nil {
-		return json.Marshal(hover{
-			Contents: []MarkedString{},
-			Range:    h.Range,
-		})
+const (
+	PlainText MarkupKind = "plaintext"
+	Markdown  MarkupKind = "markdown"
+)
+
+type MarkupContent struct {
+	Kind  MarkupKind `json:"kind"`
+	Value string     `json:"value"`
+}
+
+func (m *MarkupContent) UnmarshalJSON(data []byte) error {
+	d := strings.TrimSpace(string(data))
+	if len(d) == 0 {
+		return nil
 	}
-	return json.Marshal(hover(h))
-}
-
-type MarkedString markedString
-
-type markedString struct {
-	Language string `json:"language"`
-	Value    string `json:"value"`
-
-	isRawString bool
-}
-
-func (m *MarkedString) UnmarshalJSON(data []byte) error {
-	if d := strings.TrimSpace(string(data)); len(d) > 0 && d[0] == '"' {
-		// Raw string
+	switch d[0] {
+	case '"': // string (deprecated in LSP)
 		var s string
 		if err := json.Unmarshal(data, &s); err != nil {
 			return err
 		}
+		m.Kind = PlainText
 		m.Value = s
-		m.isRawString = true
+		return nil
+
+	case '[': // []MarkedString (deprecated in LSP)
+		var mslist []MarkupContent
+		err := json.Unmarshal(data, &mslist)
+		if err != nil {
+			return err
+		}
+		var b strings.Builder
+		for i, ms := range mslist {
+			if i > 0 {
+				b.WriteRune('\n')
+			}
+			b.WriteString(ms.Value)
+		}
+		m.Kind = PlainText
+		m.Value = b.String()
 		return nil
 	}
-	// Language string
-	ms := (*markedString)(m)
-	return json.Unmarshal(data, ms)
-}
 
-func (m MarkedString) MarshalJSON() ([]byte, error) {
-	if m.isRawString {
-		return json.Marshal(m.Value)
-	}
-	return json.Marshal((markedString)(m))
-}
-
-// RawMarkedString returns a MarkedString consisting of only a raw
-// string (i.e., "foo" instead of {"value":"foo", "language":"bar"}).
-func RawMarkedString(s string) MarkedString {
-	return MarkedString{Value: s, isRawString: true}
+	// MarkedString (deprecated in LSP) or MarkedContent
+	type noUnmarshal MarkupContent
+	m.Kind = PlainText // for MarkedString
+	return json.Unmarshal(data, (*noUnmarshal)(m))
 }
 
 type SignatureHelp struct {

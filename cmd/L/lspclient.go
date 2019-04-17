@@ -145,9 +145,7 @@ func (c *lspClient) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) erro
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
 		return err
 	}
-	for _, c := range hov.Contents {
-		fmt.Fprintf(w, "%v\n", c.Value)
-	}
+	fmt.Fprintf(w, "%v\n", hov.Contents.Value)
 	return nil
 }
 
