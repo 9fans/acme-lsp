@@ -98,7 +98,7 @@ type TextDocumentSyncOptions struct {
 	Save              *SaveOptions         `json:"save,omitempty"`
 }
 
-// TextDocumentSyncOptions holds either a TextDocumentSyncKind or
+// TextDocumentSyncOptionsOrKind holds either a TextDocumentSyncKind or
 // TextDocumentSyncOptions. The LSP API allows either to be specified
 // in the (ServerCapabilities).TextDocumentSync field.
 type TextDocumentSyncOptionsOrKind struct {
@@ -296,14 +296,14 @@ type CompletionTriggerKind int
 
 const (
 	CTKInvoked          CompletionTriggerKind = 1
-	CTKTriggerCharacter                       = 2
+	CTKTriggerCharacter CompletionTriggerKind = 2
 )
 
 type InsertTextFormat int
 
 const (
 	ITFPlainText InsertTextFormat = 1
-	ITFSnippet                    = 2
+	ITFSnippet   InsertTextFormat = 2
 )
 
 type CompletionContext struct {
@@ -405,8 +405,8 @@ type DocumentHighlightKind int
 
 const (
 	Text  DocumentHighlightKind = 1
-	Read                        = 2
-	Write                       = 3
+	Read  DocumentHighlightKind = 2
+	Write DocumentHighlightKind = 3
 )
 
 type DocumentHighlight struct {
@@ -570,9 +570,9 @@ type MessageType int
 
 const (
 	MTError   MessageType = 1
-	MTWarning             = 2
-	Info                  = 3
-	Log                   = 4
+	MTWarning MessageType = 2
+	Info      MessageType = 3
+	Log       MessageType = 4
 )
 
 func (mt MessageType) String() string {
@@ -617,8 +617,8 @@ type FileChangeType int
 
 const (
 	Created FileChangeType = 1
-	Changed                = 2
-	Deleted                = 3
+	Changed FileChangeType = 2
+	Deleted FileChangeType = 3
 )
 
 type FileEvent struct {

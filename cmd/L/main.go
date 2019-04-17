@@ -182,6 +182,9 @@ func plumbDefinition(c *lspClient, pos *lsp.TextDocumentPositionParams) error {
 	}
 	defer p.Close()
 	locations, err := c.Definition(pos)
+	if err != nil {
+		return err
+	}
 	for _, loc := range locations {
 		err := plumbLocation(p, &loc)
 		if err != nil {
