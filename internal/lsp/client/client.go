@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"path/filepath"
 	"sort"
@@ -35,14 +34,23 @@ func locToLink(l *lsp.Location) string {
 		l.Range.End.Line+1, l.Range.End.Character+1)
 }
 
-// TODO: rename to 'handler' and take a io.Writer as input
-type lspHandler struct{}
+var _ = (jsonrpc2.Handler)(&handler{})
 
-func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+// handler handles JSON-RPC requests and notifications.
+// Diagnostics and other messages sent by the server are printed to writer w.
+type handler struct {
+	w io.Writer
+}
+
+func (h *handler) Printf(format string, a ...interface{}) (n int, err error) {
+	return fmt.Fprintf(h.w, format, a...)
+}
+
+func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
 	if strings.HasPrefix(req.Method, "$/") {
 		// Ignore server dependent notifications
 		if Debug {
-			fmt.Printf("Handle: got request %#v\n", req)
+			h.Printf("Handle: got request %#v\n", req)
 		}
 		return
 	}
@@ -50,36 +58,36 @@ func (h *lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 	case "textDocument/publishDiagnostics":
 		var params lsp.PublishDiagnosticsParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
-			log.Printf("diagnostics unmarshal failed: %v\n", err)
+			h.Printf("diagnostics unmarshal failed: %v\n", err)
 			return
 		}
 		if len(params.Diagnostics) > 0 {
-			fmt.Printf("LSP Diagnostics:\n")
+			h.Printf("LSP Diagnostics:\n")
 		}
 		for _, diag := range params.Diagnostics {
 			loc := &lsp.Location{
 				URI:   params.URI,
 				Range: diag.Range,
 			}
-			fmt.Printf(" %v: %v\n", locToLink(loc), diag.Message)
+			h.Printf(" %v: %v\n", locToLink(loc), diag.Message)
 		}
 	case "window/showMessage":
 		var params lsp.ShowMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
-			log.Printf("window/showMessage unmarshal failed: %v\n", err)
+			h.Printf("window/showMessage unmarshal failed: %v\n", err)
 			return
 		}
-		fmt.Printf("LSP %v: %v\n", params.Type, params.Message)
+		h.Printf("LSP %v: %v\n", params.Type, params.Message)
 	case "window/logMessage":
 		var params lsp.LogMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
-			log.Printf("window/logMessage unmarshal failed: %v\n", err)
+			h.Printf("window/logMessage unmarshal failed: %v\n", err)
 			return
 		}
-		fmt.Printf("LSP %v: %v\n", params.Type, params.Message)
+		h.Printf("LSP %v: %v\n", params.Type, params.Message)
 
 	default:
-		fmt.Printf("Handle: got request %#v\n", req)
+		h.Printf("Handle: got request %#v\n", req)
 	}
 }
 
@@ -88,10 +96,12 @@ type Conn struct {
 	ctx context.Context
 }
 
-func New(conn net.Conn, rootdir string) (*Conn, error) {
+func New(conn net.Conn, w io.Writer, rootdir string) (*Conn, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
-	rpc := jsonrpc2.NewConn(ctx, stream, &lspHandler{})
+	rpc := jsonrpc2.NewConn(ctx, stream, &handler{
+		w: w,
+	})
 
 	d, err := filepath.Abs(rootdir)
 	if err != nil {

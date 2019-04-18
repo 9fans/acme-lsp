@@ -1,6 +1,7 @@
 package client
 
 import (
+	"io"
 	"log"
 	"net"
 	"os"
@@ -22,7 +23,7 @@ func (s *Server) Close() {
 	}
 }
 
-func StartServer(args []string, rootdir string) (*Server, error) {
+func StartServer(args []string, w io.Writer, rootdir string) (*Server, error) {
 	p0, p1 := net.Pipe()
 	// TODO: use CommandContext?
 	cmd := exec.Command(args[0], args[1:]...)
@@ -40,7 +41,7 @@ func StartServer(args []string, rootdir string) (*Server, error) {
 			log.Printf("wait failed: %v\n", err)
 		}
 	}()
-	lsp, err := New(p1, rootdir)
+	lsp, err := New(p1, w, rootdir)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -52,12 +53,12 @@ func StartServer(args []string, rootdir string) (*Server, error) {
 	}, nil
 }
 
-func DialServer(addr string, rootdir string) (*Server, error) {
+func DialServer(addr string, w io.Writer, rootdir string) (*Server, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	lsp, err := New(conn, rootdir)
+	lsp, err := New(conn, w, rootdir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
 	}

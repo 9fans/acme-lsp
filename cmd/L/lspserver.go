@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -17,9 +18,9 @@ type serverInfo struct {
 
 func (si *serverInfo) Connect() (*client.Server, error) {
 	if len(si.addr) > 0 {
-		return client.DialServer(si.addr, *rootdir)
+		return client.DialServer(si.addr, os.Stdout, *rootdir)
 	}
-	return client.StartServer(si.args, *rootdir)
+	return client.StartServer(si.args, os.Stdout, *rootdir)
 }
 
 var serverList = []serverInfo{
