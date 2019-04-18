@@ -70,12 +70,12 @@ type lspClient struct {
 	ctx context.Context
 }
 
-func newLSPClient(conn net.Conn) (*lspClient, error) {
+func newLSPClient(conn net.Conn, rootdir string) (*lspClient, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
 	rpc := jsonrpc2.NewConn(ctx, stream, &lspHandler{})
 
-	d, err := filepath.Abs(*rootdir)
+	d, err := filepath.Abs(rootdir)
 	if err != nil {
 		return nil, err
 	}

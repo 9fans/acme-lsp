@@ -38,8 +38,7 @@ func testGoHover(t *testing.T, want string, command []string) {
 	}
 
 	// Start the server
-	*rootdir = dir
-	srv, err := startServer(command)
+	srv, err := startServer(command, dir)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -122,7 +121,7 @@ func testPythonHover(t *testing.T, want string, command []string) {
 	}
 
 	// Start the server
-	srv, err := startServer(command)
+	srv, err := startServer(command, dir)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}

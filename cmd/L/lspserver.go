@@ -21,9 +21,9 @@ type serverInfo struct {
 
 func (si *serverInfo) Connect() (*langServer, error) {
 	if len(si.addr) > 0 {
-		return dialServer(si.addr)
+		return dialServer(si.addr, *rootdir)
 	}
-	return startServer(si.args)
+	return startServer(si.args, *rootdir)
 }
 
 var serverList = []serverInfo{
@@ -57,7 +57,7 @@ func (s *langServer) Close() {
 	}
 }
 
-func startServer(args []string) (*langServer, error) {
+func startServer(args []string, rootdir string) (*langServer, error) {
 	p0, p1 := net.Pipe()
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = p0
@@ -73,7 +73,7 @@ func startServer(args []string) (*langServer, error) {
 			log.Printf("wait failed: %v\n", err)
 		}
 	}()
-	lsp, err := newLSPClient(p1)
+	lsp, err := newLSPClient(p1, rootdir)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -85,12 +85,12 @@ func startServer(args []string) (*langServer, error) {
 	}, nil
 }
 
-func dialServer(addr string) (*langServer, error) {
+func dialServer(addr string, rootdir string) (*langServer, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	lsp, err := newLSPClient(conn)
+	lsp, err := newLSPClient(conn, rootdir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
 	}
