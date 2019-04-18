@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -38,18 +38,18 @@ func testGoHover(t *testing.T, want string, command []string) {
 	}
 
 	// Start the server
-	srv, err := startServer(command, dir)
+	srv, err := StartServer(command, dir)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
 	defer srv.Close()
 
-	err = srv.lsp.DidOpen(gofile, []byte(goSource))
+	err = srv.Conn.DidOpen(gofile, []byte(goSource))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
 	defer func() {
-		err := srv.lsp.DidClose(gofile)
+		err := srv.Conn.DidClose(gofile)
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
@@ -57,7 +57,7 @@ func testGoHover(t *testing.T, want string, command []string) {
 
 	t.Run("Format", func(t *testing.T) {
 		uri := lsp.DocumentURI(filenameToURI(gofile))
-		edits, err := srv.lsp.Format(uri)
+		edits, err := srv.Conn.Format(uri)
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
@@ -75,7 +75,7 @@ func testGoHover(t *testing.T, want string, command []string) {
 			},
 		}
 		var b bytes.Buffer
-		if err := srv.lsp.Hover(pos, &b); err != nil {
+		if err := srv.Conn.Hover(pos, &b); err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
 		got := b.String()
@@ -107,8 +107,6 @@ if __name__ == '__main__':
 `
 
 func testPythonHover(t *testing.T, want string, command []string) {
-	*debug = true
-
 	dir, err := ioutil.TempDir("", "lspexample")
 	if err != nil {
 		t.Fatalf("TempDir failed: %v", err)
@@ -121,18 +119,18 @@ func testPythonHover(t *testing.T, want string, command []string) {
 	}
 
 	// Start the server
-	srv, err := startServer(command, dir)
+	srv, err := StartServer(command, dir)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
 	defer srv.Close()
 
-	err = srv.lsp.DidOpen(pyfile, []byte(pySource))
+	err = srv.Conn.DidOpen(pyfile, []byte(pySource))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
 	defer func() {
-		err := srv.lsp.DidClose(pyfile)
+		err := srv.Conn.DidClose(pyfile)
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
@@ -140,7 +138,7 @@ func testPythonHover(t *testing.T, want string, command []string) {
 
 	t.Run("Format", func(t *testing.T) {
 		uri := lsp.DocumentURI(filenameToURI(pyfile))
-		edits, err := srv.lsp.Format(uri)
+		edits, err := srv.Conn.Format(uri)
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
@@ -158,7 +156,7 @@ func testPythonHover(t *testing.T, want string, command []string) {
 			},
 		}
 		var b bytes.Buffer
-		if err := srv.lsp.Hover(pos, &b); err != nil {
+		if err := srv.Conn.Hover(pos, &b); err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
 		got := b.String()

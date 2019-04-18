@@ -2,28 +2,24 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net"
-	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/fhs/acme-lsp/internal/lsp/client"
 )
 
 type serverInfo struct {
 	re   *regexp.Regexp
 	args []string
 	addr string
-	srv  *langServer
+	srv  *client.Server
 }
 
-func (si *serverInfo) Connect() (*langServer, error) {
+func (si *serverInfo) Connect() (*client.Server, error) {
 	if len(si.addr) > 0 {
-		return dialServer(si.addr, *rootdir)
+		return client.DialServer(si.addr, *rootdir)
 	}
-	return startServer(si.args, *rootdir)
+	return client.StartServer(si.args, *rootdir)
 }
 
 var serverList = []serverInfo{
@@ -44,64 +40,7 @@ func findServer(filename string) *serverInfo {
 	return nil
 }
 
-type langServer struct {
-	cmd  *exec.Cmd
-	conn net.Conn
-	lsp  *lspClient
-}
-
-func (s *langServer) Close() {
-	if s != nil {
-		s.lsp.Close()
-		s.conn.Close()
-	}
-}
-
-func startServer(args []string, rootdir string) (*langServer, error) {
-	p0, p1 := net.Pipe()
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdin = p0
-	cmd.Stdout = p0
-	if *debug {
-		cmd.Stderr = os.Stderr
-	}
-	if err := cmd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute language server")
-	}
-	go func() {
-		if err := cmd.Wait(); err != nil {
-			log.Printf("wait failed: %v\n", err)
-		}
-	}()
-	lsp, err := newLSPClient(p1, rootdir)
-	if err != nil {
-		cmd.Process.Kill()
-		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
-	}
-	return &langServer{
-		cmd:  cmd,
-		conn: p1,
-		lsp:  lsp,
-	}, nil
-}
-
-func dialServer(addr string, rootdir string) (*langServer, error) {
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	lsp, err := newLSPClient(conn, rootdir)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
-	}
-	return &langServer{
-		cmd:  nil,
-		conn: conn,
-		lsp:  lsp,
-	}, nil
-}
-
-func startServerForFile(filename string) (*langServer, error) {
+func startServerForFile(filename string) (*client.Server, error) {
 	si := findServer(filename)
 	if si == nil {
 		return nil, fmt.Errorf("unknown language server for %v", filename)

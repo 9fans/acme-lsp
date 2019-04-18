@@ -8,6 +8,7 @@ import (
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/client"
 )
 
 func watchLog(ch chan<- *acme.LogEvent) {
@@ -130,7 +131,7 @@ func (w *outputWin) Close() {
 	w.CloseFiles()
 }
 
-func (w *outputWin) Update(fw *focusWin, c *lspClient, cmd string) {
+func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	b, err := fw.w.ReadAll("body")
 	if err != nil {
 		log.Printf("failed to read source body: %v\n", err)
@@ -191,7 +192,7 @@ loop:
 			if err != nil {
 				log.Printf("failed to start language server: %v\n", err)
 			} else {
-				w.Update(fw, s.lsp, cmd)
+				w.Update(fw, s.Conn, cmd)
 			}
 			fw.mu.Unlock()
 

@@ -12,6 +12,7 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/pkg/errors"
 )
 
@@ -89,6 +90,10 @@ func main() {
 	flag.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
 	flag.Parse()
 
+	if *debug {
+		client.Debug = true
+	}
+
 	if len(userServers) > 0 {
 		// give priority to user-defined servers
 		serverList = append(userServers, serverList...)
@@ -137,35 +142,35 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read source body: %v\n", err)
 	}
-	if err = s.lsp.DidOpen(fname, b); err != nil {
+	if err = s.Conn.DidOpen(fname, b); err != nil {
 		log.Fatalf("DidOpen failed: %v\n", err)
 	}
 	defer func() {
-		if err = s.lsp.DidClose(fname); err != nil {
+		if err = s.Conn.DidClose(fname); err != nil {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
 
 	switch flag.Arg(0) {
 	case "comp":
-		err = s.lsp.Completion(pos, os.Stdout)
+		err = s.Conn.Completion(pos, os.Stdout)
 	case "def":
-		err = plumbDefinition(s.lsp, pos)
+		err = plumbDefinition(s.Conn, pos)
 	case "fmt":
-		err = s.lsp.FormatInEditor(pos.TextDocument.URI, w)
+		err = formatInEditor(s.Conn, pos.TextDocument.URI, w)
 	case "hov":
-		err = s.lsp.Hover(pos, os.Stdout)
+		err = s.Conn.Hover(pos, os.Stdout)
 	case "refs":
-		err = s.lsp.References(pos, os.Stdout)
+		err = s.Conn.References(pos, os.Stdout)
 	case "rn":
 		if flag.NArg() < 2 {
 			usage()
 		}
-		err = s.lsp.Rename(pos, flag.Arg(1))
+		err = renameInEditor(s.Conn, pos, flag.Arg(1))
 	case "sig":
-		err = s.lsp.SignatureHelp(pos, os.Stdout)
+		err = s.Conn.SignatureHelp(pos, os.Stdout)
 	case "syms":
-		err = s.lsp.Symbols(pos.TextDocument.URI, os.Stdout)
+		err = s.Conn.Symbols(pos.TextDocument.URI, os.Stdout)
 	default:
 		log.Printf("unknown command %q\n", flag.Arg(0))
 		os.Exit(1)
@@ -175,7 +180,7 @@ func main() {
 	}
 }
 
-func plumbDefinition(c *lspClient, pos *lsp.TextDocumentPositionParams) error {
+func plumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error {
 	p, err := plumb.Open("send", plan9.OWRITE)
 	if err != nil {
 		return errors.Wrap(err, "failed to open plumber")
@@ -211,15 +216,15 @@ func formatWin(id int) error {
 	if err != nil {
 		log.Fatalf("failed to read source body: %v\n", err)
 	}
-	if err := s.lsp.DidOpen(fname, b); err != nil {
+	if err := s.Conn.DidOpen(fname, b); err != nil {
 		log.Fatalf("DidOpen failed: %v\n", err)
 	}
 	defer func() {
-		if err := s.lsp.DidClose(fname); err != nil {
+		if err := s.Conn.DidClose(fname); err != nil {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
-	return s.lsp.FormatInEditor(uri, w)
+	return formatInEditor(s.Conn, uri, w)
 }
 
 func monitor() {
