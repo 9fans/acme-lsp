@@ -25,7 +25,7 @@ func (s *Server) Close() {
 
 func StartServer(args []string, w io.Writer, rootdir string) (*Server, error) {
 	p0, p1 := net.Pipe()
-	// TODO: use CommandContext?
+	// TODO(fhs): use CommandContext?
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = p0
 	cmd.Stdout = p0
@@ -36,7 +36,7 @@ func StartServer(args []string, w io.Writer, rootdir string) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to execute language server")
 	}
 	go func() {
-		// TODO: can we expose Wait and ask user to call it instead?
+		// TODO(fhs): can we expose Wait and ask user to call it instead?
 		if err := cmd.Wait(); err != nil {
 			log.Printf("wait failed: %v\n", err)
 		}

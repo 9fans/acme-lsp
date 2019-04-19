@@ -56,8 +56,7 @@ func testGoHover(t *testing.T, want string, command []string) {
 	}()
 
 	t.Run("Format", func(t *testing.T) {
-		uri := lsp.DocumentURI(filenameToURI(gofile))
-		edits, err := srv.Conn.Format(uri)
+		edits, err := srv.Conn.Format(ToURI(gofile))
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
@@ -67,7 +66,7 @@ func testGoHover(t *testing.T, want string, command []string) {
 	t.Run("Hover", func(t *testing.T) {
 		pos := &lsp.TextDocumentPositionParams{
 			TextDocument: lsp.TextDocumentIdentifier{
-				URI: lsp.DocumentURI(filenameToURI(gofile)),
+				URI: ToURI(gofile),
 			},
 			Position: lsp.Position{
 				Line:      5,
@@ -139,8 +138,7 @@ func testPythonHover(t *testing.T, want string, command []string) {
 	}()
 
 	t.Run("Format", func(t *testing.T) {
-		uri := lsp.DocumentURI(filenameToURI(pyfile))
-		edits, err := srv.Conn.Format(uri)
+		edits, err := srv.Conn.Format(ToURI(pyfile))
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
@@ -150,7 +148,7 @@ func testPythonHover(t *testing.T, want string, command []string) {
 	t.Run("Hover", func(t *testing.T) {
 		pos := &lsp.TextDocumentPositionParams{
 			TextDocument: lsp.TextDocumentIdentifier{
-				URI: lsp.DocumentURI(filenameToURI(pyfile)),
+				URI: ToURI(pyfile),
 			},
 			Position: lsp.Position{
 				Line:      5,
@@ -173,6 +171,24 @@ func testPythonHover(t *testing.T, want string, command []string) {
 func TestPyls(t *testing.T) {
 	want := "Return the square root of x.\n"
 	testPythonHover(t, want, []string{"pyls"})
+}
+
+func TestURI(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		uri  lsp.DocumentURI
+	}{
+		{"/home/gopher/hello.go", "file:///home/gopher/hello.go"},
+	} {
+		uri := ToURI(tc.name)
+		if uri != tc.uri {
+			t.Errorf("ToURI(%q) is %q; expected %q", tc.name, uri, tc.uri)
+		}
+		name := ToPath(tc.uri)
+		if name != tc.name {
+			t.Errorf("ToPath(%q) is %q; expected %q", tc.uri, name, tc.name)
+		}
+	}
 }
 
 func TestFileLanguage(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"strings"
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +59,7 @@ func (w *win) DocumentURI() (lsp.DocumentURI, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	return filenameToURI(fname), fname, nil
+	return client.ToURI(fname), fname, nil
 }
 
 // ReadDotAddr returns the address of current selection.
@@ -91,7 +91,7 @@ func (w *win) Position() (*lsp.TextDocumentPositionParams, string, error) {
 	line, col := off.OffsetToLine(q0)
 	return &lsp.TextDocumentPositionParams{
 		TextDocument: lsp.TextDocumentIdentifier{
-			URI: filenameToURI(fname),
+			URI: client.ToURI(fname),
 		},
 		Position: lsp.Position{
 			Line:      line,
@@ -165,14 +165,6 @@ type editor interface {
 	Edit(edits []lsp.TextEdit) error
 }
 
-func uriToFilename(uri lsp.DocumentURI) string {
-	return strings.TrimPrefix(string(uri), "file://")
-}
-
-func filenameToURI(fname string) lsp.DocumentURI {
-	return lsp.DocumentURI("file://" + fname)
-}
-
 func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	wins, err := acme.Windows()
 	if err != nil {
@@ -184,13 +176,13 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	}
 
 	for uri := range we.Changes {
-		fname := uriToFilename(lsp.DocumentURI(uri))
+		fname := client.ToPath(lsp.DocumentURI(uri))
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
 	for uri, edits := range we.Changes {
-		fname := uriToFilename(lsp.DocumentURI(uri))
+		fname := client.ToPath(lsp.DocumentURI(uri))
 		id := winid[fname]
 		w, err := openWin(id)
 		if err != nil {

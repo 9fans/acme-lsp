@@ -17,18 +17,18 @@ import (
 
 var Debug = false
 
-// TODO: move to a new lsputils package?
-func filenameToURI(fname string) lsp.DocumentURI {
-	return lsp.DocumentURI("file://" + fname)
+// ToURI converts filename to URI.
+func ToURI(filename string) lsp.DocumentURI {
+	return lsp.DocumentURI("file://" + filename)
 }
 
-// TODO: move to a new lsputils package?
-func uriToFilename(uri lsp.DocumentURI) string {
+// ToPath converts filename to URI.
+func ToPath(uri lsp.DocumentURI) string {
 	return strings.TrimPrefix(string(uri), "file://")
 }
 
 func locToLink(l *lsp.Location) string {
-	p := uriToFilename(l.URI)
+	p := ToPath(l.URI)
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
@@ -108,7 +108,7 @@ func New(conn net.Conn, w io.Writer, rootdir string) (*Conn, error) {
 		return nil, err
 	}
 	initp := &lsp.InitializeParams{
-		RootURI: filenameToURI(d),
+		RootURI: ToURI(d),
 	}
 	initr := &lsp.InitializeResult{}
 	if err := rpc.Call(ctx, "initialize", initp, initr); err != nil {
@@ -271,7 +271,7 @@ func fileLanguage(filename string) string {
 func (c *Conn) DidOpen(filename string, body []byte) error {
 	params := &lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
-			URI:        filenameToURI(filename),
+			URI:        ToURI(filename),
 			LanguageID: fileLanguage(filename),
 			Version:    0,
 			Text:       string(body),
@@ -283,7 +283,7 @@ func (c *Conn) DidOpen(filename string, body []byte) error {
 func (c *Conn) DidClose(filename string) error {
 	params := &lsp.DidCloseTextDocumentParams{
 		TextDocument: lsp.TextDocumentIdentifier{
-			URI: filenameToURI(filename),
+			URI: ToURI(filename),
 		},
 	}
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)

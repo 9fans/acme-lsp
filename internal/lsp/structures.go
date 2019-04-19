@@ -111,6 +111,7 @@ type WorkspaceEdit struct {
 	/**
 	 * Holds changes to existing resources.
 	 */
+	// TODO(fhs): Change key type to DocumentURI?
 	Changes map[string][]TextEdit `json:"changes"`
 }
 
