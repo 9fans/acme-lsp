@@ -176,13 +176,13 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	}
 
 	for uri := range we.Changes {
-		fname := client.ToPath(lsp.DocumentURI(uri))
+		fname := client.ToPath(uri)
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
 	for uri, edits := range we.Changes {
-		fname := client.ToPath(lsp.DocumentURI(uri))
+		fname := client.ToPath(uri)
 		id := winid[fname]
 		w, err := openWin(id)
 		if err != nil {
