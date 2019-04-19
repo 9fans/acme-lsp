@@ -79,14 +79,16 @@ func testGoHover(t *testing.T, want string, command []string) {
 			t.Fatalf("Hover failed: %v", err)
 		}
 		got := b.String()
-		if want != got {
+		// Instead of doing an exact match, we ignore extra markups
+		// from markdown (if there are any).
+		if !strings.Contains(got, want) {
 			t.Errorf("hover result is %q; expected %q", got, want)
 		}
 	})
 }
 
 func TestGopls(t *testing.T) {
-	want := "```go\nfunc fmt.Println(a ...interface{}) (n int, err error)\n```\n"
+	want := "func fmt.Println(a ...interface{}) (n int, err error)\n"
 	testGoHover(t, want, []string{"gopls"})
 }
 
