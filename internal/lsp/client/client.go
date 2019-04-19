@@ -253,16 +253,26 @@ func (c *Conn) Format(uri lsp.DocumentURI) ([]lsp.TextEdit, error) {
 	return edits, nil
 }
 
-func (c *Conn) DidOpen(filename string, body []byte) error {
+func fileLanguage(filename string) string {
 	lang := filepath.Ext(filename)
+	if len(lang) == 0 {
+		return lang
+	}
+	if lang[0] == '.' {
+		lang = lang[1:]
+	}
 	switch lang {
 	case "py":
 		lang = "python"
 	}
+	return lang
+}
+
+func (c *Conn) DidOpen(filename string, body []byte) error {
 	params := &lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
 			URI:        filenameToURI(filename),
-			LanguageID: lang,
+			LanguageID: fileLanguage(filename),
 			Version:    0,
 			Text:       string(body),
 		},

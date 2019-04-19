@@ -174,3 +174,17 @@ func TestPyls(t *testing.T) {
 	want := "Return the square root of x.\n"
 	testPythonHover(t, want, []string{"pyls"})
 }
+
+func TestFileLanguage(t *testing.T) {
+	for _, tc := range []struct {
+		name, lang string
+	}{
+		{"/home/gopher/hello.py", "python"},
+		{"/home/gopher/hello.go", "go"},
+	} {
+		lang := fileLanguage(tc.name)
+		if lang != tc.lang {
+			t.Errorf("language ID of %q is %q; expected %q", tc.name, lang, tc.lang)
+		}
+	}
+}
