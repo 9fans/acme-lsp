@@ -1,7 +1,8 @@
-The code in this directory is based on
-[sourcegraph/go-lsp](github.com/sourcegraph/go-lsp). We add more types and more
-flexibility in the JSON parser, which needs to be compatible with a wider set
-of LSP servers, not just
+The code in this directory (excluding sub-directories) is
+based on [sourcegraph/go-lsp](github.com/sourcegraph/go-lsp)
+and are subject to the license found in this directory. We've
+added more types and more flexibility in the JSON parser, which
+needs to be compatible with a wider set of LSP servers, not just
 [go-langserver](github.com/sourcegraph/go-langserver).
 
 # go-lsp
