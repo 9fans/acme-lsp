@@ -6,6 +6,10 @@ import (
 	"unicode/utf8"
 )
 
+// TODO(fhs): Maybe replace this with https://godoc.org/golang.org/x/tools/internal/span ?
+// LSP deals with UTF-16, but acme deals with runes, so out implementation here
+// may not be entirely accurate.
+
 type NLOffsets struct {
 	nl       []int // rune offsets of '\n'
 	leftover int   // runes leftover after last '\n'
