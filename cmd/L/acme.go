@@ -11,6 +11,7 @@ import (
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
 
@@ -84,7 +85,7 @@ func (w *win) Position() (*lsp.TextDocumentPositionParams, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	off, err := getNewlineOffsets(w.FileReadWriter("body"))
+	off, err := text.GetNewlineOffsets(w.FileReadWriter("body"))
 	if err != nil {
 		return nil, "", err
 	}
@@ -136,7 +137,7 @@ func (w *win) Edit(edits []lsp.TextEdit) error {
 	if err != nil {
 		return errors.Wrapf(err, "seed failed for window %v", w.ID())
 	}
-	off, err := getNewlineOffsets(w.FileReadWriter("body"))
+	off, err := text.GetNewlineOffsets(w.FileReadWriter("body"))
 	if err != nil {
 		return errors.Wrapf(err, "failed to obtain newline offsets for window %v", w.ID())
 	}
