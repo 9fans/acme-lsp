@@ -9,6 +9,7 @@ import (
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
 func watchLog(ch chan<- *acme.LogEvent) {
@@ -57,14 +58,14 @@ func (fw *focusWin) Update() bool {
 	if err != nil {
 		return false
 	}
-	q0, _, err := w.ReadDotAddr()
+	q0, _, err := w.CurrentAddr()
 	if err != nil {
 		return false
 	}
 	if q0 == fw.q0 {
 		return false
 	}
-	pos, name, err := w.Position()
+	pos, name, err := text.Position(w)
 	if err != nil {
 		return false
 	}

@@ -130,7 +130,7 @@ func main() {
 		log.Fatalf("failed to to open current window: %v\n", err)
 	}
 	defer w.CloseFiles()
-	pos, fname, err := w.Position()
+	pos, fname, err := text.Position(w)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -220,7 +220,7 @@ func formatWin(id int) error {
 	if err != nil {
 		return err
 	}
-	uri, fname, err := w.DocumentURI()
+	uri, fname, err := text.DocumentURI(w)
 	if err != nil {
 		return err
 	}

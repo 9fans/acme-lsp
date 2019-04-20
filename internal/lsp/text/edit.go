@@ -3,6 +3,7 @@ package text
 import (
 	"bytes"
 	"io"
+	"strings"
 
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/pkg/errors"
@@ -74,4 +75,61 @@ func (f *BytesFile) Mark() error {
 
 func (f *BytesFile) DisableMark() error {
 	return nil
+}
+
+type AddressableFile interface {
+	File
+
+	// Filename returns the filesystem path to the file.
+	Filename() (string, error)
+
+	// CurrentAddr returns the address of current selection.
+	CurrentAddr() (q0, q1 int, err error)
+}
+
+func DocumentURI(f AddressableFile) (uri lsp.DocumentURI, filename string, err error) {
+	name, err := f.Filename()
+	if err != nil {
+		return "", "", err
+	}
+	return ToURI(name), name, nil
+}
+
+func Position(f AddressableFile) (pos *lsp.TextDocumentPositionParams, filename string, err error) {
+	name, err := f.Filename()
+	if err != nil {
+		return nil, "", err
+	}
+	q0, _, err := f.CurrentAddr()
+	if err != nil {
+		return nil, "", err
+	}
+	reader, err := f.Reader()
+	if err != nil {
+		return nil, "", err
+	}
+	off, err := GetNewlineOffsets(reader)
+	if err != nil {
+		return nil, "", err
+	}
+	line, col := off.OffsetToLine(q0)
+	return &lsp.TextDocumentPositionParams{
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: ToURI(name),
+		},
+		Position: lsp.Position{
+			Line:      line,
+			Character: col,
+		},
+	}, name, nil
+}
+
+// ToURI converts filename to URI.
+func ToURI(filename string) lsp.DocumentURI {
+	return lsp.DocumentURI("file://" + filename)
+}
+
+// ToPath converts filename to URI.
+func ToPath(uri lsp.DocumentURI) string {
+	return strings.TrimPrefix(string(uri), "file://")
 }
