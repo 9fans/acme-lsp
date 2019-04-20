@@ -14,6 +14,7 @@ import (
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
 
@@ -242,12 +243,12 @@ func formatWin(id int) error {
 	return formatInEditor(s.Conn, uri, w)
 }
 
-func formatInEditor(c *client.Conn, uri lsp.DocumentURI, e editor) error {
+func formatInEditor(c *client.Conn, uri lsp.DocumentURI, f text.File) error {
 	edits, err := c.Format(uri)
 	if err != nil {
 		return err
 	}
-	if err := e.Edit(edits); err != nil {
+	if err := text.Edit(f, edits); err != nil {
 		return errors.Wrapf(err, "failed to apply edits")
 	}
 	return nil

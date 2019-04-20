@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strconv"
 
 	"9fans.net/go/acme"
@@ -108,6 +107,34 @@ func (w *win) FileReadWriter(filename string) io.ReadWriter {
 	}
 }
 
+// Reader implements text.File.
+func (w *win) Reader() (io.Reader, error) {
+	_, err := w.Seek("body", 0, 0)
+	if err != nil {
+		return nil, errors.Wrapf(err, "seed failed for window %v", w.ID())
+	}
+	return w.FileReadWriter("body"), nil
+}
+
+// WriteAt implements text.File.
+func (w *win) WriteAt(q0, q1 int, b []byte) (int, error) {
+	err := w.Addr("#%d,#%d", q0, q1)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to write to addr for winid=%v", w.ID())
+	}
+	return w.Write("data", b)
+}
+
+// Mark implements text.File.
+func (w *win) Mark() error {
+	return w.Ctl("mark")
+}
+
+// DisableMark implements text.File.
+func (w *win) DisableMark() error {
+	return w.Ctl("nomark")
+}
+
 type winFile struct {
 	w    *acme.Win
 	name string
@@ -119,51 +146,6 @@ func (f *winFile) Read(b []byte) (int, error) {
 
 func (f *winFile) Write(b []byte) (int, error) {
 	return f.w.Write(f.name, b)
-}
-
-func (w *win) Edit(edits []lsp.TextEdit) error {
-	if len(edits) == 0 {
-		return nil
-	}
-	sort.Slice(edits, func(i, j int) bool {
-		pi := edits[i].Range.Start
-		pj := edits[j].Range.Start
-		if pi.Line == pj.Line {
-			return pi.Character < pj.Character
-		}
-		return pi.Line < pj.Line
-	})
-	_, err := w.Seek("body", 0, 0)
-	if err != nil {
-		return errors.Wrapf(err, "seed failed for window %v", w.ID())
-	}
-	off, err := text.GetNewlineOffsets(w.FileReadWriter("body"))
-	if err != nil {
-		return errors.Wrapf(err, "failed to obtain newline offsets for window %v", w.ID())
-	}
-
-	w.Ctl("nomark")
-	w.Ctl("mark")
-
-	delta := 0
-	for _, e := range edits {
-		soff := off.LineToOffset(e.Range.Start.Line, e.Range.Start.Character)
-		eoff := off.LineToOffset(e.Range.End.Line, e.Range.End.Character)
-		err := w.Addr("#%d,#%d", soff+delta, eoff+delta)
-		if err != nil {
-			return errors.Wrapf(err, "failed to write to addr for winid=%v", w.ID())
-		}
-		_, err = w.Write("data", []byte(e.NewText))
-		if err != nil {
-			return errors.Wrapf(err, "failed to write new text to data file")
-		}
-		delta += len(e.NewText) - (eoff - soff)
-	}
-	return nil
-}
-
-type editor interface {
-	Edit(edits []lsp.TextEdit) error
 }
 
 func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
@@ -189,7 +171,7 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to open window %v", id)
 		}
-		if err := w.Edit(edits); err != nil {
+		if err := text.Edit(w, edits); err != nil {
 			return errors.Wrapf(err, "failed to apply edits to window %v", id)
 		}
 		w.CloseFiles()

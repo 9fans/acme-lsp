@@ -90,7 +90,7 @@ func TestGoFormat(t *testing.T) {
 				t.Fatalf("Format failed: %v", err)
 			}
 			f := text.BytesFile([]byte(goSourceUnfmt))
-			err = text.EditFile(&f, edits)
+			err = text.Edit(&f, edits)
 			if err != nil {
 				t.Fatalf("failed to apply edits: %v", err)
 			}
@@ -222,7 +222,7 @@ func TestPythonFormat(t *testing.T) {
 			t.Fatalf("Format failed: %v", err)
 		}
 		f := text.BytesFile([]byte(pySourceUnfmt))
-		err = text.EditFile(&f, edits)
+		err = text.Edit(&f, edits)
 		if err != nil {
 			t.Fatalf("failed to apply edits: %v", err)
 		}

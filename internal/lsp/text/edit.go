@@ -22,7 +22,7 @@ type File interface {
 	DisableMark() error
 }
 
-func EditFile(f File, edits []lsp.TextEdit) error {
+func Edit(f File, edits []lsp.TextEdit) error {
 	if len(edits) == 0 {
 		return nil
 	}
