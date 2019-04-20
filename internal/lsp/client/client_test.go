@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
 const goSource = `package main // import "example.com/test"
@@ -17,6 +18,15 @@ import "fmt"
 
 func main() {
 	fmt.Println("Hello, 世界")
+}
+`
+
+const goSourceUnfmt = `package main // import "example.com/test"
+
+import "fmt"
+
+func main( ){
+fmt . Println	( "Hello, 世界" )
 }
 `
 
@@ -74,12 +84,19 @@ func TestGoFormat(t *testing.T) {
 		"gopls",
 		"go-langserver",
 	} {
-		testGoModule(t, server, goSource, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+		testGoModule(t, server, goSourceUnfmt, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
 			edits, err := c.Format(uri)
 			if err != nil {
 				t.Fatalf("Format failed: %v", err)
 			}
-			t.Logf("Format returned %v edits\n", len(edits))
+			f := text.BytesFile([]byte(goSourceUnfmt))
+			err = text.EditFile(&f, edits)
+			if err != nil {
+				t.Fatalf("failed to apply edits: %v", err)
+			}
+			if got := string(f); got != goSource {
+				t.Errorf("bad format output:\n%s\nexpected:\n%s", got, goSource)
+			}
 		})
 	}
 }
@@ -120,11 +137,24 @@ const pySource = `#!/usr/bin/env python
 
 import math
 
+
 def main():
     print(math.sqrt(42))
 
+
 if __name__ == '__main__':
     main()
+`
+
+const pySourceUnfmt = `#!/usr/bin/env python
+
+import math
+
+def main( ):
+    print( math.sqrt ( 42 ) )
+
+if __name__=='__main__':
+    main( )
 `
 
 func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri lsp.DocumentURI)) {
@@ -167,7 +197,7 @@ func TestPythonHover(t *testing.T) {
 				URI: uri,
 			},
 			Position: lsp.Position{
-				Line:      5,
+				Line:      6,
 				Character: 16,
 			},
 		}
@@ -186,12 +216,19 @@ func TestPythonHover(t *testing.T) {
 }
 
 func TestPythonFormat(t *testing.T) {
-	testPython(t, pySource, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+	testPython(t, pySourceUnfmt, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
 		edits, err := c.Format(uri)
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
-		t.Logf("Format returned %v edits\n", len(edits))
+		f := text.BytesFile([]byte(pySourceUnfmt))
+		err = text.EditFile(&f, edits)
+		if err != nil {
+			t.Fatalf("failed to apply edits: %v", err)
+		}
+		if got := string(f); got != pySource {
+			t.Errorf("bad format output:\n%s\nexpected:\n%s", got, pySource)
+		}
 	})
 }
 
