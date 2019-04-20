@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"9fans.net/go/acme"
+	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -32,7 +33,7 @@ type focusWin struct {
 	q0   int
 	pos  *lsp.TextDocumentPositionParams
 	name string
-	w    *win
+	w    *acmeutil.Win
 	mu   sync.Mutex
 }
 
@@ -54,7 +55,7 @@ func (fw *focusWin) Reset() {
 }
 
 func (fw *focusWin) Update() bool {
-	w, err := openWin(fw.id)
+	w, err := acmeutil.OpenWin(fw.id)
 	if err != nil {
 		return false
 	}
@@ -109,19 +110,19 @@ func notifyPosChange(ch chan<- *focusWin) {
 }
 
 type outputWin struct {
-	*win
+	*acmeutil.Win
 	body  io.Writer
 	event <-chan *acme.Event
 }
 
 func newOutputWin() (*outputWin, error) {
-	w, err := newWin()
+	w, err := acmeutil.NewWin()
 	if err != nil {
 		return nil, err
 	}
 	w.Name("/Lsp/watch")
 	return &outputWin{
-		win:   w,
+		Win:   w,
 		body:  w.FileReadWriter("body"),
 		event: w.EventChan(),
 	}, nil

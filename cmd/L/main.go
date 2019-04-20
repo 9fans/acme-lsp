@@ -12,6 +12,7 @@ import (
 	"9fans.net/go/plan9"
 	p9client "9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
+	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -125,7 +126,7 @@ func main() {
 		printServerList()
 		return
 	}
-	w, err := openCurrentWin()
+	w, err := acmeutil.OpenCurrentWin()
 	if err != nil {
 		log.Fatalf("failed to to open current window: %v\n", err)
 	}
@@ -216,7 +217,7 @@ func plumbLocation(p *p9client.Fid, loc *lsp.Location) error {
 }
 
 func formatWin(id int) error {
-	w, err := openWin(id)
+	w, err := acmeutil.OpenWin(id)
 	if err != nil {
 		return err
 	}
