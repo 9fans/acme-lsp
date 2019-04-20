@@ -9,7 +9,6 @@ import (
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
@@ -126,13 +125,13 @@ func applyAcmeEdits(we *lsp.WorkspaceEdit) error {
 	}
 
 	for uri := range we.Changes {
-		fname := client.ToPath(uri)
+		fname := text.ToPath(uri)
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
 	for uri, edits := range we.Changes {
-		fname := client.ToPath(uri)
+		fname := text.ToPath(uri)
 		id := winid[fname]
 		w, err := openWin(id)
 		if err != nil {

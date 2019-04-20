@@ -202,7 +202,7 @@ func plumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error 
 }
 
 func plumbLocation(p *p9client.Fid, loc *lsp.Location) error {
-	fn := client.ToPath(loc.URI)
+	fn := text.ToPath(loc.URI)
 	a := fmt.Sprintf("%v:%v", fn, loc.Range.Start)
 
 	m := &plumb.Message{

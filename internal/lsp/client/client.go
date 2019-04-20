@@ -11,24 +11,15 @@ import (
 	"strings"
 
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
 var Debug = false
 
-// ToURI converts filename to URI.
-func ToURI(filename string) lsp.DocumentURI {
-	return lsp.DocumentURI("file://" + filename)
-}
-
-// ToPath converts filename to URI.
-func ToPath(uri lsp.DocumentURI) string {
-	return strings.TrimPrefix(string(uri), "file://")
-}
-
 func locToLink(l *lsp.Location) string {
-	p := ToPath(l.URI)
+	p := text.ToPath(l.URI)
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
@@ -108,7 +99,7 @@ func New(conn net.Conn, w io.Writer, rootdir string) (*Conn, error) {
 		return nil, err
 	}
 	initp := &lsp.InitializeParams{
-		RootURI: ToURI(d),
+		RootURI: text.ToURI(d),
 	}
 	initr := &lsp.InitializeResult{}
 	if err := rpc.Call(ctx, "initialize", initp, initr); err != nil {
@@ -271,7 +262,7 @@ func fileLanguage(filename string) string {
 func (c *Conn) DidOpen(filename string, body []byte) error {
 	params := &lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
-			URI:        ToURI(filename),
+			URI:        text.ToURI(filename),
 			LanguageID: fileLanguage(filename),
 			Version:    0,
 			Text:       string(body),
@@ -283,7 +274,7 @@ func (c *Conn) DidOpen(filename string, body []byte) error {
 func (c *Conn) DidClose(filename string) error {
 	params := &lsp.DidCloseTextDocumentParams{
 		TextDocument: lsp.TextDocumentIdentifier{
-			URI: ToURI(filename),
+			URI: text.ToURI(filename),
 		},
 	}
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)

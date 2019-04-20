@@ -75,7 +75,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	}()
 
 	t.Run(server, func(t *testing.T) {
-		f(t, srv.Conn, ToURI(gofile))
+		f(t, srv.Conn, text.ToURI(gofile))
 	})
 }
 
@@ -187,7 +187,7 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri lsp.
 		}
 	}()
 
-	f(t, srv.Conn, ToURI(pyfile))
+	f(t, srv.Conn, text.ToURI(pyfile))
 }
 
 func TestPythonHover(t *testing.T) {
@@ -230,24 +230,6 @@ func TestPythonFormat(t *testing.T) {
 			t.Errorf("bad format output:\n%s\nexpected:\n%s", got, pySource)
 		}
 	})
-}
-
-func TestURI(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		uri  lsp.DocumentURI
-	}{
-		{"/home/gopher/hello.go", "file:///home/gopher/hello.go"},
-	} {
-		uri := ToURI(tc.name)
-		if uri != tc.uri {
-			t.Errorf("ToURI(%q) is %q; expected %q", tc.name, uri, tc.uri)
-		}
-		name := ToPath(tc.uri)
-		if name != tc.name {
-			t.Errorf("ToPath(%q) is %q; expected %q", tc.uri, name, tc.name)
-		}
-	}
 }
 
 func TestFileLanguage(t *testing.T) {
