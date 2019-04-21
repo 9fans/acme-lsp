@@ -260,7 +260,38 @@ func renameInEditor(c *client.Conn, pos *lsp.TextDocumentPositionParams, newname
 	if err != nil {
 		return err
 	}
-	return applyAcmeEdits(we)
+	return editWorkspace(we)
+}
+
+func editWorkspace(we *lsp.WorkspaceEdit) error {
+	wins, err := acme.Windows()
+	if err != nil {
+		return errors.Wrapf(err, "failed to read list of acme index")
+	}
+	winid := make(map[string]int, len(wins))
+	for _, info := range wins {
+		winid[info.Name] = info.ID
+	}
+
+	for uri := range we.Changes {
+		fname := text.ToPath(uri)
+		if _, ok := winid[fname]; !ok {
+			return fmt.Errorf("%v: not open in acme", fname)
+		}
+	}
+	for uri, edits := range we.Changes {
+		fname := text.ToPath(uri)
+		id := winid[fname]
+		w, err := acmeutil.OpenWin(id)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open window %v", id)
+		}
+		if err := text.Edit(w, edits); err != nil {
+			return errors.Wrapf(err, "failed to apply edits to window %v", id)
+		}
+		w.CloseFiles()
+	}
+	return nil
 }
 
 func monitor() {
