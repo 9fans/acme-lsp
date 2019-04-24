@@ -129,7 +129,7 @@ func ToURI(filename string) lsp.DocumentURI {
 	return lsp.DocumentURI("file://" + filename)
 }
 
-// ToPath converts filename to URI.
+// ToPath converts URI to filename.
 func ToPath(uri lsp.DocumentURI) string {
 	return strings.TrimPrefix(string(uri), "file://")
 }
