@@ -1,3 +1,4 @@
+// Package acmelsp defines helper functions for implementation of acme-lsp commands.
 package acmelsp
 
 import (
@@ -17,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// PlumbDefinition sends the location of where the identifier at positon pos is defined to the plumber.
 func PlumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error {
 	p, err := plumb.Open("send", plan9.OWRITE)
 	if err != nil {
@@ -78,6 +80,7 @@ func formatWin(serverSet *client.ServerSet, id int) error {
 	return FormatFile(s.Conn, uri, w)
 }
 
+// FormatFile formats the file f.
 func FormatFile(c *client.Conn, uri lsp.DocumentURI, f text.File) error {
 	edits, err := c.Format(uri)
 	if err != nil {
@@ -89,6 +92,7 @@ func FormatFile(c *client.Conn, uri lsp.DocumentURI, f text.File) error {
 	return nil
 }
 
+// Rename renames the identifier at position pos to newname.
 func Rename(c *client.Conn, pos *lsp.TextDocumentPositionParams, newname string) error {
 	we, err := c.Rename(pos, newname)
 	if err != nil {

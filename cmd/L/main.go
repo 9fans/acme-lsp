@@ -8,7 +8,6 @@ import (
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
@@ -68,11 +67,6 @@ List of sub-commands:
 		is shown each time cursor position is changed.
 `
 
-var (
-	serverSet *client.ServerSet
-	debug     bool
-)
-
 func usage() {
 	os.Stderr.Write([]byte(mainDoc))
 	fmt.Fprintf(os.Stderr, "\n")
@@ -82,7 +76,7 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	serverSet, debug = acmelsp.ParseFlags()
+	serverSet, _ := acmelsp.ParseFlags()
 
 	if flag.NArg() < 1 {
 		usage()
@@ -92,7 +86,7 @@ func main() {
 		if flag.NArg() < 2 {
 			usage()
 		}
-		watch(flag.Arg(1))
+		acmelsp.Watch(serverSet, flag.Arg(1))
 		serverSet.CloseAll()
 		return
 

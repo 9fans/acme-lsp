@@ -1,4 +1,4 @@
-package main
+package acmelsp
 
 import (
 	"io"
@@ -77,7 +77,7 @@ func (fw *focusWin) Update() bool {
 	return true
 }
 
-func notifyPosChange(ch chan<- *focusWin) {
+func notifyPosChange(serverSet *client.ServerSet, ch chan<- *focusWin) {
 	fw := newFocusWin()
 	logch := make(chan *acme.LogEvent)
 	go watchLog(logch)
@@ -174,7 +174,10 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	w.Ctl("clean")
 }
 
-func watch(cmd string) {
+// Watch creates an acme window where output of cmd is written after each
+// cursor position change in acme. Cmd is either 'comp', 'sig', or 'hov',
+// for completion, signature, and hover respectively.
+func Watch(serverSet *client.ServerSet, cmd string) {
 	w, err := newOutputWin()
 	if err != nil {
 		log.Fatalf("failed to create acme window: %v\n", err)
@@ -182,7 +185,7 @@ func watch(cmd string) {
 	defer w.Close()
 
 	fch := make(chan *focusWin)
-	go notifyPosChange(fch)
+	go notifyPosChange(serverSet, fch)
 
 loop:
 	for {
