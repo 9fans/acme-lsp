@@ -83,11 +83,12 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 }
 
 type Conn struct {
-	rpc *jsonrpc2.Conn
-	ctx context.Context
+	rpc  *jsonrpc2.Conn
+	ctx  context.Context
+	caps *lsp.ServerCapabilities
 }
 
-func New(conn net.Conn, w io.Writer, rootdir string) (*Conn, error) {
+func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
 	rpc := jsonrpc2.NewConn(ctx, stream, &handler{
@@ -98,16 +99,28 @@ func New(conn net.Conn, w io.Writer, rootdir string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	initp := &lsp.InitializeParams{
+	params := &lsp.InitializeParams{
 		RootURI: text.ToURI(d),
+		Capabilities: lsp.ClientCapabilities{
+			Workspace: lsp.WorkspaceClientCapabilities{
+				WorkspaceFolders: true,
+			},
+		},
 	}
-	initr := &lsp.InitializeResult{}
-	if err := rpc.Call(ctx, "initialize", initp, initr); err != nil {
+	for _, w := range workspaces {
+		params.WorkspaceFolders = append(params.WorkspaceFolders, lsp.WorkspaceFolder{
+			URI:  text.ToURI(w),
+			Name: w,
+		})
+	}
+	var result lsp.InitializeResult
+	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}
 	return &Conn{
-		rpc: rpc,
-		ctx: ctx,
+		rpc:  rpc,
+		ctx:  ctx,
+		caps: &result.Capabilities,
 	}, nil
 }
 
@@ -278,4 +291,14 @@ func (c *Conn) DidClose(filename string) error {
 		},
 	}
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)
+}
+
+func (c *Conn) DidChangeWorkspaceFolders(added, removed []lsp.WorkspaceFolder) error {
+	params := &lsp.DidChangeWorkspaceFoldersParams{
+		Event: lsp.WorkspaceFoldersChangeEvent{
+			Added:   added,
+			Removed: removed,
+		},
+	}
+	return c.rpc.Notify(c.ctx, "workspace/didChangeWorkspaceFolders", params)
 }

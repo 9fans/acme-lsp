@@ -17,6 +17,11 @@ type InitializeParams struct {
 	RootURI               DocumentURI        `json:"rootUri,omitempty"`
 	InitializationOptions interface{}        `json:"initializationOptions,omitempty"`
 	Capabilities          ClientCapabilities `json:"capabilities"`
+
+	/*WorkspaceFolders defined:
+	 * The actual configured workspace folders.
+	 */
+	WorkspaceFolders []WorkspaceFolder `json:"workspaceFolders"`
 }
 
 // Root returns the RootURI if set, or otherwise the RootPath with 'file://' prepended.
@@ -53,7 +58,17 @@ type ClientCapabilities struct {
 	XCacheProvider bool `json:"xcacheProvider,omitempty"`
 }
 
-type WorkspaceClientCapabilities struct{}
+/**
+ * Workspace specific client capabilities.
+ */
+type WorkspaceClientCapabilities struct {
+	/**
+	 * The client has support for workspace folders.
+	 *
+	 * Since 3.6.0
+	 */
+	WorkspaceFolders bool `json:"workspaceFolders,omitempty"`
+}
 
 type TextDocumentClientCapabilities struct {
 	Completion struct {
@@ -167,6 +182,32 @@ type ServerCapabilities struct {
 	DocumentOnTypeFormattingProvider *DocumentOnTypeFormattingOptions `json:"documentOnTypeFormattingProvider,omitempty"`
 	RenameProvider                   bool                             `json:"renameProvider,omitempty"`
 	ExecuteCommandProvider           *ExecuteCommandOptions           `json:"executeCommandProvider,omitempty"`
+
+	/*Workspace defined:
+	 * The workspace server capabilities
+	 */
+	Workspace *struct {
+
+		// WorkspaceFolders is
+		WorkspaceFolders *struct {
+
+			/*Supported defined:
+			 * The Server has support for workspace folders
+			 */
+			Supported bool `json:"supported,omitempty"`
+
+			/*ChangeNotifications defined:
+			 * Whether the server wants to receive workspace folder
+			 * change notifications.
+			 *
+			 * If a strings is provided the string is treated as a ID
+			 * under which the notification is registed on the client
+			 * side. The ID can be used to unregister for these events
+			 * using the `client/unregisterCapability` request.
+			 */
+			ChangeNotifications string `json:"changeNotifications,omitempty"` // string | boolean
+		} `json:"workspaceFolders,omitempty"`
+	} `json:"workspace,omitempty"`
 
 	// XWorkspaceReferencesProvider indicates the server provides support for
 	// xworkspace/references. This is a Sourcegraph extension.
@@ -650,4 +691,46 @@ type DocumentOnTypeFormattingParams struct {
 
 type CancelParams struct {
 	ID ID `json:"id"`
+}
+
+// WorkspaceFolder is
+type WorkspaceFolder struct {
+
+	/*URI defined:
+	 * The associated URI for this workspace folder.
+	 */
+	URI DocumentURI `json:"uri"`
+
+	/*Name defined:
+	 * The name of the workspace folder. Used to refer to this
+	 * workspace folder in thge user interface.
+	 */
+	Name string `json:"name"`
+}
+
+/*DidChangeWorkspaceFoldersParams defined:
+ * The parameters of a `workspace/didChangeWorkspaceFolders` notification.
+ */
+type DidChangeWorkspaceFoldersParams struct {
+
+	/*Event defined:
+	 * The actual workspace folder change event.
+	 */
+	Event WorkspaceFoldersChangeEvent `json:"event"`
+}
+
+/*WorkspaceFoldersChangeEvent defined:
+ * The workspace folder change event.
+ */
+type WorkspaceFoldersChangeEvent struct {
+
+	/*Added defined:
+	 * The array of added workspace folders
+	 */
+	Added []WorkspaceFolder `json:"added"`
+
+	/*Removed defined:
+	 * The array of the removed workspace folders
+	 */
+	Removed []WorkspaceFolder `json:"removed"`
 }

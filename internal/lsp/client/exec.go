@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +27,7 @@ func (s *Server) Close() {
 	}
 }
 
-func StartServer(args []string, w io.Writer, rootdir string) (*Server, error) {
+func StartServer(args []string, w io.Writer, rootdir string, workspaces []string) (*Server, error) {
 	p0, p1 := net.Pipe()
 	// TODO(fhs): use CommandContext?
 	cmd := exec.Command(args[0], args[1:]...)
@@ -44,7 +45,7 @@ func StartServer(args []string, w io.Writer, rootdir string) (*Server, error) {
 			log.Printf("wait failed: %v\n", err)
 		}
 	}()
-	lsp, err := New(p1, w, rootdir)
+	lsp, err := New(p1, w, rootdir, workspaces)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -56,12 +57,12 @@ func StartServer(args []string, w io.Writer, rootdir string) (*Server, error) {
 	}, nil
 }
 
-func DialServer(addr string, w io.Writer, rootdir string) (*Server, error) {
+func DialServer(addr string, w io.Writer, rootdir string, workspaces []string) (*Server, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	lsp, err := New(conn, w, rootdir)
+	lsp, err := New(conn, w, rootdir, workspaces)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
 	}
@@ -80,7 +81,7 @@ type ServerInfo struct {
 	srv  *Server        // running server instance
 }
 
-func (info *ServerInfo) Start() (*Server, error) {
+func (info *ServerInfo) start(workspaces []string) (*Server, error) {
 	if info.srv != nil {
 		return info.srv, nil
 	}
@@ -88,13 +89,13 @@ func (info *ServerInfo) Start() (*Server, error) {
 	const rootdir = "/"
 
 	if len(info.addr) > 0 {
-		srv, err := DialServer(info.addr, os.Stdout, rootdir)
+		srv, err := DialServer(info.addr, os.Stdout, rootdir, workspaces)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := StartServer(info.args, os.Stdout, rootdir)
+		srv, err := StartServer(info.args, os.Stdout, rootdir, workspaces)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +107,8 @@ func (info *ServerInfo) Start() (*Server, error) {
 // ServerSet holds information about a set of LSP servers and connection to them,
 // which are created on-demand.
 type ServerSet struct {
-	data []*ServerInfo
+	data       []*ServerInfo
+	Workspaces []string
 }
 
 func (ss *ServerSet) Register(pattern string, args []string) error {
@@ -149,7 +151,25 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, error) {
 	if info == nil {
 		return nil, nil // unknown language server
 	}
-	return info.Start()
+	srv, err := info.start(ss.Workspaces)
+	if err != nil {
+		return nil, err
+	}
+	if false {
+		// gopls doesn't support dynamic changes to workspace folders yet.
+		// See https://github.com/golang/go/issues/31635
+		fmt.Printf("server caps: %+v\n", srv.Conn.caps)
+		err = srv.Conn.DidChangeWorkspaceFolders([]lsp.WorkspaceFolder{
+			{
+				URI:  "file:///home/fhs/go/src/github.com/fhs/acme-lsp",
+				Name: "/home/fhs/go/src/github.com/fhs/acme-lsp",
+			},
+		}, nil)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return srv, err
 }
 
 func (ss *ServerSet) CloseAll() {

@@ -57,7 +57,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	if !ok {
 		t.Fatalf("unknown server %q", server)
 	}
-	srv, err := StartServer(args, os.Stdout, dir)
+	srv, err := StartServer(args, os.Stdout, dir, nil)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -170,7 +170,7 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri lsp.
 	}
 
 	// Start the server
-	srv, err := StartServer([]string{"pyls"}, os.Stdout, dir)
+	srv, err := StartServer([]string{"pyls"}, os.Stdout, dir, nil)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}

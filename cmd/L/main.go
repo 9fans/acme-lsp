@@ -75,6 +75,7 @@ List of sub-commands:
 `
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
+var workspaces = flag.String("workspaces", "", "colon-separated list of initial workspace directories")
 var userServers serverFlag
 var dialServers serverFlag
 
@@ -308,6 +309,9 @@ func monitor() {
 }
 
 func initServerSet() {
+	if len(*workspaces) > 0 {
+		serverSet.Workspaces = strings.Split(*workspaces, ":")
+	}
 	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
 	// references, and rename yet.
 	//serverSet.Register(`\.go$`, []string{"gopls"})
