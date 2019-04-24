@@ -1,11 +1,14 @@
 package client
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -67,4 +70,100 @@ func DialServer(addr string, w io.Writer, rootdir string) (*Server, error) {
 		protocol: conn,
 		Conn:     lsp,
 	}, nil
+}
+
+// ServerInfo holds information about a LSP server and optionally a connection to it.
+type ServerInfo struct {
+	re   *regexp.Regexp // filename regular expression
+	args []string       // LSP server command
+	addr string         // network address of LSP server
+	srv  *Server        // running server instance
+}
+
+func (info *ServerInfo) Start() (*Server, error) {
+	if info.srv != nil {
+		return info.srv, nil
+	}
+
+	const rootdir = "/"
+
+	if len(info.addr) > 0 {
+		srv, err := DialServer(info.addr, os.Stdout, rootdir)
+		if err != nil {
+			return nil, err
+		}
+		info.srv = srv
+	} else {
+		srv, err := StartServer(info.args, os.Stdout, rootdir)
+		if err != nil {
+			return nil, err
+		}
+		info.srv = srv
+	}
+	return info.srv, nil
+}
+
+// ServerSet holds information about a set of LSP servers and connection to them,
+// which are created on-demand.
+type ServerSet struct {
+	data []*ServerInfo
+}
+
+func (ss *ServerSet) Register(pattern string, args []string) error {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return err
+	}
+	info := &ServerInfo{
+		re:   re,
+		args: args,
+	}
+	ss.data = append([]*ServerInfo{info}, ss.data...)
+	return nil
+}
+
+func (ss *ServerSet) RegisterDial(pattern string, addr string) error {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return err
+	}
+	info := &ServerInfo{
+		re:   re,
+		addr: addr,
+	}
+	ss.data = append([]*ServerInfo{info}, ss.data...)
+	return nil
+}
+
+func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
+	for i, info := range ss.data {
+		if info.re.MatchString(filename) {
+			return ss.data[i]
+		}
+	}
+	return nil
+}
+
+func (ss *ServerSet) StartForFile(filename string) (*Server, error) {
+	info := ss.MatchFile(filename)
+	if info == nil {
+		return nil, nil // unknown language server
+	}
+	return info.Start()
+}
+
+func (ss *ServerSet) CloseAll() {
+	for _, info := range ss.data {
+		info.srv.Close()
+	}
+}
+
+func (ss *ServerSet) PrintTo(w io.Writer) {
+	for _, info := range ss.data {
+		if len(info.addr) > 0 {
+			fmt.Fprintf(w, "%v %v\n", info.re, info.addr)
+		} else {
+			fmt.Fprintf(w, "%v %v\n", info.re, strings.Join(info.args, " "))
+		}
+	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 
 	"9fans.net/go/acme"
@@ -76,9 +75,10 @@ List of sub-commands:
 `
 
 var debug = flag.Bool("debug", false, "turn on debugging prints")
-var rootdir = flag.String("rootdir", "/", "root directory used for LSP initialization")
 var userServers serverFlag
-var dialServers dialFlag
+var dialServers serverFlag
+
+var serverSet client.ServerSet
 
 func usage() {
 	os.Stderr.Write([]byte(mainDoc))
@@ -97,14 +97,8 @@ func main() {
 		client.Debug = true
 	}
 
-	if len(userServers) > 0 {
-		// give priority to user-defined servers
-		serverList = append(userServers, serverList...)
-	}
-	if len(dialServers) > 0 {
-		// give priority to user-defined servers
-		serverList = append(dialServers, serverList...)
-	}
+	initServerSet()
+
 	if flag.NArg() < 1 {
 		usage()
 	}
@@ -114,16 +108,16 @@ func main() {
 			usage()
 		}
 		watch(flag.Arg(1))
-		closeServers()
+		serverSet.CloseAll()
 		return
 
 	case "monitor":
 		monitor()
-		closeServers()
+		serverSet.CloseAll()
 		return
 
 	case "servers":
-		printServerList()
+		serverSet.PrintTo(os.Stdout)
 		return
 	}
 	w, err := acmeutil.OpenCurrentWin()
@@ -135,7 +129,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, err := startServerForFile(fname)
+	s, err := serverSet.StartForFile(fname)
 	if err != nil {
 		log.Fatalf("cound not start language server: %v\n", err)
 	}
@@ -225,7 +219,7 @@ func formatWin(id int) error {
 	if err != nil {
 		return err
 	}
-	s, err := startServerForFile(fname)
+	s, err := serverSet.StartForFile(fname)
 	if err != nil {
 		return nil // unknown language server
 	}
@@ -313,10 +307,34 @@ func monitor() {
 	}
 }
 
-type serverFlag []serverInfo
+func initServerSet() {
+	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
+	// references, and rename yet.
+	//serverSet.Register(`\.go$`, []string{"gopls"})
+	serverSet.Register(`\.go$`, []string{"go-langserver", "-gocodecompletion"})
+	serverSet.Register(`\.py$`, []string{"pyls"})
+	//serverSet.Register(`\.c$`, []string{"cquery"})
+
+	if len(userServers) > 0 {
+		for _, sa := range userServers {
+			serverSet.Register(sa.pattern, strings.Fields(sa.args))
+		}
+	}
+	if len(dialServers) > 0 {
+		for _, sa := range userServers {
+			serverSet.RegisterDial(sa.pattern, sa.args)
+		}
+	}
+}
+
+type serverArgs struct {
+	pattern, args string
+}
+
+type serverFlag []serverArgs
 
 func (sf *serverFlag) String() string {
-	return fmt.Sprintf("%v", []serverInfo(*sf))
+	return fmt.Sprintf("%v", []serverArgs(*sf))
 }
 
 func (sf *serverFlag) Set(val string) error {
@@ -324,35 +342,9 @@ func (sf *serverFlag) Set(val string) error {
 	if len(f) != 2 {
 		return errors.New("bad flag value")
 	}
-	re, err := regexp.Compile(f[0])
-	if err != nil {
-		return err
-	}
-	*sf = append(*sf, serverInfo{
-		re:   re,
-		args: strings.Fields(f[1]),
-	})
-	return nil
-}
-
-type dialFlag []serverInfo
-
-func (sf *dialFlag) String() string {
-	return fmt.Sprintf("%v", []serverInfo(*sf))
-}
-
-func (sf *dialFlag) Set(val string) error {
-	f := strings.SplitN(val, ":", 2)
-	if len(f) != 2 {
-		return errors.New("bad flag value")
-	}
-	re, err := regexp.Compile(f[0])
-	if err != nil {
-		return err
-	}
-	*sf = append(*sf, serverInfo{
-		re:   re,
-		addr: f[1],
+	*sf = append(*sf, serverArgs{
+		pattern: f[0],
+		args:    f[1],
 	})
 	return nil
 }

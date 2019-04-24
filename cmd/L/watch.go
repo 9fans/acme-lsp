@@ -90,8 +90,7 @@ func notifyPosChange(ch chan<- *focusWin) {
 		select {
 		case ev := <-logch:
 			fw.mu.Lock()
-			si := findServer(ev.Name)
-			if si != nil && ev.Op == "focus" {
+			if serverSet.MatchFile(ev.Name) != nil && ev.Op == "focus" {
 				fw.id = ev.ID
 			} else {
 				fw.Reset()
@@ -190,7 +189,7 @@ loop:
 		select {
 		case fw := <-fch:
 			fw.mu.Lock()
-			s, err := startServerForFile(fw.name)
+			s, err := serverSet.StartForFile(fw.name)
 			if err != nil {
 				log.Printf("failed to start language server: %v\n", err)
 			} else {
