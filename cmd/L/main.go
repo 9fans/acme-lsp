@@ -6,9 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
 //go:generate ./mkdocs.sh
@@ -77,6 +75,7 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	serverSet, _ := acmelsp.ParseFlags()
+	defer serverSet.CloseAll()
 
 	if flag.NArg() < 1 {
 		usage()
@@ -87,66 +86,43 @@ func main() {
 			usage()
 		}
 		acmelsp.Watch(serverSet, flag.Arg(1))
-		serverSet.CloseAll()
 		return
 
 	case "monitor":
 		acmelsp.FormatOnPut(serverSet)
-		serverSet.CloseAll()
 		return
 
 	case "servers":
 		serverSet.PrintTo(os.Stdout)
 		return
 	}
-	w, err := acmeutil.OpenCurrentWin()
-	if err != nil {
-		log.Fatalf("failed to to open current window: %v\n", err)
-	}
-	defer w.CloseFiles()
-	pos, fname, err := text.Position(w)
-	if err != nil {
-		log.Fatal(err)
-	}
-	s, err := serverSet.StartForFile(fname)
-	if err != nil {
-		log.Fatalf("cound not start language server: %v\n", err)
-	}
-	defer s.Close()
 
-	b, err := w.ReadAll("body")
+	cmd, err := acmelsp.CurrentWindowCmd(serverSet)
 	if err != nil {
-		log.Fatalf("failed to read source body: %v\n", err)
+		log.Fatalf("CurrentWindowCmd failed: %v\n", err)
 	}
-	if err = s.Conn.DidOpen(fname, b); err != nil {
-		log.Fatalf("DidOpen failed: %v\n", err)
-	}
-	defer func() {
-		if err = s.Conn.DidClose(fname); err != nil {
-			log.Printf("DidClose failed: %v\n", err)
-		}
-	}()
+	defer cmd.Close()
 
 	switch flag.Arg(0) {
 	case "comp":
-		err = s.Conn.Completion(pos, os.Stdout)
+		err = cmd.Completion()
 	case "def":
-		err = acmelsp.PlumbDefinition(s.Conn, pos)
+		err = cmd.Definition()
 	case "fmt":
-		err = acmelsp.FormatFile(s.Conn, pos.TextDocument.URI, w)
+		err = cmd.Format()
 	case "hov":
-		err = s.Conn.Hover(pos, os.Stdout)
+		err = cmd.Hover()
 	case "refs":
-		err = s.Conn.References(pos, os.Stdout)
+		err = cmd.References()
 	case "rn":
 		if flag.NArg() < 2 {
 			usage()
 		}
-		err = acmelsp.Rename(s.Conn, pos, flag.Arg(1))
+		err = cmd.Rename(flag.Arg(1))
 	case "sig":
-		err = s.Conn.SignatureHelp(pos, os.Stdout)
+		err = cmd.SignatureHelp()
 	case "syms":
-		err = s.Conn.Symbols(pos.TextDocument.URI, os.Stdout)
+		err = cmd.Symbols()
 	default:
 		log.Printf("unknown command %q\n", flag.Arg(0))
 		os.Exit(1)

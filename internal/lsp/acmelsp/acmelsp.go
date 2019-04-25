@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 
 	"9fans.net/go/acme"
@@ -17,6 +19,89 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
+
+// Cmd contains the states required to execute an LSP command in an acme window.
+type Cmd struct {
+	conn     *client.Conn
+	win      *acmeutil.Win
+	pos      *lsp.TextDocumentPositionParams
+	filename string
+}
+
+func CurrentWindowCmd(ss *client.ServerSet) (*Cmd, error) {
+	id, err := strconv.Atoi(os.Getenv("winid"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse $winid")
+	}
+	return WindowCmd(ss, id)
+}
+
+func WindowCmd(ss *client.ServerSet, winid int) (*Cmd, error) {
+	w, err := acmeutil.OpenWin(winid)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to to open window %v", winid)
+	}
+	pos, fname, err := text.Position(w)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get text position")
+	}
+	srv, err := ss.StartForFile(fname)
+	if err != nil {
+		return nil, errors.Wrap(err, "cound not start language server")
+	}
+
+	b, err := w.ReadAll("body")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read source body")
+	}
+	if err = srv.Conn.DidOpen(fname, b); err != nil {
+		return nil, errors.Wrap(err, "DidOpen failed")
+	}
+
+	return &Cmd{
+		conn:     srv.Conn,
+		win:      w,
+		pos:      pos,
+		filename: fname,
+	}, nil
+}
+
+func (c *Cmd) Close() error {
+	c.win.CloseFiles()
+	return c.conn.DidClose(c.filename)
+}
+
+func (c *Cmd) Completion() error {
+	return c.conn.Completion(c.pos, os.Stdout)
+}
+
+func (c *Cmd) Definition() error {
+	return PlumbDefinition(c.conn, c.pos)
+}
+
+func (c *Cmd) Format() error {
+	return FormatFile(c.conn, c.pos.TextDocument.URI, c.win)
+}
+
+func (c *Cmd) Hover() error {
+	return c.conn.Hover(c.pos, os.Stdout)
+}
+
+func (c *Cmd) References() error {
+	return c.conn.References(c.pos, os.Stdout)
+}
+
+func (c *Cmd) Rename(newname string) error {
+	return Rename(c.conn, c.pos, newname)
+}
+
+func (c *Cmd) SignatureHelp() error {
+	return c.conn.SignatureHelp(c.pos, os.Stdout)
+}
+
+func (c *Cmd) Symbols() error {
+	return c.conn.Symbols(c.pos.TextDocument.URI, os.Stdout)
+}
 
 // PlumbDefinition sends the location of where the identifier at positon pos is defined to the plumber.
 func PlumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error {
