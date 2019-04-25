@@ -107,7 +107,7 @@ func (info *ServerInfo) start(workspaces []string) (*Server, error) {
 // ServerSet holds information about a set of LSP servers and connection to them,
 // which are created on-demand.
 type ServerSet struct {
-	data       []*ServerInfo
+	Data       []*ServerInfo
 	Workspaces []string
 }
 
@@ -120,7 +120,7 @@ func (ss *ServerSet) Register(pattern string, args []string) error {
 		re:   re,
 		args: args,
 	}
-	ss.data = append([]*ServerInfo{info}, ss.data...)
+	ss.Data = append([]*ServerInfo{info}, ss.Data...)
 	return nil
 }
 
@@ -133,14 +133,14 @@ func (ss *ServerSet) RegisterDial(pattern string, addr string) error {
 		re:   re,
 		addr: addr,
 	}
-	ss.data = append([]*ServerInfo{info}, ss.data...)
+	ss.Data = append([]*ServerInfo{info}, ss.Data...)
 	return nil
 }
 
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
-	for i, info := range ss.data {
+	for i, info := range ss.Data {
 		if info.re.MatchString(filename) {
-			return ss.data[i]
+			return ss.Data[i]
 		}
 	}
 	return nil
@@ -173,13 +173,13 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, error) {
 }
 
 func (ss *ServerSet) CloseAll() {
-	for _, info := range ss.data {
+	for _, info := range ss.Data {
 		info.srv.Close()
 	}
 }
 
 func (ss *ServerSet) PrintTo(w io.Writer) {
-	for _, info := range ss.data {
+	for _, info := range ss.Data {
 		if len(info.addr) > 0 {
 			fmt.Fprintf(w, "%v %v\n", info.re, info.addr)
 		} else {

@@ -77,6 +77,13 @@ func main() {
 	serverSet, _ := acmelsp.ParseFlags()
 	defer serverSet.CloseAll()
 
+	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
+	// references, and rename yet.
+	//serverSet.Register(`\.go$`, []string{"gopls"})
+	serverSet.Register(`\.go$`, []string{"go-langserver", "-gocodecompletion"})
+	serverSet.Register(`\.py$`, []string{"pyls"})
+	//serverSet.Register(`\.c$`, []string{"cquery"})
+
 	if flag.NArg() < 1 {
 		usage()
 	}
