@@ -75,7 +75,9 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			h.Printf("window/logMessage unmarshal failed: %v\n", err)
 			return
 		}
-		h.Printf("LSP %v: %v\n", params.Type, params.Message)
+		if params.Type != lsp.Log || Debug {
+			h.Printf("log: LSP %v: %v\n", params.Type, params.Message)
+		}
 
 	default:
 		h.Printf("Handle: got request %#v\n", req)
