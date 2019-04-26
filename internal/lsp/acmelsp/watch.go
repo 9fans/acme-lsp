@@ -192,10 +192,11 @@ loop:
 		select {
 		case fw := <-fch:
 			fw.mu.Lock()
-			s, err := serverSet.StartForFile(fw.name)
+			s, found, err := serverSet.StartForFile(fw.name)
 			if err != nil {
 				log.Printf("failed to start language server: %v\n", err)
-			} else {
+			}
+			if found {
 				w.Update(fw, s.Conn, cmd)
 			}
 			fw.mu.Unlock()

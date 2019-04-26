@@ -45,9 +45,12 @@ func WindowCmd(ss *client.ServerSet, winid int) (*Cmd, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get text position")
 	}
-	srv, err := ss.StartForFile(fname)
+	srv, found, err := ss.StartForFile(fname)
 	if err != nil {
 		return nil, errors.Wrap(err, "cound not start language server")
+	}
+	if !found {
+		return nil, fmt.Errorf("no language server for filename %q", fname)
 	}
 
 	b, err := w.ReadAll("body")
@@ -146,8 +149,11 @@ func formatWin(serverSet *client.ServerSet, id int) error {
 	if err != nil {
 		return err
 	}
-	s, err := serverSet.StartForFile(fname)
+	s, found, err := serverSet.StartForFile(fname)
 	if err != nil {
+		return err
+	}
+	if !found {
 		return nil // unknown language server
 	}
 	b, err := w.ReadAll("body")

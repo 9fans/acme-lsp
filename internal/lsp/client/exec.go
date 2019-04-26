@@ -146,14 +146,14 @@ func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	return nil
 }
 
-func (ss *ServerSet) StartForFile(filename string) (*Server, error) {
+func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	info := ss.MatchFile(filename)
 	if info == nil {
-		return nil, nil // unknown language server
+		return nil, false, nil // unknown language server
 	}
 	srv, err := info.start(ss.Workspaces)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if false {
 		// gopls doesn't support dynamic changes to workspace folders yet.
@@ -165,11 +165,11 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, error) {
 				Name: "/home/fhs/go/src/github.com/fhs/acme-lsp",
 			},
 		}, nil)
+		if err != nil {
+			return nil, false, err
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
-	return srv, err
+	return srv, true, err
 }
 
 func (ss *ServerSet) CloseAll() {
