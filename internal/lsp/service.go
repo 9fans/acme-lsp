@@ -547,14 +547,79 @@ type ConfigurationItem struct {
 
 type ConfigurationResult []interface{}
 
+/*CodeActionContext defined:
+ * Contains additional diagnostic information about the context in which
+ * a [code action](#CodeActionProvider.provideCodeActions) is run.
+ */
 type CodeActionContext struct {
+	/*Diagnostics defined:
+	 * An array of diagnostics known on the client side overlapping the range provided to the
+	 * `textDocument/codeAction` request. They are provied so that the server knows which
+	 * errors are currently presented to the user for the given range. There is no guarantee
+	 * that these accurately reflect the error state of the resource. The primary parameter
+	 * to compute code actions is the provided range.
+	 */
 	Diagnostics []Diagnostic `json:"diagnostics"`
+
+	/*Only defined:
+	 * Requested kind of actions to return.
+	 *
+	 * Actions not of this kind are filtered out by the client before being shown. So servers
+	 * can omit computing them.
+	 */
+	Only []CodeActionKind `json:"only,omitempty"`
 }
+
+// CodeActionKind defines constants
+type CodeActionKind string
+
+/*SourceOrganizeImports defined:
+ * Base kind for an organize imports source action: `source.organizeImports`
+ */
+const SourceOrganizeImports CodeActionKind = "source.organizeImports"
 
 type CodeActionParams struct {
 	TextDocument TextDocumentIdentifier `json:"textDocument"`
 	Range        Range                  `json:"range"`
 	Context      CodeActionContext      `json:"context"`
+}
+
+/*CodeAction defined:
+ * A code action represents a change that can be performed in code, e.g. to fix a problem or
+ * to refactor code.
+ *
+ * A CodeAction must set either `edit` and/or a `command`. If both are supplied, the `edit` is applied first, then the `command` is executed.
+ */
+type CodeAction struct {
+
+	/*Title defined:
+	 * A short, human-readable, title for this code action.
+	 */
+	Title string `json:"title"`
+
+	/*Kind defined:
+	 * The kind of the code action.
+	 *
+	 * Used to filter code actions.
+	 */
+	Kind CodeActionKind `json:"kind,omitempty"`
+
+	/*Diagnostics defined:
+	 * The diagnostics that this code action resolves.
+	 */
+	Diagnostics []Diagnostic `json:"diagnostics,omitempty"`
+
+	/*Edit defined:
+	 * The workspace edit this code action performs.
+	 */
+	Edit *WorkspaceEdit `json:"edit,omitempty"`
+
+	/*Command defined:
+	 * A command this code action executes. If a code action
+	 * provides a edit and a command, first the edit is
+	 * executed and then the command.
+	 */
+	Command *Command `json:"command,omitempty"`
 }
 
 type CodeLensParams struct {

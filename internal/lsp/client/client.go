@@ -85,9 +85,9 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 }
 
 type Conn struct {
-	rpc  *jsonrpc2.Conn
-	ctx  context.Context
-	caps *lsp.ServerCapabilities
+	rpc          *jsonrpc2.Conn
+	ctx          context.Context
+	Capabilities *lsp.ServerCapabilities
 }
 
 func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn, error) {
@@ -120,9 +120,9 @@ func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn
 		return nil, errors.Wrap(err, "initialize failed")
 	}
 	return &Conn{
-		rpc:  rpc,
-		ctx:  ctx,
-		caps: &result.Capabilities,
+		rpc:          rpc,
+		ctx:          ctx,
+		Capabilities: &result.Capabilities,
 	}, nil
 }
 
@@ -259,6 +259,24 @@ func (c *Conn) Format(uri lsp.DocumentURI) ([]lsp.TextEdit, error) {
 	return edits, nil
 }
 
+func (c *Conn) OrganizeImports(uri lsp.DocumentURI) ([]lsp.CodeAction, error) {
+	params := &lsp.CodeActionParams{
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: uri,
+		},
+		Range: lsp.Range{},
+		Context: lsp.CodeActionContext{
+			Diagnostics: nil,
+			Only:        []lsp.CodeActionKind{lsp.SourceOrganizeImports},
+		},
+	}
+	var actions []lsp.CodeAction
+	if err := c.rpc.Call(c.ctx, "textDocument/codeAction", params, &actions); err != nil {
+		return nil, err
+	}
+	return actions, nil
+}
+
 func fileLanguage(filename string) string {
 	lang := filepath.Ext(filename)
 	if len(lang) == 0 {
@@ -293,6 +311,22 @@ func (c *Conn) DidClose(filename string) error {
 		},
 	}
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)
+}
+
+func (c *Conn) DidChange(filename string, body []byte) error {
+	params := &lsp.DidChangeTextDocumentParams{
+		TextDocument: lsp.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+				URI: text.ToURI(filename),
+			},
+		},
+		ContentChanges: []lsp.TextDocumentContentChangeEvent{
+			{
+				Text: string(body),
+			},
+		},
+	}
+	return c.rpc.Notify(c.ctx, "textDocument/didChange", params)
 }
 
 func (c *Conn) DidChangeWorkspaceFolders(added, removed []lsp.WorkspaceFolder) error {

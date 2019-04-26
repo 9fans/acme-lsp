@@ -4,6 +4,7 @@ package acmelsp
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -171,8 +172,35 @@ func formatWin(serverSet *client.ServerSet, id int) error {
 	return FormatFile(s.Conn, uri, w)
 }
 
-// FormatFile formats the file f.
+// FormatFile organizes import paths and then formats the file f.
 func FormatFile(c *client.Conn, uri lsp.DocumentURI, f text.File) error {
+	if c.Capabilities.CodeActionProvider {
+		actions, err := c.OrganizeImports(uri)
+		if err != nil {
+			return err
+		}
+		for _, a := range actions {
+			err := editWorkspace(a.Edit)
+			if err != nil {
+				return err
+			}
+		}
+		if len(actions) > 0 {
+			// TODO(fhs): check if uri is among the files edited?
+			rd, err := f.Reader()
+			if err != nil {
+				return err
+			}
+			b, err := ioutil.ReadAll(rd)
+			if err != nil {
+				return err
+			}
+			err = c.DidChange(text.ToPath(uri), b)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	edits, err := c.Format(uri)
 	if err != nil {
 		return err

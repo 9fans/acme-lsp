@@ -158,7 +158,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if false {
 		// gopls doesn't support dynamic changes to workspace folders yet.
 		// See https://github.com/golang/go/issues/31635
-		fmt.Printf("server caps: %+v\n", srv.Conn.caps)
+		fmt.Printf("server caps: %+v\n", srv.Conn.Capabilities)
 		err = srv.Conn.DidChangeWorkspaceFolders([]lsp.WorkspaceFolder{
 			{
 				URI:  "file:///home/fhs/go/src/github.com/fhs/acme-lsp",
