@@ -11,17 +11,22 @@ import (
 
 //go:generate ../../scripts/mkdocs.sh
 
-const mainDoc = `The program L is a client for the acme text editor that interacts with a
-Language Server.
+const mainDoc = `The program Lone is a standalone client for the acme text editor that
+interacts with a Language Server. (deprecated by L)
+
+Note: this program is similar to the L command, except it also does
+the work of acme-lsp command by executing a LSP server on demand. It's
+recommended to use the L and acme-lsp commands instead, which takes
+advantage of LSP server caches and should give faster responses.
 
 A Language Server implements the Language Server Protocol
 (see https://langserver.org/), which provides language features
 like auto complete, go to definition, find all references, etc.
-L depends on one or more language servers already being installed
+Lone depends on one or more language servers already being installed
 in the system.  See this page of a list of language servers:
 https://microsoft.github.io/language-server-protocol/implementors/servers/.
 
-	Usage: L [flags] <sub-command> [args...]
+	Usage: Lone [flags] <sub-command> [args...]
 
 List of sub-commands:
 
