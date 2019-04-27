@@ -9,7 +9,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 )
 
-//go:generate ./mkdocs.sh
+//go:generate ../../scripts/mkdocs.sh
 
 const mainDoc = `The program L is a client for the acme text editor that interacts with a
 Language Server.
