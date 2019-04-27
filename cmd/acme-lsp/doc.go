@@ -26,6 +26,8 @@ and then the rules must be reload by running:
 
 	cat $HOME/lib/plumbing | 9p write plumb/rules
 
+Acme-lsp also watches for Put executed in an acme window, organizes
+import paths in the window and formats it.
 
 	Usage: acme-lsp [flags]
 
@@ -33,8 +35,6 @@ and then the rules must be reload by running:
     	turn on debugging prints
   -dial value
     	language server address for filename match (e.g. '\.go$:localhost:4389')
-  -format
-    	format window buffer after each Put
   -server value
     	language server command for filename match (e.g. '\.go$:gopls')
   -workspaces string

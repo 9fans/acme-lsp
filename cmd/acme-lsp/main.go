@@ -46,11 +46,11 @@ and then the rules must be reload by running:
 
 	cat $HOME/lib/plumbing | 9p write plumb/rules
 
+Acme-lsp also watches for Put executed in an acme window, organizes
+import paths in the window and formats it.
 
 	Usage: acme-lsp [flags]
 `
-
-var format = flag.Bool("format", false, "format window buffer after each Put")
 
 func usage() {
 	os.Stderr.Write([]byte(mainDoc))
@@ -64,11 +64,9 @@ func main() {
 	ss, _ := acmelsp.ParseFlags()
 
 	if len(ss.Data) == 0 {
-		log.Fatalf("No servers specified. Specify either -server or -dial flag.\n")
+		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")
 	}
-	if *format {
-		go acmelsp.FormatOnPut(ss)
-	}
+	go acmelsp.FormatOnPut(ss)
 	readPlumb(ss)
 }
 
