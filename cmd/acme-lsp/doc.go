@@ -14,7 +14,7 @@ Acme-lsp executes or connects to a set of LSP servers specified using the
 (https://9fans.github.io/plan9port/man/man4/plumber.html) port named
 "lsp".  The messages direct acme-lsp to run commands on the LSP servers
 and apply/show the results in acme.  The format of the plumbing messages
-is implementation dependent and subject to change. The L2 command should
+is implementation dependent and subject to change. The L command should
 be used to send the messages instead of plumb(1) command.
 
 This following plumbing rule must be added to $HOME/lib/plumbing:

@@ -1,12 +1,12 @@
 /*
-The program L2 sends messages to the Language Server Protocol
+The program L sends messages to the Language Server Protocol
 proxy server acme-lsp.
 
-L2 is usually run from within the acme text editor, where $winid
+L is usually run from within the acme text editor, where $winid
 environment variable is set to the window ID.  It sends $winid to
 acme-lsp, which uses it to compute the context for LSP commands.
 
-	Usage: L2 <sub-command> [args...]
+	Usage: L <sub-command> [args...]
 
 List of sub-commands:
 
