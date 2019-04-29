@@ -164,6 +164,9 @@ func plumbCmd(attr *plumb.Attribute, args ...string) error {
 
 func portOpen() bool {
 	fid, err := plumb.Open("lsp", plan9.OREAD|plan9.OCEXEC)
+	if err != nil {
+		return false
+	}
 	defer fid.Close()
-	return err == nil
+	return true
 }
