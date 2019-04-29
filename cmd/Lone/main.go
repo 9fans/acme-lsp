@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
+	"github.com/fhs/acme-lsp/internal/lsp/client"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -79,8 +80,8 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	serverSet, _ := acmelsp.ParseFlags()
-	defer serverSet.CloseAll()
+
+	serverSet := new(client.ServerSet)
 
 	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
 	// references, and rename yet.
@@ -88,6 +89,9 @@ func main() {
 	serverSet.Register(`\.go$`, []string{"go-langserver", "-gocodecompletion"})
 	serverSet.Register(`\.py$`, []string{"pyls"})
 	//serverSet.Register(`\.c$`, []string{"cquery"})
+
+	serverSet, _ = acmelsp.ParseFlags(serverSet)
+	defer serverSet.CloseAll()
 
 	if flag.NArg() < 1 {
 		usage()

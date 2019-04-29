@@ -61,7 +61,7 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	ss, _ := acmelsp.ParseFlags()
+	ss, _ := acmelsp.ParseFlags(nil)
 
 	if len(ss.Data) == 0 {
 		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")

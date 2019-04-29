@@ -272,7 +272,7 @@ func FormatOnPut(serverSet *client.ServerSet) {
 }
 
 // ParseFlags adds some standard flags, parses all flags, and returns the server set and debug.
-func ParseFlags() (*client.ServerSet, bool) {
+func ParseFlags(serverSet *client.ServerSet) (*client.ServerSet, bool) {
 	var (
 		userServers serverFlag
 		dialServers serverFlag
@@ -288,7 +288,9 @@ func ParseFlags() (*client.ServerSet, bool) {
 		client.Debug = true
 	}
 
-	var serverSet client.ServerSet
+	if serverSet == nil {
+		serverSet = new(client.ServerSet)
+	}
 	if len(*workspaces) > 0 {
 		serverSet.Workspaces = strings.Split(*workspaces, ":")
 	}
@@ -303,7 +305,7 @@ func ParseFlags() (*client.ServerSet, bool) {
 			serverSet.RegisterDial(sa.pattern, sa.args)
 		}
 	}
-	return &serverSet, *debug
+	return serverSet, *debug
 }
 
 type serverArgs struct {
