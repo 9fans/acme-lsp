@@ -128,15 +128,20 @@ func PlumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error 
 }
 
 func plumbLocation(p *p9client.Fid, loc *lsp.Location) error {
-	fn := text.ToPath(loc.URI)
-	a := fmt.Sprintf("%v:%v", fn, loc.Range.Start)
-
+	// LSP uses zero-based offsets.
+	// Place the cursor *before* the location range.
+	pos := loc.Range.Start
+	attr := &plumb.Attribute{
+		Name:  "addr",
+		Value: fmt.Sprintf("%v-#0+#%v", pos.Line+1, pos.Character),
+	}
 	m := &plumb.Message{
-		Src:  "L",
+		Src:  "acme-lsp",
 		Dst:  "edit",
 		Dir:  "/",
 		Type: "text",
-		Data: []byte(a),
+		Attr: attr,
+		Data: []byte(text.ToPath(loc.URI)),
 	}
 	return m.Send(p)
 }
