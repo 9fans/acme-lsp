@@ -110,9 +110,13 @@ func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn
 		},
 	}
 	for _, w := range workspaces {
+		ww, err := filepath.Abs(w)
+		if err != nil {
+			return nil, err
+		}
 		params.WorkspaceFolders = append(params.WorkspaceFolders, lsp.WorkspaceFolder{
-			URI:  text.ToURI(w),
-			Name: w,
+			URI:  text.ToURI(ww),
+			Name: ww,
 		})
 	}
 	var result lsp.InitializeResult
