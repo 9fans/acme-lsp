@@ -3,6 +3,7 @@ package lsp
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -692,7 +693,7 @@ func (mt MessageType) String() string {
 	case Log:
 		return "Log"
 	}
-	panic("unreached")
+	return fmt.Sprintf("MessageType(%v)", int(mt))
 }
 
 type ShowMessageParams struct {

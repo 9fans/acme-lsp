@@ -218,6 +218,7 @@ func TestMessageTypeString(t *testing.T) {
 		{MTWarning, "Warning"},
 		{Info, "Info"},
 		{Log, "Log"},
+		{42, "MessageType(42)"},
 	} {
 		s := test.m.String()
 		if s != test.s {
