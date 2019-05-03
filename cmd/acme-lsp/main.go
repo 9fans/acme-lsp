@@ -129,6 +129,8 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 		return cmd.Completion()
 	case "definition":
 		return cmd.Definition()
+	case "type-definition":
+		return cmd.TypeDefinition()
 	case "format":
 		return cmd.Format()
 	case "hover":

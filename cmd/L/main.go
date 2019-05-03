@@ -53,6 +53,10 @@ List of sub-commands:
 	syms
 		List symbols in the current file.
 
+	type
+		Find where the type of identifier at the cursor position is define
+		and send the location to the plumber.
+
 	win <command>
 		The command argument can be either "comp", "hov" or "sig". A
 		new window is created where the output of the given command
@@ -113,6 +117,8 @@ func run(args []string) error {
 		return plumbCmd(nil, "signature")
 	case "syms":
 		return plumbCmd(nil, "symbols")
+	case "type":
+		return plumbCmd(nil, "type-definition")
 	case "win":
 		if len(args) < 2 {
 			usage()

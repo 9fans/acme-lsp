@@ -12,7 +12,6 @@ import (
 
 	"9fans.net/go/acme"
 	"9fans.net/go/plan9"
-	p9client "9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
@@ -80,7 +79,19 @@ func (c *Cmd) Completion() error {
 }
 
 func (c *Cmd) Definition() error {
-	return PlumbDefinition(c.conn, c.pos)
+	locations, err := c.conn.Definition(c.pos)
+	if err != nil {
+		return err
+	}
+	return PlumbLocations(locations)
+}
+
+func (c *Cmd) TypeDefinition() error {
+	locations, err := c.conn.TypeDefinition(c.pos)
+	if err != nil {
+		return err
+	}
+	return PlumbLocations(locations)
 }
 
 func (c *Cmd) Format() error {
@@ -107,19 +118,15 @@ func (c *Cmd) Symbols() error {
 	return c.conn.Symbols(c.pos.TextDocument.URI, os.Stdout)
 }
 
-// PlumbDefinition sends the location of where the identifier at positon pos is defined to the plumber.
-func PlumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error {
+// PlumbLocations sends the locations to the plumber.
+func PlumbLocations(locations []lsp.Location) error {
 	p, err := plumb.Open("send", plan9.OWRITE)
 	if err != nil {
 		return errors.Wrap(err, "failed to open plumber")
 	}
 	defer p.Close()
-	locations, err := c.Definition(pos)
-	if err != nil {
-		return err
-	}
 	for _, loc := range locations {
-		err := plumbLocation(p, &loc)
+		err := plumbLocation(&loc).Send(p)
 		if err != nil {
 			return errors.Wrap(err, "failed to plumb location")
 		}
@@ -127,7 +134,7 @@ func PlumbDefinition(c *client.Conn, pos *lsp.TextDocumentPositionParams) error 
 	return nil
 }
 
-func plumbLocation(p *p9client.Fid, loc *lsp.Location) error {
+func plumbLocation(loc *lsp.Location) *plumb.Message {
 	// LSP uses zero-based offsets.
 	// Place the cursor *before* the location range.
 	pos := loc.Range.Start
@@ -135,7 +142,7 @@ func plumbLocation(p *p9client.Fid, loc *lsp.Location) error {
 		Name:  "addr",
 		Value: fmt.Sprintf("%v-#0+#%v", pos.Line+1, pos.Character),
 	}
-	m := &plumb.Message{
+	return &plumb.Message{
 		Src:  "acme-lsp",
 		Dst:  "edit",
 		Dir:  "/",
@@ -143,7 +150,6 @@ func plumbLocation(p *p9client.Fid, loc *lsp.Location) error {
 		Attr: attr,
 		Data: []byte(text.ToPath(loc.URI)),
 	}
-	return m.Send(p)
 }
 
 func formatWin(serverSet *client.ServerSet, id int) error {

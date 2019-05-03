@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -133,6 +134,111 @@ func TestGoHover(t *testing.T) {
 	}
 }
 
+func TestGoDefinition(t *testing.T) {
+	src := `package main // import "example.com/test"
+
+import "fmt"
+
+func hello() string { return "Hello" }
+
+func main() {
+	fmt.Printf("%v\n", hello())
+}
+`
+
+	for _, srv := range []string{
+		"gopls",
+		"go-langserver",
+	} {
+		testGoModule(t, srv, src, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+			pos := &lsp.TextDocumentPositionParams{
+				TextDocument: lsp.TextDocumentIdentifier{
+					URI: uri,
+				},
+				Position: lsp.Position{
+					Line:      7,
+					Character: 22,
+				},
+			}
+			got, err := c.Definition(pos)
+			if err != nil {
+				t.Fatalf("Definition failed: %v", err)
+			}
+			want := []lsp.Location{
+				{
+					URI: uri,
+					Range: lsp.Range{
+						Start: lsp.Position{
+							Line:      4,
+							Character: 5,
+						},
+						End: lsp.Position{
+							Line:      4,
+							Character: 10,
+						},
+					},
+				},
+			}
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("defintion result is %q; expected %q", got, want)
+			}
+		})
+	}
+}
+
+func TestGoTypeDefinition(t *testing.T) {
+	src := `package main // import "example.com/test"
+
+import "fmt"
+
+type T string
+
+func main() {
+	foo := T("hello")
+	fmt.Printf("%v\n", foo)
+}
+`
+
+	for _, srv := range []string{
+		"gopls",
+		//"go-langserver", 	// failing
+	} {
+		testGoModule(t, srv, src, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+			pos := &lsp.TextDocumentPositionParams{
+				TextDocument: lsp.TextDocumentIdentifier{
+					URI: uri,
+				},
+				Position: lsp.Position{
+					Line:      7,
+					Character: 2,
+				},
+			}
+			got, err := c.TypeDefinition(pos)
+			if err != nil {
+				t.Fatalf("TypeDefinition failed: %v", err)
+			}
+			want := []lsp.Location{
+				{
+					URI: uri,
+					Range: lsp.Range{
+						Start: lsp.Position{
+							Line:      4,
+							Character: 5,
+						},
+						End: lsp.Position{
+							Line:      4,
+							Character: 6,
+						},
+					},
+				},
+			}
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("type defintion result is %q; expected %q", got, want)
+			}
+		})
+	}
+}
+
 const pySource = `#!/usr/bin/env python
 
 import math
@@ -230,6 +336,53 @@ func TestPythonFormat(t *testing.T) {
 			t.Errorf("bad format output:\n%s\nexpected:\n%s", got, pySource)
 		}
 	})
+}
+
+func TestPythonDefinition(t *testing.T) {
+	src := `def main():
+    pass
+
+if __name__ == '__main__':
+    main()
+`
+
+	testPython(t, src, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+		pos := &lsp.TextDocumentPositionParams{
+			TextDocument: lsp.TextDocumentIdentifier{
+				URI: uri,
+			},
+			Position: lsp.Position{
+				Line:      4,
+				Character: 6,
+			},
+		}
+		got, err := c.Definition(pos)
+		if err != nil {
+			t.Fatalf("Definition failed: %v", err)
+		}
+		want := []lsp.Location{
+			{
+				URI: uri,
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line:      0,
+						Character: 4,
+					},
+					End: lsp.Position{
+						Line:      0,
+						Character: 8,
+					},
+				},
+			},
+		}
+		if !reflect.DeepEqual(want, got) {
+			t.Errorf("defintion result is %q; expected %q", got, want)
+		}
+	})
+}
+
+func TestPythonTypeDefinition(t *testing.T) {
+	t.Logf("pyls doesn't implement LSP textDocument/typeDefinition")
 }
 
 func TestFileLanguage(t *testing.T) {
