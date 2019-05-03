@@ -94,6 +94,14 @@ func (c *Cmd) TypeDefinition() error {
 	return PlumbLocations(locations)
 }
 
+func (c *Cmd) Implementation() error {
+	locations, err := c.conn.Implementation(c.pos)
+	if err != nil {
+		return err
+	}
+	return PlumbLocations(locations)
+}
+
 func (c *Cmd) Format() error {
 	return FormatFile(c.conn, c.pos.TextDocument.URI, c.win)
 }

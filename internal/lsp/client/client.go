@@ -150,6 +150,14 @@ func (c *Conn) TypeDefinition(pos *lsp.TextDocumentPositionParams) ([]lsp.Locati
 	return loc, nil
 }
 
+func (c *Conn) Implementation(pos *lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
+	loc := make([]lsp.Location, 1)
+	if err := c.rpc.Call(c.ctx, "textDocument/implementation", pos, &loc); err != nil {
+		return nil, err
+	}
+	return loc, nil
+}
+
 func (c *Conn) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
 	var hov lsp.Hover
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {

@@ -135,6 +135,8 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 		return cmd.Format()
 	case "hover":
 		return cmd.Hover()
+	case "implementation":
+		return cmd.Implementation()
 	case "references":
 		return cmd.References()
 	case "rename":
