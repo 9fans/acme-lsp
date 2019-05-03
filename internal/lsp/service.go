@@ -660,8 +660,8 @@ type DidChangeTextDocumentParams struct {
 }
 
 type TextDocumentContentChangeEvent struct {
-	Range       *Range `json:"range,omitEmpty"`
-	RangeLength uint   `json:"rangeLength,omitEmpty"`
+	Range       *Range `json:"range,omitempty"`
+	RangeLength uint   `json:"rangeLength,omitempty"`
 	Text        string `json:"text"`
 }
 
