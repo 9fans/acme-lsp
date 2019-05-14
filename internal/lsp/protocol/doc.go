@@ -3,4 +3,4 @@
 //
 // See https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md
 // for more information.
-package lsp
+package protocol

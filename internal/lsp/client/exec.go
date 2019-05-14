@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/pkg/errors"
 )
 
@@ -159,7 +159,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 		// gopls doesn't support dynamic changes to workspace folders yet.
 		// See https://github.com/golang/go/issues/31635
 		fmt.Printf("server caps: %+v\n", srv.Conn.Capabilities)
-		err = srv.Conn.DidChangeWorkspaceFolders([]lsp.WorkspaceFolder{
+		err = srv.Conn.DidChangeWorkspaceFolders([]protocol.WorkspaceFolder{
 			{
 				URI:  "file:///home/fhs/go/src/github.com/fhs/acme-lsp",
 				Name: "/home/fhs/go/src/github.com/fhs/acme-lsp",

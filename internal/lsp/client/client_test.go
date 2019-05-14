@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
@@ -31,7 +31,7 @@ fmt . Println	( "Hello, 世界" )
 }
 `
 
-func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, c *Conn, uri lsp.DocumentURI)) {
+func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, c *Conn, uri protocol.DocumentURI)) {
 	serverArgs := map[string][]string{
 		"gopls":         {"gopls"},
 		"go-langserver": {"go-langserver"},
@@ -85,7 +85,7 @@ func TestGoFormat(t *testing.T) {
 		"gopls",
 		"go-langserver",
 	} {
-		testGoModule(t, server, goSourceUnfmt, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+		testGoModule(t, server, goSourceUnfmt, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
 			edits, err := c.Format(uri)
 			if err != nil {
 				t.Fatalf("Format failed: %v", err)
@@ -110,12 +110,12 @@ func TestGoHover(t *testing.T) {
 		{"gopls", "func fmt.Println(a ...interface{}) (n int, err error)\n"},
 		{"go-langserver", "func Println(a ...interface{}) (n int, err error)\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered. \n\n\n"},
 	} {
-		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
-			pos := &lsp.TextDocumentPositionParams{
-				TextDocument: lsp.TextDocumentIdentifier{
+		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
+			pos := &protocol.TextDocumentPositionParams{
+				TextDocument: protocol.TextDocumentIdentifier{
 					URI: uri,
 				},
-				Position: lsp.Position{
+				Position: protocol.Position{
 					Line:      5,
 					Character: 10,
 				},
@@ -150,12 +150,12 @@ func main() {
 		"gopls",
 		"go-langserver",
 	} {
-		testGoModule(t, srv, src, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
-			pos := &lsp.TextDocumentPositionParams{
-				TextDocument: lsp.TextDocumentIdentifier{
+		testGoModule(t, srv, src, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
+			pos := &protocol.TextDocumentPositionParams{
+				TextDocument: protocol.TextDocumentIdentifier{
 					URI: uri,
 				},
-				Position: lsp.Position{
+				Position: protocol.Position{
 					Line:      7,
 					Character: 22,
 				},
@@ -164,15 +164,15 @@ func main() {
 			if err != nil {
 				t.Fatalf("Definition failed: %v", err)
 			}
-			want := []lsp.Location{
+			want := []protocol.Location{
 				{
 					URI: uri,
-					Range: lsp.Range{
-						Start: lsp.Position{
+					Range: protocol.Range{
+						Start: protocol.Position{
 							Line:      4,
 							Character: 5,
 						},
-						End: lsp.Position{
+						End: protocol.Position{
 							Line:      4,
 							Character: 10,
 						},
@@ -203,12 +203,12 @@ func main() {
 		"gopls",
 		//"go-langserver", 	// failing
 	} {
-		testGoModule(t, srv, src, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
-			pos := &lsp.TextDocumentPositionParams{
-				TextDocument: lsp.TextDocumentIdentifier{
+		testGoModule(t, srv, src, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
+			pos := &protocol.TextDocumentPositionParams{
+				TextDocument: protocol.TextDocumentIdentifier{
 					URI: uri,
 				},
-				Position: lsp.Position{
+				Position: protocol.Position{
 					Line:      7,
 					Character: 2,
 				},
@@ -217,15 +217,15 @@ func main() {
 			if err != nil {
 				t.Fatalf("TypeDefinition failed: %v", err)
 			}
-			want := []lsp.Location{
+			want := []protocol.Location{
 				{
 					URI: uri,
-					Range: lsp.Range{
-						Start: lsp.Position{
+					Range: protocol.Range{
+						Start: protocol.Position{
 							Line:      4,
 							Character: 5,
 						},
-						End: lsp.Position{
+						End: protocol.Position{
 							Line:      4,
 							Character: 6,
 						},
@@ -263,7 +263,7 @@ if __name__=='__main__':
     main( )
 `
 
-func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri lsp.DocumentURI)) {
+func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri protocol.DocumentURI)) {
 	dir, err := ioutil.TempDir("", "lspexample")
 	if err != nil {
 		t.Fatalf("TempDir failed: %v", err)
@@ -297,12 +297,12 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri lsp.
 }
 
 func TestPythonHover(t *testing.T) {
-	testPython(t, pySource, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
-		pos := &lsp.TextDocumentPositionParams{
-			TextDocument: lsp.TextDocumentIdentifier{
+	testPython(t, pySource, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
+		pos := &protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
 				URI: uri,
 			},
-			Position: lsp.Position{
+			Position: protocol.Position{
 				Line:      6,
 				Character: 16,
 			},
@@ -322,7 +322,7 @@ func TestPythonHover(t *testing.T) {
 }
 
 func TestPythonFormat(t *testing.T) {
-	testPython(t, pySourceUnfmt, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
+	testPython(t, pySourceUnfmt, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
 		edits, err := c.Format(uri)
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
@@ -346,12 +346,12 @@ if __name__ == '__main__':
     main()
 `
 
-	testPython(t, src, func(t *testing.T, c *Conn, uri lsp.DocumentURI) {
-		pos := &lsp.TextDocumentPositionParams{
-			TextDocument: lsp.TextDocumentIdentifier{
+	testPython(t, src, func(t *testing.T, c *Conn, uri protocol.DocumentURI) {
+		pos := &protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
 				URI: uri,
 			},
-			Position: lsp.Position{
+			Position: protocol.Position{
 				Line:      4,
 				Character: 6,
 			},
@@ -360,15 +360,15 @@ if __name__ == '__main__':
 		if err != nil {
 			t.Fatalf("Definition failed: %v", err)
 		}
-		want := []lsp.Location{
+		want := []protocol.Location{
 			{
 				URI: uri,
-				Range: lsp.Range{
-					Start: lsp.Position{
+				Range: protocol.Range{
+					Start: protocol.Position{
 						Line:      0,
 						Character: 4,
 					},
-					End: lsp.Position{
+					End: protocol.Position{
 						Line:      0,
 						Character: 8,
 					},

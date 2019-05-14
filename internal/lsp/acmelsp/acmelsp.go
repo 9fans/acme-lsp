@@ -14,8 +14,8 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
@@ -24,7 +24,7 @@ import (
 type Cmd struct {
 	conn     *client.Conn
 	win      *acmeutil.Win
-	pos      *lsp.TextDocumentPositionParams
+	pos      *protocol.TextDocumentPositionParams
 	filename string
 }
 
@@ -127,7 +127,7 @@ func (c *Cmd) Symbols() error {
 }
 
 // PlumbLocations sends the locations to the plumber.
-func PlumbLocations(locations []lsp.Location) error {
+func PlumbLocations(locations []protocol.Location) error {
 	p, err := plumb.Open("send", plan9.OWRITE)
 	if err != nil {
 		return errors.Wrap(err, "failed to open plumber")
@@ -142,7 +142,7 @@ func PlumbLocations(locations []lsp.Location) error {
 	return nil
 }
 
-func plumbLocation(loc *lsp.Location) *plumb.Message {
+func plumbLocation(loc *protocol.Location) *plumb.Message {
 	// LSP uses zero-based offsets.
 	// Place the cursor *before* the location range.
 	pos := loc.Range.Start
@@ -192,7 +192,7 @@ func formatWin(serverSet *client.ServerSet, id int) error {
 }
 
 // FormatFile organizes import paths and then formats the file f.
-func FormatFile(c *client.Conn, uri lsp.DocumentURI, f text.File) error {
+func FormatFile(c *client.Conn, uri protocol.DocumentURI, f text.File) error {
 	if c.Capabilities.CodeActionProvider {
 		actions, err := c.OrganizeImports(uri)
 		if err != nil {
@@ -231,7 +231,7 @@ func FormatFile(c *client.Conn, uri lsp.DocumentURI, f text.File) error {
 }
 
 // Rename renames the identifier at position pos to newname.
-func Rename(c *client.Conn, pos *lsp.TextDocumentPositionParams, newname string) error {
+func Rename(c *client.Conn, pos *protocol.TextDocumentPositionParams, newname string) error {
 	we, err := c.Rename(pos, newname)
 	if err != nil {
 		return err
@@ -239,7 +239,7 @@ func Rename(c *client.Conn, pos *lsp.TextDocumentPositionParams, newname string)
 	return editWorkspace(we)
 }
 
-func editWorkspace(we *lsp.WorkspaceEdit) error {
+func editWorkspace(we *protocol.WorkspaceEdit) error {
 	wins, err := acme.Windows()
 	if err != nil {
 		return errors.Wrapf(err, "failed to read list of acme index")

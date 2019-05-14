@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
@@ -18,7 +18,7 @@ import (
 
 var Debug = false
 
-func locToLink(l *lsp.Location) string {
+func locToLink(l *protocol.Location) string {
 	p := text.ToPath(l.URI)
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
@@ -47,7 +47,7 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 	}
 	switch req.Method {
 	case "textDocument/publishDiagnostics":
-		var params lsp.PublishDiagnosticsParams
+		var params protocol.PublishDiagnosticsParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			h.Printf("diagnostics unmarshal failed: %v\n", err)
 			return
@@ -56,26 +56,26 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			h.Printf("LSP Diagnostics:\n")
 		}
 		for _, diag := range params.Diagnostics {
-			loc := &lsp.Location{
+			loc := &protocol.Location{
 				URI:   params.URI,
 				Range: diag.Range,
 			}
 			h.Printf(" %v: %v\n", locToLink(loc), diag.Message)
 		}
 	case "window/showMessage":
-		var params lsp.ShowMessageParams
+		var params protocol.ShowMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			h.Printf("window/showMessage unmarshal failed: %v\n", err)
 			return
 		}
 		h.Printf("LSP %v: %v\n", params.Type, params.Message)
 	case "window/logMessage":
-		var params lsp.LogMessageParams
+		var params protocol.LogMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			h.Printf("window/logMessage unmarshal failed: %v\n", err)
 			return
 		}
-		if params.Type != lsp.Log || Debug {
+		if params.Type != protocol.Log || Debug {
 			h.Printf("log: LSP %v: %v\n", params.Type, params.Message)
 		}
 
@@ -87,7 +87,7 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 type Conn struct {
 	rpc          *jsonrpc2.Conn
 	ctx          context.Context
-	Capabilities *lsp.ServerCapabilities
+	Capabilities *protocol.ServerCapabilities
 }
 
 func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn, error) {
@@ -101,10 +101,10 @@ func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn
 	if err != nil {
 		return nil, err
 	}
-	params := &lsp.InitializeParams{
+	params := &protocol.InitializeParams{
 		RootURI: text.ToURI(d),
-		Capabilities: lsp.ClientCapabilities{
-			Workspace: lsp.WorkspaceClientCapabilities{
+		Capabilities: protocol.ClientCapabilities{
+			Workspace: protocol.WorkspaceClientCapabilities{
 				WorkspaceFolders: true,
 			},
 		},
@@ -114,12 +114,12 @@ func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn
 		if err != nil {
 			return nil, err
 		}
-		params.WorkspaceFolders = append(params.WorkspaceFolders, lsp.WorkspaceFolder{
+		params.WorkspaceFolders = append(params.WorkspaceFolders, protocol.WorkspaceFolder{
 			URI:  text.ToURI(ww),
 			Name: ww,
 		})
 	}
-	var result lsp.InitializeResult
+	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}
@@ -134,32 +134,32 @@ func (c *Conn) Close() error {
 	return c.rpc.Close()
 }
 
-func (c *Conn) Definition(pos *lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
-	loc := make([]lsp.Location, 1)
+func (c *Conn) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/definition", pos, &loc); err != nil {
 		return nil, err
 	}
 	return loc, nil
 }
 
-func (c *Conn) TypeDefinition(pos *lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
-	loc := make([]lsp.Location, 1)
+func (c *Conn) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/typeDefinition", pos, &loc); err != nil {
 		return nil, err
 	}
 	return loc, nil
 }
 
-func (c *Conn) Implementation(pos *lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
-	loc := make([]lsp.Location, 1)
+func (c *Conn) Implementation(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/implementation", pos, &loc); err != nil {
 		return nil, err
 	}
 	return loc, nil
 }
 
-func (c *Conn) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	var hov lsp.Hover
+func (c *Conn) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+	var hov protocol.Hover
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
 		return err
 	}
@@ -167,14 +167,14 @@ func (c *Conn) Hover(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
 	return nil
 }
 
-func (c *Conn) References(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	rp := &lsp.ReferenceParams{
+func (c *Conn) References(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+	rp := &protocol.ReferenceParams{
 		TextDocumentPositionParams: *pos,
-		Context: lsp.ReferenceContext{
+		Context: protocol.ReferenceContext{
 			IncludeDeclaration: true,
 		},
 	}
-	loc := make([]lsp.Location, 1)
+	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/references", rp, &loc); err != nil {
 		return err
 	}
@@ -202,13 +202,13 @@ func (c *Conn) References(pos *lsp.TextDocumentPositionParams, w io.Writer) erro
 	return nil
 }
 
-func (c *Conn) Symbols(uri lsp.DocumentURI, w io.Writer) error {
-	params := &lsp.DocumentSymbolParams{
-		TextDocument: lsp.TextDocumentIdentifier{
+func (c *Conn) Symbols(uri protocol.DocumentURI, w io.Writer) error {
+	params := &protocol.DocumentSymbolParams{
+		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
 	}
-	var syms []lsp.SymbolInformation
+	var syms []protocol.SymbolInformation
 	if err := c.rpc.Call(c.ctx, "textDocument/documentSymbol", params, &syms); err != nil {
 		return err
 	}
@@ -223,12 +223,12 @@ func (c *Conn) Symbols(uri lsp.DocumentURI, w io.Writer) error {
 	return nil
 }
 
-func (c *Conn) Completion(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	comp := &lsp.CompletionParams{
+func (c *Conn) Completion(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+	comp := &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
-		Context:                    lsp.CompletionContext{},
+		Context:                    protocol.CompletionContext{},
 	}
-	var cl lsp.CompletionList
+	var cl protocol.CompletionList
 	if err := c.rpc.Call(c.ctx, "textDocument/completion", comp, &cl); err != nil {
 		return err
 	}
@@ -241,8 +241,8 @@ func (c *Conn) Completion(pos *lsp.TextDocumentPositionParams, w io.Writer) erro
 	return nil
 }
 
-func (c *Conn) SignatureHelp(pos *lsp.TextDocumentPositionParams, w io.Writer) error {
-	var sh lsp.SignatureHelp
+func (c *Conn) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+	var sh protocol.SignatureHelp
 	if err := c.rpc.Call(c.ctx, "textDocument/signatureHelp", pos, &sh); err != nil {
 		return err
 	}
@@ -253,44 +253,44 @@ func (c *Conn) SignatureHelp(pos *lsp.TextDocumentPositionParams, w io.Writer) e
 	return nil
 }
 
-func (c *Conn) Rename(pos *lsp.TextDocumentPositionParams, newname string) (*lsp.WorkspaceEdit, error) {
-	params := &lsp.RenameParams{
+func (c *Conn) Rename(pos *protocol.TextDocumentPositionParams, newname string) (*protocol.WorkspaceEdit, error) {
+	params := &protocol.RenameParams{
 		TextDocument: pos.TextDocument,
 		Position:     pos.Position,
 		NewName:      newname,
 	}
-	var we lsp.WorkspaceEdit
+	var we protocol.WorkspaceEdit
 	if err := c.rpc.Call(c.ctx, "textDocument/rename", params, &we); err != nil {
 		return nil, err
 	}
 	return &we, nil
 }
 
-func (c *Conn) Format(uri lsp.DocumentURI) ([]lsp.TextEdit, error) {
-	params := &lsp.DocumentFormattingParams{
-		TextDocument: lsp.TextDocumentIdentifier{
+func (c *Conn) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
+	params := &protocol.DocumentFormattingParams{
+		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
 	}
-	var edits []lsp.TextEdit
+	var edits []protocol.TextEdit
 	if err := c.rpc.Call(c.ctx, "textDocument/formatting", params, &edits); err != nil {
 		return nil, err
 	}
 	return edits, nil
 }
 
-func (c *Conn) OrganizeImports(uri lsp.DocumentURI) ([]lsp.CodeAction, error) {
-	params := &lsp.CodeActionParams{
-		TextDocument: lsp.TextDocumentIdentifier{
+func (c *Conn) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeAction, error) {
+	params := &protocol.CodeActionParams{
+		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
-		Range: lsp.Range{},
-		Context: lsp.CodeActionContext{
+		Range: protocol.Range{},
+		Context: protocol.CodeActionContext{
 			Diagnostics: nil,
-			Only:        []lsp.CodeActionKind{lsp.SourceOrganizeImports},
+			Only:        []protocol.CodeActionKind{protocol.SourceOrganizeImports},
 		},
 	}
-	var actions []lsp.CodeAction
+	var actions []protocol.CodeAction
 	if err := c.rpc.Call(c.ctx, "textDocument/codeAction", params, &actions); err != nil {
 		return nil, err
 	}
@@ -313,8 +313,8 @@ func fileLanguage(filename string) string {
 }
 
 func (c *Conn) DidOpen(filename string, body []byte) error {
-	params := &lsp.DidOpenTextDocumentParams{
-		TextDocument: lsp.TextDocumentItem{
+	params := &protocol.DidOpenTextDocumentParams{
+		TextDocument: protocol.TextDocumentItem{
 			URI:        text.ToURI(filename),
 			LanguageID: fileLanguage(filename),
 			Version:    0,
@@ -325,8 +325,8 @@ func (c *Conn) DidOpen(filename string, body []byte) error {
 }
 
 func (c *Conn) DidClose(filename string) error {
-	params := &lsp.DidCloseTextDocumentParams{
-		TextDocument: lsp.TextDocumentIdentifier{
+	params := &protocol.DidCloseTextDocumentParams{
+		TextDocument: protocol.TextDocumentIdentifier{
 			URI: text.ToURI(filename),
 		},
 	}
@@ -334,13 +334,13 @@ func (c *Conn) DidClose(filename string) error {
 }
 
 func (c *Conn) DidChange(filename string, body []byte) error {
-	params := &lsp.DidChangeTextDocumentParams{
-		TextDocument: lsp.VersionedTextDocumentIdentifier{
-			TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+	params := &protocol.DidChangeTextDocumentParams{
+		TextDocument: protocol.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
 			},
 		},
-		ContentChanges: []lsp.TextDocumentContentChangeEvent{
+		ContentChanges: []protocol.TextDocumentContentChangeEvent{
 			{
 				Text: string(body),
 			},
@@ -349,9 +349,9 @@ func (c *Conn) DidChange(filename string, body []byte) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didChange", params)
 }
 
-func (c *Conn) DidChangeWorkspaceFolders(added, removed []lsp.WorkspaceFolder) error {
-	params := &lsp.DidChangeWorkspaceFoldersParams{
-		Event: lsp.WorkspaceFoldersChangeEvent{
+func (c *Conn) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
+	params := &protocol.DidChangeWorkspaceFoldersParams{
+		Event: protocol.WorkspaceFoldersChangeEvent{
 			Added:   added,
 			Removed: removed,
 		},

@@ -5,18 +5,18 @@ import (
 	"testing"
 
 	"9fans.net/go/plumb"
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 func TestPlumbLocation(t *testing.T) {
-	loc := lsp.Location{
+	loc := protocol.Location{
 		URI: "file:///home/gopher/hello/main.go",
-		Range: lsp.Range{
-			Start: lsp.Position{
+		Range: protocol.Range{
+			Start: protocol.Position{
 				Line:      100,
 				Character: 25,
 			},
-			End: lsp.Position{},
+			End: protocol.Position{},
 		},
 	}
 	want := plumb.Message{

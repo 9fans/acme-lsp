@@ -8,8 +8,8 @@ import (
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
@@ -31,7 +31,7 @@ func watchLog(ch chan<- *acme.LogEvent) {
 type focusWin struct {
 	id   int
 	q0   int
-	pos  *lsp.TextDocumentPositionParams
+	pos  *protocol.TextDocumentPositionParams
 	name string
 	w    *acmeutil.Win
 	mu   sync.Mutex

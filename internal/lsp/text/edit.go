@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/pkg/errors"
 )
 
@@ -23,7 +23,7 @@ type File interface {
 	DisableMark() error
 }
 
-func Edit(f File, edits []lsp.TextEdit) error {
+func Edit(f File, edits []protocol.TextEdit) error {
 	if len(edits) == 0 {
 		return nil
 	}
@@ -87,7 +87,7 @@ type AddressableFile interface {
 	CurrentAddr() (q0, q1 int, err error)
 }
 
-func DocumentURI(f AddressableFile) (uri lsp.DocumentURI, filename string, err error) {
+func DocumentURI(f AddressableFile) (uri protocol.DocumentURI, filename string, err error) {
 	name, err := f.Filename()
 	if err != nil {
 		return "", "", err
@@ -95,7 +95,7 @@ func DocumentURI(f AddressableFile) (uri lsp.DocumentURI, filename string, err e
 	return ToURI(name), name, nil
 }
 
-func Position(f AddressableFile) (pos *lsp.TextDocumentPositionParams, filename string, err error) {
+func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, filename string, err error) {
 	name, err := f.Filename()
 	if err != nil {
 		return nil, "", err
@@ -113,11 +113,11 @@ func Position(f AddressableFile) (pos *lsp.TextDocumentPositionParams, filename 
 		return nil, "", err
 	}
 	line, col := off.OffsetToLine(q0)
-	return &lsp.TextDocumentPositionParams{
-		TextDocument: lsp.TextDocumentIdentifier{
+	return &protocol.TextDocumentPositionParams{
+		TextDocument: protocol.TextDocumentIdentifier{
 			URI: ToURI(name),
 		},
-		Position: lsp.Position{
+		Position: protocol.Position{
 			Line:      line,
 			Character: col,
 		},
@@ -125,11 +125,11 @@ func Position(f AddressableFile) (pos *lsp.TextDocumentPositionParams, filename 
 }
 
 // ToURI converts filename to URI.
-func ToURI(filename string) lsp.DocumentURI {
-	return lsp.DocumentURI("file://" + filename)
+func ToURI(filename string) protocol.DocumentURI {
+	return protocol.DocumentURI("file://" + filename)
 }
 
 // ToPath converts URI to filename.
-func ToPath(uri lsp.DocumentURI) string {
+func ToPath(uri protocol.DocumentURI) string {
 	return strings.TrimPrefix(string(uri), "file://")
 }

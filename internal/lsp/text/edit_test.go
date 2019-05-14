@@ -3,13 +3,13 @@ package text
 import (
 	"testing"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 func TestURI(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		uri  lsp.DocumentURI
+		uri  protocol.DocumentURI
 	}{
 		{"/home/gopher/hello.go", "file:///home/gopher/hello.go"},
 	} {

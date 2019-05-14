@@ -1,4 +1,4 @@
-The code in this directory (excluding sub-directories) is
+The code in this directory is
 based on [sourcegraph/go-lsp](github.com/sourcegraph/go-lsp)
 and are subject to the license found in this directory. We've
 added more types and more flexibility in the JSON parser, which
