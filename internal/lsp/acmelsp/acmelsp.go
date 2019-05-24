@@ -320,7 +320,7 @@ func ParseFlags(serverSet *client.ServerSet) (*client.ServerSet, bool) {
 		}
 	}
 	if len(dialServers) > 0 {
-		for _, sa := range userServers {
+		for _, sa := range dialServers {
 			serverSet.RegisterDial(sa.pattern, sa.args)
 		}
 	}
