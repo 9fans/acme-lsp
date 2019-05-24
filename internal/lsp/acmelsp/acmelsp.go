@@ -292,16 +292,27 @@ func FormatOnPut(serverSet *client.ServerSet) {
 
 // ParseFlags adds some standard flags, parses all flags, and returns the server set and debug.
 func ParseFlags(serverSet *client.ServerSet) (*client.ServerSet, bool) {
+	serverSet, debug, err := ParseFlagSet(flag.CommandLine, os.Args[1:], serverSet)
+	if err != nil {
+		// Unreached since flag.CommandLine uses flag.ExitOnError.
+		panic(err)
+	}
+	return serverSet, debug
+}
+
+func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *client.ServerSet) (*client.ServerSet, bool, error) {
 	var (
 		userServers serverFlag
 		dialServers serverFlag
 	)
 
-	debug := flag.Bool("debug", false, "turn on debugging prints")
-	workspaces := flag.String("workspaces", "", "colon-separated list of initial workspace directories")
-	flag.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
-	flag.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
-	flag.Parse()
+	debug := f.Bool("debug", false, "turn on debugging prints")
+	workspaces := f.String("workspaces", "", "colon-separated list of initial workspace directories")
+	f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
+	f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
+	if err := f.Parse(arguments); err != nil {
+		return nil, false, err
+	}
 
 	if *debug {
 		client.Debug = true
@@ -313,18 +324,13 @@ func ParseFlags(serverSet *client.ServerSet) (*client.ServerSet, bool) {
 	if len(*workspaces) > 0 {
 		serverSet.Workspaces = strings.Split(*workspaces, ":")
 	}
-
-	if len(userServers) > 0 {
-		for _, sa := range userServers {
-			serverSet.Register(sa.pattern, strings.Fields(sa.args))
-		}
+	for _, sa := range userServers {
+		serverSet.Register(sa.pattern, strings.Fields(sa.args))
 	}
-	if len(dialServers) > 0 {
-		for _, sa := range dialServers {
-			serverSet.RegisterDial(sa.pattern, sa.args)
-		}
+	for _, sa := range dialServers {
+		serverSet.RegisterDial(sa.pattern, sa.args)
 	}
-	return serverSet, *debug
+	return serverSet, *debug, nil
 }
 
 type serverArgs struct {
@@ -340,7 +346,7 @@ func (sf *serverFlag) String() string {
 func (sf *serverFlag) Set(val string) error {
 	f := strings.SplitN(val, ":", 2)
 	if len(f) != 2 {
-		return errors.New("bad flag value")
+		return errors.New("flag value must contain a colon")
 	}
 	*sf = append(*sf, serverArgs{
 		pattern: f[0],

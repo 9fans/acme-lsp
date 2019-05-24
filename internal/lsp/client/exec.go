@@ -75,9 +75,9 @@ func DialServer(addr string, w io.Writer, rootdir string, workspaces []string) (
 
 // ServerInfo holds information about a LSP server and optionally a connection to it.
 type ServerInfo struct {
-	re   *regexp.Regexp // filename regular expression
-	args []string       // LSP server command
-	addr string         // network address of LSP server
+	Re   *regexp.Regexp // filename regular expression
+	Args []string       // LSP server command
+	Addr string         // network address of LSP server
 	srv  *Server        // running server instance
 }
 
@@ -88,14 +88,14 @@ func (info *ServerInfo) start(workspaces []string) (*Server, error) {
 
 	const rootdir = "/"
 
-	if len(info.addr) > 0 {
-		srv, err := DialServer(info.addr, os.Stdout, rootdir, workspaces)
+	if len(info.Addr) > 0 {
+		srv, err := DialServer(info.Addr, os.Stdout, rootdir, workspaces)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := StartServer(info.args, os.Stdout, rootdir, workspaces)
+		srv, err := StartServer(info.Args, os.Stdout, rootdir, workspaces)
 		if err != nil {
 			return nil, err
 		}
@@ -117,8 +117,8 @@ func (ss *ServerSet) Register(pattern string, args []string) error {
 		return err
 	}
 	info := &ServerInfo{
-		re:   re,
-		args: args,
+		Re:   re,
+		Args: args,
 	}
 	ss.Data = append([]*ServerInfo{info}, ss.Data...)
 	return nil
@@ -130,8 +130,8 @@ func (ss *ServerSet) RegisterDial(pattern string, addr string) error {
 		return err
 	}
 	info := &ServerInfo{
-		re:   re,
-		addr: addr,
+		Re:   re,
+		Addr: addr,
 	}
 	ss.Data = append([]*ServerInfo{info}, ss.Data...)
 	return nil
@@ -139,7 +139,7 @@ func (ss *ServerSet) RegisterDial(pattern string, addr string) error {
 
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	for i, info := range ss.Data {
-		if info.re.MatchString(filename) {
+		if info.Re.MatchString(filename) {
 			return ss.Data[i]
 		}
 	}
@@ -180,10 +180,10 @@ func (ss *ServerSet) CloseAll() {
 
 func (ss *ServerSet) PrintTo(w io.Writer) {
 	for _, info := range ss.Data {
-		if len(info.addr) > 0 {
-			fmt.Fprintf(w, "%v %v\n", info.re, info.addr)
+		if len(info.Addr) > 0 {
+			fmt.Fprintf(w, "%v %v\n", info.Re, info.Addr)
 		} else {
-			fmt.Fprintf(w, "%v %v\n", info.re, strings.Join(info.args, " "))
+			fmt.Fprintf(w, "%v %v\n", info.Re, strings.Join(info.Args, " "))
 		}
 	}
 }
