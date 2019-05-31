@@ -43,9 +43,9 @@ Start acme-lsp like this:
 
 	acme-lsp -server '\.go$:gopls' -workspaces /path/to/mod1:/path/to/mod2
 
-where mod1 and mod2 are module directories with a `go.mod` file. Currently
-the set of workspace directories can't be changed at runtime (see
-[golang/go#31635](https://github.com/golang/go/issues/31635)).
+where mod1 and mod2 are module directories with a `go.mod` file.
+The set of workspace directories can be changed at runtime
+by using the `L ws+` and `L ws-` sub-commands.
 
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also

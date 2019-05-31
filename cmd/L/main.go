@@ -9,6 +9,7 @@ import (
 
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
+	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/pkg/errors"
 )
 
@@ -61,6 +62,15 @@ List of sub-commands:
 		The command argument can be either "comp", "hov" or "sig". A
 		new window is created where the output of the given command
 		is shown each time cursor position is changed.
+
+	ws
+		List current set of workspace directories.
+
+	ws+ <directories...>
+		Add given workspace directories.
+
+	ws- <directories...>
+		Remove given workspace directories.
 `
 
 func usage() {
@@ -95,15 +105,15 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "comp":
-		return plumbCmd(nil, "completion")
+		return plumbAcmeCmd(nil, "completion")
 	case "def":
-		return plumbCmd(nil, "definition")
+		return plumbAcmeCmd(nil, "definition")
 	case "fmt":
-		return plumbCmd(nil, "format")
+		return plumbAcmeCmd(nil, "format")
 	case "hov":
-		return plumbCmd(nil, "hover")
+		return plumbAcmeCmd(nil, "hover")
 	case "refs":
-		return plumbCmd(nil, "references")
+		return plumbAcmeCmd(nil, "references")
 	case "rn":
 		if len(args) < 2 {
 			usage()
@@ -112,47 +122,59 @@ func run(args []string) error {
 			Name:  "newname",
 			Value: args[1],
 		}
-		return plumbCmd(attr, "rename")
+		return plumbAcmeCmd(attr, "rename")
 	case "sig":
-		return plumbCmd(nil, "signature")
+		return plumbAcmeCmd(nil, "signature")
 	case "syms":
-		return plumbCmd(nil, "symbols")
+		return plumbAcmeCmd(nil, "symbols")
 	case "type":
-		return plumbCmd(nil, "type-definition")
+		return plumbAcmeCmd(nil, "type-definition")
 	case "win":
 		if len(args) < 2 {
 			usage()
 		}
 		switch args[1] {
 		case "comp":
-			return plumbCmd(nil, "watch-completion")
+			return plumbAcmeCmd(nil, "watch-completion")
 		case "sig":
-			return plumbCmd(nil, "watch-signature")
+			return plumbAcmeCmd(nil, "watch-signature")
 		case "hov":
-			return plumbCmd(nil, "watch-hover")
+			return plumbAcmeCmd(nil, "watch-hover")
 		}
 		return fmt.Errorf("unknown win command %q", flag.Arg(1))
+	case "ws":
+		return plumbCmd(nil, "workspaces")
+	case "ws+":
+		if len(args) < 2 {
+			usage()
+		}
+		dirs, err := client.AbsDirs(args[1:])
+		if err != nil {
+			return err
+		}
+		args = append([]string{"workspaces-add"}, dirs...)
+		return plumbCmd(nil, args...)
+	case "ws-":
+		if len(args) < 2 {
+			usage()
+		}
+		dirs, err := client.AbsDirs(args[1:])
+		if err != nil {
+			return err
+		}
+		args = append([]string{"workspaces-remove"}, dirs...)
+		return plumbCmd(nil, args...)
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
 func plumbCmd(attr *plumb.Attribute, args ...string) error {
-	winid := os.Getenv("winid")
-	if winid == "" {
-		return fmt.Errorf("$winid is empty")
-	}
-
 	p, err := plumb.Open("send", plan9.OWRITE)
 	if err != nil {
 		return errors.Wrap(err, "failed to open plumber")
 	}
 	defer p.Close()
 
-	attr = &plumb.Attribute{
-		Name:  "winid",
-		Value: winid,
-		Next:  attr,
-	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -166,6 +188,19 @@ func plumbCmd(attr *plumb.Attribute, args ...string) error {
 		Data: []byte(strings.Join(args, " ")),
 	}
 	return m.Send(p)
+}
+
+func plumbAcmeCmd(attr *plumb.Attribute, args ...string) error {
+	winid := os.Getenv("winid")
+	if winid == "" {
+		return fmt.Errorf("$winid is empty")
+	}
+	attr = &plumb.Attribute{
+		Name:  "winid",
+		Value: winid,
+		Next:  attr,
+	}
+	return plumbCmd(attr, args...)
 }
 
 func portOpen() bool {

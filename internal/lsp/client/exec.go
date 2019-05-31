@@ -7,10 +7,11 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/pkg/errors"
 )
 
@@ -108,7 +109,14 @@ func (info *ServerInfo) start(workspaces []string) (*Server, error) {
 // which are created on-demand.
 type ServerSet struct {
 	Data       []*ServerInfo
-	Workspaces []string
+	workspaces map[string]struct{} // set of absolute paths to workspace directories
+}
+
+func NewServerSet() *ServerSet {
+	return &ServerSet{
+		Data:       nil,
+		workspaces: make(map[string]struct{}),
+	}
 }
 
 func (ss *ServerSet) Register(pattern string, args []string) error {
@@ -151,23 +159,9 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if info == nil {
 		return nil, false, nil // unknown language server
 	}
-	srv, err := info.start(ss.Workspaces)
+	srv, err := info.start(ss.Workspaces())
 	if err != nil {
 		return nil, false, err
-	}
-	if false {
-		// gopls doesn't support dynamic changes to workspace folders yet.
-		// See https://github.com/golang/go/issues/31635
-		fmt.Printf("server caps: %+v\n", srv.Conn.Capabilities)
-		err = srv.Conn.DidChangeWorkspaceFolders([]protocol.WorkspaceFolder{
-			{
-				URI:  "file:///home/fhs/go/src/github.com/fhs/acme-lsp",
-				Name: "/home/fhs/go/src/github.com/fhs/acme-lsp",
-			},
-		}, nil)
-		if err != nil {
-			return nil, false, err
-		}
 	}
 	return srv, true, err
 }
@@ -186,4 +180,90 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 			fmt.Fprintf(w, "%v %v\n", info.Re, strings.Join(info.Args, " "))
 		}
 	}
+}
+
+func (ss *ServerSet) forEach(f func(*Conn) error) error {
+	for _, info := range ss.Data {
+		srv, err := info.start(ss.Workspaces())
+		if err != nil {
+			return err
+		}
+		err = f(srv.Conn)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Workspaces returns a sorted list of current workspace directories.
+func (ss *ServerSet) Workspaces() []string {
+	var dirs []string
+	for d := range ss.workspaces {
+		dirs = append(dirs, d)
+	}
+	sort.Strings(dirs)
+	return dirs
+}
+
+// InitWorkspaces initializes workspace directories.
+func (ss *ServerSet) InitWorkspaces(dirs []string) error {
+	dirs, err := AbsDirs(dirs)
+	if err != nil {
+		return err
+	}
+	ss.workspaces = make(map[string]struct{})
+	for _, d := range dirs {
+		ss.workspaces[d] = struct{}{}
+	}
+	return nil
+}
+
+// AddWorkspaces adds given workspace directories.
+func (ss *ServerSet) AddWorkspaces(dirs []string) error {
+	dirs, err := AbsDirs(dirs)
+	if err != nil {
+		return err
+	}
+	err = ss.forEach(func(conn *Conn) error {
+		return conn.DidChangeWorkspaceFolders(dirs, nil)
+	})
+	if err != nil {
+		return err
+	}
+	for _, d := range dirs {
+		ss.workspaces[d] = struct{}{}
+	}
+	return nil
+}
+
+// RemoveWorkspaces removes given workspace directories.
+func (ss *ServerSet) RemoveWorkspaces(dirs []string) error {
+	dirs, err := AbsDirs(dirs)
+	if err != nil {
+		return err
+	}
+	err = ss.forEach(func(conn *Conn) error {
+		return conn.DidChangeWorkspaceFolders(nil, dirs)
+	})
+	if err != nil {
+		return err
+	}
+	for _, d := range dirs {
+		delete(ss.workspaces, d)
+	}
+	return nil
+}
+
+// AbsDirs returns the absolute representation of directories dirs.
+func AbsDirs(dirs []string) ([]string, error) {
+	a := make([]string, len(dirs))
+	for i, d := range dirs {
+		d, err := filepath.Abs(d)
+		if err != nil {
+			return nil, err
+		}
+		a[i] = d
+	}
+	return a, nil
 }

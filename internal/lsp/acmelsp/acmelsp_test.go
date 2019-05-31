@@ -46,56 +46,54 @@ func TestParseFlagSet(t *testing.T) {
 	tt := []struct {
 		args      []string
 		debug     bool
-		serverSet client.ServerSet
+		serverInfo []*client.ServerInfo
+		workspaces []string
 		err       string
 	}{
-		{[]string{"-debug"}, true, client.ServerSet{}, ""},
+		{[]string{"-debug"}, true, nil, nil, ""},
 		{
 			[]string{"-workspaces", "/path/to/mod1"},
 			false,
-			client.ServerSet{
-				Workspaces: []string{"/path/to/mod1"},
-			},
+			nil,
+			[]string{"/path/to/mod1"},
 			"",
 		},
 		{
 			[]string{"-workspaces", "/go/mod1:/go/mod2"},
 			false,
-			client.ServerSet{
-				Workspaces: []string{"/go/mod1", "/go/mod2"},
-			},
+			nil,
+			[]string{"/go/mod1", "/go/mod2"},
 			"",
 		},
 		{
 			[]string{"-server", `\.go$:gopls -rpc.trace`},
 			false,
-			client.ServerSet{
-				Data: []*client.ServerInfo{
-					{
-						Re:   regexp.MustCompile(`\.go$`),
-						Args: []string{"gopls", "-rpc.trace"},
-					},
+			[]*client.ServerInfo{
+				{
+					Re:   regexp.MustCompile(`\.go$`),
+					Args: []string{"gopls", "-rpc.trace"},
 				},
 			},
+			nil,
 			"",
 		},
 		{
 			[]string{"-dial", `\.go$:localhost:4389`},
 			false,
-			client.ServerSet{
-				Data: []*client.ServerInfo{
-					{
-						Re:   regexp.MustCompile(`\.go$`),
-						Addr: "localhost:4389",
-					},
+			[]*client.ServerInfo{
+				{
+					Re:   regexp.MustCompile(`\.go$`),
+					Addr: "localhost:4389",
 				},
 			},
+			nil,
 			"",
 		},
 		{
 			[]string{"-server", `gopls -rpc.trace`},
 			false,
-			client.ServerSet{},
+			nil,
+			nil,
 			"flag value must contain a colon",
 		},
 	}
@@ -117,14 +115,14 @@ func TestParseFlagSet(t *testing.T) {
 		if debug != tc.debug {
 			t.Errorf("-debug flag didn't turn on debugging")
 		}
-		if got, want := ss.Workspaces, tc.serverSet.Workspaces; !cmp.Equal(got, want) {
+		if got, want := ss.Workspaces(), tc.workspaces; !cmp.Equal(got, want) {
 			t.Errorf("workspaces are %v; want %v", got, want)
 		}
-		if len(tc.serverSet.Data) > 0 {
-			if got, want := len(ss.Data), len(tc.serverSet.Data); got != want {
+		if len(tc.serverInfo) > 0 {
+			if got, want := len(ss.Data), len(tc.serverInfo); got != want {
 				t.Fatalf("%v servers registered for %v; want %v", got, tc.args, want)
 			}
-			got := tc.serverSet.Data[0]
+			got := tc.serverInfo[0]
 			want := ss.Data[0]
 			if got, want := got.Re.String(), want.Re.String(); got != want {
 				t.Errorf("filename pattern for %v is %v; want %v", got, tc.args, want)

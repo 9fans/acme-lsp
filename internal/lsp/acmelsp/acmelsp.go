@@ -319,10 +319,10 @@ func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *client.ServerS
 	}
 
 	if serverSet == nil {
-		serverSet = new(client.ServerSet)
+		serverSet = client.NewServerSet()
 	}
 	if len(*workspaces) > 0 {
-		serverSet.Workspaces = strings.Split(*workspaces, ":")
+		serverSet.InitWorkspaces(strings.Split(*workspaces, ":"))
 	}
 	for _, sa := range userServers {
 		serverSet.Register(sa.pattern, strings.Fields(sa.args))

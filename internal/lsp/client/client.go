@@ -109,15 +109,9 @@ func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn
 			},
 		},
 	}
-	for _, w := range workspaces {
-		ww, err := filepath.Abs(w)
-		if err != nil {
-			return nil, err
-		}
-		params.WorkspaceFolders = append(params.WorkspaceFolders, protocol.WorkspaceFolder{
-			URI:  text.ToURI(ww),
-			Name: ww,
-		})
+	params.WorkspaceFolders, err = dirsToWorkspaceFolders(workspaces)
+	if err != nil {
+		return nil, err
 	}
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
@@ -349,7 +343,15 @@ func (c *Conn) DidChange(filename string, body []byte) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didChange", params)
 }
 
-func (c *Conn) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
+func (c *Conn) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) error {
+	added, err := dirsToWorkspaceFolders(addedDirs)
+	if err != nil {
+		return err
+	}
+	removed, err := dirsToWorkspaceFolders(removedDirs)
+	if err != nil {
+		return err
+	}
 	params := &protocol.DidChangeWorkspaceFoldersParams{
 		Event: protocol.WorkspaceFoldersChangeEvent{
 			Added:   added,
@@ -357,4 +359,19 @@ func (c *Conn) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFold
 		},
 	}
 	return c.rpc.Notify(c.ctx, "workspace/didChangeWorkspaceFolders", params)
+}
+
+func dirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {
+	var workspaces []protocol.WorkspaceFolder
+	for _, d := range dirs {
+		d, err := filepath.Abs(d)
+		if err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, protocol.WorkspaceFolder{
+			URI:  text.ToURI(d),
+			Name: d,
+		})
+	}
+	return workspaces, nil
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"9fans.net/go/plan9"
@@ -115,6 +116,20 @@ func readPlumb(ss *client.ServerSet) {
 }
 
 func run(ss *client.ServerSet, data string, attr map[string]string) error {
+	args := strings.Fields(data)
+	switch args[0] {
+	case "workspaces":
+		fmt.Printf("Workspaces:\n")
+		for _, d := range ss.Workspaces() {
+			fmt.Printf(" %v\n", d)
+		}
+		return nil
+	case "workspaces-add":
+		return ss.AddWorkspaces(args[1:])
+	case "workspaces-remove":
+		return ss.RemoveWorkspaces(args[1:])
+	}
+
 	winid, err := strconv.Atoi(attr["winid"])
 	if err != nil {
 		return errors.Wrap(err, "failed to parse $winid")
@@ -124,7 +139,7 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 		return err
 	}
 
-	switch data {
+	switch args[0] {
 	case "completion":
 		return cmd.Completion()
 	case "definition":
@@ -155,5 +170,5 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 		go acmelsp.Watch(ss, "hov")
 		return nil
 	}
-	return fmt.Errorf("unknown command %v", data)
+	return fmt.Errorf("unknown command %v", args[0])
 }
