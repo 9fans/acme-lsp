@@ -44,11 +44,11 @@ func TestPlumbLocation(t *testing.T) {
 
 func TestParseFlagSet(t *testing.T) {
 	tt := []struct {
-		args      []string
-		debug     bool
+		args       []string
+		debug      bool
 		serverInfo []*client.ServerInfo
 		workspaces []string
-		err       string
+		err        string
 	}{
 		{[]string{"-debug"}, true, nil, nil, ""},
 		{
