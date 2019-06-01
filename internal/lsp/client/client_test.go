@@ -58,7 +58,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	if !ok {
 		t.Fatalf("unknown server %q", server)
 	}
-	srv, err := StartServer(args, os.Stdout, dir, nil)
+	srv, err := StartServer(args, os.Stdout, &mockDiagosticsWriter{ioutil.Discard}, dir, nil)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -239,6 +239,52 @@ func main() {
 	}
 }
 
+func TestGoDiagnostics(t *testing.T) {
+	src := `package main // import "example.com/test"
+
+func main() {
+	var s string
+}
+`
+	dir, err := ioutil.TempDir("", "examplemod")
+	if err != nil {
+		t.Fatalf("TempDir failed: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	gofile := filepath.Join(dir, "main.go")
+	if err := ioutil.WriteFile(gofile, []byte(src), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	modfile := filepath.Join(dir, "go.mod")
+	if err := ioutil.WriteFile(modfile, nil, 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	ch := make(chan *protocol.Diagnostic)
+	srv, err := StartServer([]string{"gopls"}, ioutil.Discard, &chanDiagosticsWriter{ch}, dir, nil)
+	if err != nil {
+		t.Fatalf("startServer failed: %v", err)
+	}
+	defer srv.Close()
+
+	err = srv.Conn.DidOpen(gofile, []byte(src))
+	if err != nil {
+		t.Fatalf("DidOpen failed: %v", err)
+	}
+
+	diag := <-ch
+	want := "s declared but not used"
+	if diag.Message != want {
+		t.Errorf("diagnostics message is %q, want %q", diag.Message, want)
+	}
+
+	err = srv.Conn.DidClose(gofile)
+	if err != nil {
+		t.Fatalf("DidClose failed: %v", err)
+	}
+}
+
 const pySource = `#!/usr/bin/env python
 
 import math
@@ -276,7 +322,7 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri prot
 	}
 
 	// Start the server
-	srv, err := StartServer([]string{"pyls"}, os.Stdout, dir, nil)
+	srv, err := StartServer([]string{"pyls"}, os.Stdout, &mockDiagosticsWriter{ioutil.Discard}, dir, nil)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -397,4 +443,38 @@ func TestFileLanguage(t *testing.T) {
 			t.Errorf("language ID of %q is %q; expected %q", tc.name, lang, tc.lang)
 		}
 	}
+}
+
+func TestLocationLink(t *testing.T) {
+	l := &protocol.Location{
+		URI: protocol.DocumentURI("file:///home/gopher/mod1/main.go"),
+		Range: protocol.Range{
+			Start: protocol.Position{
+				Line:      13,
+				Character: 9,
+			},
+			End: protocol.Position{
+				Line:      15,
+				Character: 7,
+			},
+		},
+	}
+	got := LocationLink(l)
+	want := "/home/gopher/mod1/main.go:14:10-16:8"
+	if got != want {
+		t.Errorf("LocationLink(%v) returned %q; want %q", l, got, want)
+	}
+}
+
+type chanDiagosticsWriter struct {
+	ch chan *protocol.Diagnostic
+}
+
+func (dw *chanDiagosticsWriter) WriteDiagnostics(diags map[protocol.DocumentURI][]protocol.Diagnostic) error {
+	for _, uriDiag := range diags {
+		for _, diag := range uriDiag {
+			dw.ch <- &diag
+		}
+	}
+	return nil
 }

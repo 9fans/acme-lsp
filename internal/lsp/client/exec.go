@@ -28,7 +28,7 @@ func (s *Server) Close() {
 	}
 }
 
-func StartServer(args []string, w io.Writer, rootdir string, workspaces []string) (*Server, error) {
+func StartServer(args []string, w io.Writer, diagWriter DiagnosticsWriter, rootdir string, workspaces []string) (*Server, error) {
 	p0, p1 := net.Pipe()
 	// TODO(fhs): use CommandContext?
 	cmd := exec.Command(args[0], args[1:]...)
@@ -46,7 +46,7 @@ func StartServer(args []string, w io.Writer, rootdir string, workspaces []string
 			log.Printf("wait failed: %v\n", err)
 		}
 	}()
-	lsp, err := New(p1, w, rootdir, workspaces)
+	lsp, err := New(p1, w, diagWriter, rootdir, workspaces)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -58,12 +58,12 @@ func StartServer(args []string, w io.Writer, rootdir string, workspaces []string
 	}, nil
 }
 
-func DialServer(addr string, w io.Writer, rootdir string, workspaces []string) (*Server, error) {
+func DialServer(addr string, w io.Writer, diagWriter DiagnosticsWriter, rootdir string, workspaces []string) (*Server, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	lsp, err := New(conn, w, rootdir, workspaces)
+	lsp, err := New(conn, w, diagWriter, rootdir, workspaces)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
 	}
@@ -82,7 +82,7 @@ type ServerInfo struct {
 	srv  *Server        // running server instance
 }
 
-func (info *ServerInfo) start(workspaces []string) (*Server, error) {
+func (info *ServerInfo) start(workspaces []string, diagWriter DiagnosticsWriter) (*Server, error) {
 	if info.srv != nil {
 		return info.srv, nil
 	}
@@ -90,13 +90,13 @@ func (info *ServerInfo) start(workspaces []string) (*Server, error) {
 	const rootdir = "/"
 
 	if len(info.Addr) > 0 {
-		srv, err := DialServer(info.Addr, os.Stdout, rootdir, workspaces)
+		srv, err := DialServer(info.Addr, os.Stdout, diagWriter, rootdir, workspaces)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := StartServer(info.Args, os.Stdout, rootdir, workspaces)
+		srv, err := StartServer(info.Args, os.Stdout, diagWriter, rootdir, workspaces)
 		if err != nil {
 			return nil, err
 		}
@@ -110,12 +110,14 @@ func (info *ServerInfo) start(workspaces []string) (*Server, error) {
 type ServerSet struct {
 	Data       []*ServerInfo
 	workspaces map[string]struct{} // set of absolute paths to workspace directories
+	diagWriter DiagnosticsWriter
 }
 
-func NewServerSet() *ServerSet {
+func NewServerSet(diagWriter DiagnosticsWriter) *ServerSet {
 	return &ServerSet{
 		Data:       nil,
 		workspaces: make(map[string]struct{}),
+		diagWriter: diagWriter,
 	}
 }
 
@@ -159,7 +161,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if info == nil {
 		return nil, false, nil // unknown language server
 	}
-	srv, err := info.start(ss.Workspaces())
+	srv, err := info.start(ss.Workspaces(), ss.diagWriter)
 	if err != nil {
 		return nil, false, err
 	}
@@ -184,7 +186,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 
 func (ss *ServerSet) forEach(f func(*Conn) error) error {
 	for _, info := range ss.Data {
-		srv, err := info.start(ss.Workspaces())
+		srv, err := info.start(ss.Workspaces(), ss.diagWriter)
 		if err != nil {
 			return err
 		}

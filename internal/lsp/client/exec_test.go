@@ -1,10 +1,14 @@
 package client
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -33,7 +37,7 @@ func TestAbsDirs(t *testing.T) {
 }
 
 func TestServerSetWorkspaces(t *testing.T) {
-	ss := NewServerSet()
+	ss := NewServerSet(&mockDiagosticsWriter{ioutil.Discard})
 	err := ss.Register(`\.go$`, []string{"gopls"})
 	if err != nil {
 		t.Fatalf("ServerSet.Register: %v", err)
@@ -76,4 +80,21 @@ func TestServerSetWorkspaces(t *testing.T) {
 	if !cmp.Equal(got, want) {
 		t.Errorf("after removing %v, workspaces are %v; want %v", removed, got, want)
 	}
+}
+
+type mockDiagosticsWriter struct {
+	io.Writer
+}
+
+func (dw *mockDiagosticsWriter) WriteDiagnostics(diags map[protocol.DocumentURI][]protocol.Diagnostic) error {
+	for uri, uriDiag := range diags {
+		for _, diag := range uriDiag {
+			loc := &protocol.Location{
+				URI:   uri,
+				Range: diag.Range,
+			}
+			fmt.Fprintf(dw, "%v: %v\n", LocationLink(loc), diag.Message)
+		}
+	}
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -18,11 +19,15 @@ import (
 
 var Debug = false
 
-func locToLink(l *protocol.Location) string {
+func LocationLink(l *protocol.Location) string {
 	p := text.ToPath(l.URI)
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
+}
+
+type DiagnosticsWriter interface {
+	WriteDiagnostics(map[protocol.DocumentURI][]protocol.Diagnostic) error
 }
 
 var _ = (jsonrpc2.Handler)(&handler{})
@@ -31,10 +36,26 @@ var _ = (jsonrpc2.Handler)(&handler{})
 // Diagnostics and other messages sent by the server are printed to writer w.
 type handler struct {
 	w io.Writer
+
+	diagWriter DiagnosticsWriter
+	diag       map[protocol.DocumentURI][]protocol.Diagnostic
+	mu         sync.Mutex
 }
 
 func (h *handler) Printf(format string, a ...interface{}) (n int, err error) {
 	return fmt.Fprintf(h.w, format, a...)
+}
+
+func (h *handler) updateDiagnostics(params *protocol.PublishDiagnosticsParams) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if len(h.diag[params.URI]) == 0 && len(params.Diagnostics) == 0 {
+		return
+	}
+	h.diag[params.URI] = params.Diagnostics
+
+	h.diagWriter.WriteDiagnostics(h.diag)
 }
 
 func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
@@ -52,16 +73,7 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			h.Printf("diagnostics unmarshal failed: %v\n", err)
 			return
 		}
-		if len(params.Diagnostics) > 0 {
-			h.Printf("LSP Diagnostics:\n")
-		}
-		for _, diag := range params.Diagnostics {
-			loc := &protocol.Location{
-				URI:   params.URI,
-				Range: diag.Range,
-			}
-			h.Printf(" %v: %v\n", locToLink(loc), diag.Message)
-		}
+		h.updateDiagnostics(&params)
 	case "window/showMessage":
 		var params protocol.ShowMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
@@ -90,11 +102,13 @@ type Conn struct {
 	Capabilities *protocol.ServerCapabilities
 }
 
-func New(conn net.Conn, w io.Writer, rootdir string, workspaces []string) (*Conn, error) {
+func New(conn net.Conn, w io.Writer, diagWriter DiagnosticsWriter, rootdir string, workspaces []string) (*Conn, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
 	rpc := jsonrpc2.NewConn(ctx, stream, &handler{
-		w: w,
+		w:          w,
+		diagWriter: diagWriter,
+		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
 
 	d, err := filepath.Abs(rootdir)
@@ -191,7 +205,7 @@ func (c *Conn) References(pos *protocol.TextDocumentPositionParams, w io.Writer)
 	})
 	fmt.Printf("References:\n")
 	for _, l := range loc {
-		fmt.Fprintf(w, " %v\n", locToLink(&l))
+		fmt.Fprintf(w, " %v\n", LocationLink(&l))
 	}
 	return nil
 }
@@ -212,7 +226,7 @@ func (c *Conn) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 	}
 	fmt.Printf("Symbols:\n")
 	for _, s := range syms {
-		fmt.Fprintf(w, " %v %v %v %v\n", s.ContainerName, s.Name, s.Kind, locToLink(&s.Location))
+		fmt.Fprintf(w, " %v %v %v %v\n", s.ContainerName, s.Name, s.Kind, LocationLink(&s.Location))
 	}
 	return nil
 }

@@ -319,7 +319,7 @@ func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *client.ServerS
 	}
 
 	if serverSet == nil {
-		serverSet = client.NewServerSet()
+		serverSet = client.NewServerSet(NewDiagnosticsWriter())
 	}
 	if len(*workspaces) > 0 {
 		serverSet.InitWorkspaces(strings.Split(*workspaces, ":"))
