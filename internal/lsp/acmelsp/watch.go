@@ -114,12 +114,12 @@ type outputWin struct {
 	event <-chan *acme.Event
 }
 
-func newOutputWin() (*outputWin, error) {
+func newOutputWin(name string) (*outputWin, error) {
 	w, err := acmeutil.NewWin()
 	if err != nil {
 		return nil, err
 	}
-	w.Name("/Lsp/watch")
+	w.Name(name)
 	return &outputWin{
 		Win:   w,
 		body:  w.FileReadWriter("body"),
@@ -178,7 +178,7 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 // cursor position change in acme. Cmd is either 'comp', 'sig', or 'hov',
 // for completion, signature, and hover respectively.
 func Watch(serverSet *client.ServerSet, cmd string) {
-	w, err := newOutputWin()
+	w, err := newOutputWin("/LSP/win/" + cmd)
 	if err != nil {
 		log.Fatalf("failed to create acme window: %v\n", err)
 	}
