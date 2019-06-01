@@ -202,8 +202,14 @@ loop:
 			fw.mu.Unlock()
 
 		case ev := <-w.event:
-			if ev.C1 == 'M' && ev.C2 == 'x' && string(ev.Text) == "Del" {
+			if ev == nil {
 				break loop
+			}
+			switch ev.C2 {
+			case 'x', 'X': // execute
+				if string(ev.Text) == "Del" {
+					break loop
+				}
 			}
 			w.WriteEvent(ev)
 		}
