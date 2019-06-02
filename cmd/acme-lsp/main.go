@@ -138,6 +138,7 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 	if err != nil {
 		return err
 	}
+	defer cmd.Close()
 
 	switch args[0] {
 	case "completion":

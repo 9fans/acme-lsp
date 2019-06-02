@@ -160,15 +160,7 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 	}
 }
 
-func formatWin(serverSet *client.ServerSet, id int) error {
-	w, err := acmeutil.OpenWin(id)
-	if err != nil {
-		return err
-	}
-	uri, fname, err := text.DocumentURI(w)
-	if err != nil {
-		return err
-	}
+func formatWin(serverSet *client.ServerSet, id int, fname string) error {
 	s, found, err := serverSet.StartForFile(fname)
 	if err != nil {
 		return err
@@ -176,6 +168,13 @@ func formatWin(serverSet *client.ServerSet, id int) error {
 	if !found {
 		return nil // unknown language server
 	}
+
+	w, err := acmeutil.OpenWin(id)
+	if err != nil {
+		return err
+	}
+	defer w.CloseFiles()
+
 	b, err := w.ReadAll("body")
 	if err != nil {
 		log.Fatalf("failed to read source body: %v\n", err)
@@ -188,7 +187,7 @@ func formatWin(serverSet *client.ServerSet, id int) error {
 			log.Printf("DidClose failed: %v\n", err)
 		}
 	}()
-	return FormatFile(s.Conn, uri, w)
+	return FormatFile(s.Conn, text.ToURI(fname), w)
 }
 
 // FormatFile organizes import paths and then formats the file f.
@@ -205,7 +204,9 @@ func FormatFile(c *client.Conn, uri protocol.DocumentURI, f text.File) error {
 			}
 		}
 		if len(actions) > 0 {
-			// TODO(fhs): check if uri is among the files edited?
+			// Our file may or may not be among the workspace edits for import fixes.
+			// We assume it is among the edits.
+			// TODO(fhs): Skip if our file didn't have import changes.
 			rd, err := f.Reader()
 			if err != nil {
 				return err
@@ -283,7 +284,7 @@ func FormatOnPut(serverSet *client.ServerSet) {
 			panic(err)
 		}
 		if ev.Op == "put" {
-			if err = formatWin(serverSet, ev.ID); err != nil {
+			if err = formatWin(serverSet, ev.ID, ev.Name); err != nil {
 				log.Printf("formating window %v failed: %v\n", ev.ID, err)
 			}
 		}
