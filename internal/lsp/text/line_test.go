@@ -49,7 +49,7 @@ func TestLineOffsets(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		off, err := GetNewlineOffsets(bytes.NewBufferString(tc.file))
+		off, err := getNewlineOffsets(bytes.NewBufferString(tc.file))
 		if err != nil {
 			t.Errorf("failed to compute file offsets: %v", err)
 			continue
@@ -87,7 +87,7 @@ func TestLineOffsetsLeftover(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		off, err := GetNewlineOffsets(bytes.NewBufferString(tc.file))
+		off, err := getNewlineOffsets(bytes.NewBufferString(tc.file))
 		if err != nil {
 			t.Errorf("failed to compute file offsets: %v", err)
 			continue

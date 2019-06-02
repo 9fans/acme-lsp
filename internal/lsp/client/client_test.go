@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -90,7 +91,7 @@ func TestGoFormat(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Format failed: %v", err)
 			}
-			f := text.BytesFile([]byte(goSourceUnfmt))
+			f := BytesFile([]byte(goSourceUnfmt))
 			err = text.Edit(&f, edits)
 			if err != nil {
 				t.Fatalf("failed to apply edits: %v", err)
@@ -373,7 +374,7 @@ func TestPythonFormat(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
-		f := text.BytesFile([]byte(pySourceUnfmt))
+		f := BytesFile([]byte(pySourceUnfmt))
 		err = text.Edit(&f, edits)
 		if err != nil {
 			t.Fatalf("failed to apply edits: %v", err)
@@ -476,5 +477,32 @@ func (dw *chanDiagosticsWriter) WriteDiagnostics(diags map[protocol.DocumentURI]
 			dw.ch <- &diag
 		}
 	}
+	return nil
+}
+
+var _ = text.File((*BytesFile)(nil))
+
+type BytesFile []byte
+
+func (f *BytesFile) Reader() (io.Reader, error) {
+	return bytes.NewReader(*f), nil
+}
+
+func (f *BytesFile) WriteAt(q0, q1 int, b []byte) (int, error) {
+	r := []rune(string(*f))
+
+	rr := make([]rune, 0, len(r)+len(b))
+	rr = append(rr, r[:q0]...)
+	rr = append(rr, []rune(string(b))...)
+	rr = append(rr, r[q1:]...)
+	*f = []byte(string(rr))
+	return len(b), nil
+}
+
+func (f *BytesFile) Mark() error {
+	return nil
+}
+
+func (f *BytesFile) DisableMark() error {
 	return nil
 }

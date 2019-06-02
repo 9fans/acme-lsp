@@ -1,7 +1,6 @@
 package text
 
 import (
-	"bytes"
 	"io"
 	"strings"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// File represents an open file in text editor.
 type File interface {
 	// Reader returns a reader for the entire file text buffer ("body" in acme).
 	Reader() (io.Reader, error)
@@ -23,6 +23,7 @@ type File interface {
 	DisableMark() error
 }
 
+// Edit applied edits to file f.
 func Edit(f File, edits []protocol.TextEdit) error {
 	if len(edits) == 0 {
 		return nil
@@ -31,7 +32,7 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	if err != nil {
 		return err
 	}
-	off, err := GetNewlineOffsets(reader)
+	off, err := getNewlineOffsets(reader)
 	if err != nil {
 		return errors.Wrapf(err, "failed to obtain newline offsets")
 	}
@@ -50,33 +51,7 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	return nil
 }
 
-var _ = File((*BytesFile)(nil))
-
-type BytesFile []byte
-
-func (f *BytesFile) Reader() (io.Reader, error) {
-	return bytes.NewReader(*f), nil
-}
-
-func (f *BytesFile) WriteAt(q0, q1 int, b []byte) (int, error) {
-	r := []rune(string(*f))
-
-	rr := make([]rune, 0, len(r)+len(b))
-	rr = append(rr, r[:q0]...)
-	rr = append(rr, []rune(string(b))...)
-	rr = append(rr, r[q1:]...)
-	*f = []byte(string(rr))
-	return len(b), nil
-}
-
-func (f *BytesFile) Mark() error {
-	return nil
-}
-
-func (f *BytesFile) DisableMark() error {
-	return nil
-}
-
+// AddressableFile represents an open file in text editor which has a current adddress.
 type AddressableFile interface {
 	File
 
@@ -87,6 +62,7 @@ type AddressableFile interface {
 	CurrentAddr() (q0, q1 int, err error)
 }
 
+// DocumentURI returns the URI and filename of a file being edited.
 func DocumentURI(f AddressableFile) (uri protocol.DocumentURI, filename string, err error) {
 	name, err := f.Filename()
 	if err != nil {
@@ -95,6 +71,7 @@ func DocumentURI(f AddressableFile) (uri protocol.DocumentURI, filename string, 
 	return ToURI(name), name, nil
 }
 
+// Position returns the current position within a file being edited.
 func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, filename string, err error) {
 	name, err := f.Filename()
 	if err != nil {
@@ -108,7 +85,7 @@ func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, file
 	if err != nil {
 		return nil, "", err
 	}
-	off, err := GetNewlineOffsets(reader)
+	off, err := getNewlineOffsets(reader)
 	if err != nil {
 		return nil, "", err
 	}
