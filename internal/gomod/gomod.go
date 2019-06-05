@@ -1,3 +1,4 @@
+// Package gomod implements Go module related functions.
 package gomod
 
 import (

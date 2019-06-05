@@ -1,3 +1,4 @@
+// Package acmeutil implements acme utility functions.
 package acmeutil
 
 import (

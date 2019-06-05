@@ -1,3 +1,4 @@
+// Package text implements text editing helper routines for LSP.
 package text
 
 import (

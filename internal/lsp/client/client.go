@@ -1,3 +1,4 @@
+// Package client implements a general LSP client.
 package client
 
 import (
