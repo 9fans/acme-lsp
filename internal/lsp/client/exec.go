@@ -116,10 +116,10 @@ func NewServerSet(diagWriter DiagnosticsWriter) *ServerSet {
 		Data:       nil,
 		workspaces: make(map[string]struct{}),
 		cfg: Config{
-			w:          os.Stdout,
-			diagWriter: diagWriter,
-			rootdir:    "/",
-			workspaces: nil,
+			Writer:     os.Stdout,
+			DiagWriter: diagWriter,
+			RootDir:    "/",
+			Workspaces: nil,
 		},
 	}
 }
@@ -222,7 +222,7 @@ func (ss *ServerSet) InitWorkspaces(dirs []string) error {
 		ss.workspaces[d] = struct{}{}
 	}
 	// Update initial workspaces for servers not yet started.
-	ss.cfg.workspaces = dirs
+	ss.cfg.Workspaces = dirs
 	return nil
 }
 
@@ -242,7 +242,7 @@ func (ss *ServerSet) AddWorkspaces(dirs []string) error {
 		ss.workspaces[d] = struct{}{}
 	}
 	// Update initial workspaces for servers not yet started.
-	ss.cfg.workspaces = ss.Workspaces()
+	ss.cfg.Workspaces = ss.Workspaces()
 	return nil
 }
 
@@ -262,7 +262,7 @@ func (ss *ServerSet) RemoveWorkspaces(dirs []string) error {
 		delete(ss.workspaces, d)
 	}
 	// Update initial workspaces for servers not yet started.
-	ss.cfg.workspaces = ss.Workspaces()
+	ss.cfg.Workspaces = ss.Workspaces()
 	return nil
 }
 
