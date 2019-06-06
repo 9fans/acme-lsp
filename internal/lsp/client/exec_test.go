@@ -38,9 +38,9 @@ func TestAbsDirs(t *testing.T) {
 
 func TestServerSetWorkspaces(t *testing.T) {
 	ss := NewServerSet(&Config{
-		Writer: ioutil.Discard,
+		Writer:     ioutil.Discard,
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		RootDir: "/",
+		RootDir:    "/",
 		Workspaces: nil,
 	})
 	err := ss.Register(`\.go$`, []string{"gopls"})
