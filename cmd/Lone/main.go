@@ -81,7 +81,7 @@ func usage() {
 func main() {
 	flag.Usage = usage
 
-	serverSet := client.NewServerSet(acmelsp.NewDiagnosticsWriter())
+	serverSet := client.NewServerSet(acmelsp.DefaultConfig())
 
 	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
 	// references, and rename yet.

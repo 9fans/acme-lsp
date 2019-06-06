@@ -320,7 +320,7 @@ func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *client.ServerS
 	}
 
 	if serverSet == nil {
-		serverSet = client.NewServerSet(NewDiagnosticsWriter())
+		serverSet = client.NewServerSet(DefaultConfig())
 	}
 	if len(*workspaces) > 0 {
 		serverSet.InitWorkspaces(strings.Split(*workspaces, ":"))
@@ -354,4 +354,13 @@ func (sf *serverFlag) Set(val string) error {
 		args:    f[1],
 	})
 	return nil
+}
+
+func DefaultConfig() *client.Config {
+	return &client.Config{
+		Writer:     os.Stdout,
+		DiagWriter: NewDiagnosticsWriter(),
+		RootDir:    "/",
+		Workspaces: nil,
+	}
 }

@@ -37,7 +37,12 @@ func TestAbsDirs(t *testing.T) {
 }
 
 func TestServerSetWorkspaces(t *testing.T) {
-	ss := NewServerSet(&mockDiagosticsWriter{ioutil.Discard})
+	ss := NewServerSet(&Config{
+		Writer: ioutil.Discard,
+		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
+		RootDir: "/",
+		Workspaces: nil,
+	})
 	err := ss.Register(`\.go$`, []string{"gopls"})
 	if err != nil {
 		t.Fatalf("ServerSet.Register: %v", err)

@@ -111,16 +111,11 @@ type ServerSet struct {
 	cfg        Config
 }
 
-func NewServerSet(diagWriter DiagnosticsWriter) *ServerSet {
+func NewServerSet(cfg *Config) *ServerSet {
 	return &ServerSet{
 		Data:       nil,
 		workspaces: make(map[string]struct{}),
-		cfg: Config{
-			Writer:     os.Stdout,
-			DiagWriter: diagWriter,
-			RootDir:    "/",
-			Workspaces: nil,
-		},
+		cfg:        *cfg,
 	}
 }
 
