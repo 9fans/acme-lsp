@@ -59,7 +59,12 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	if !ok {
 		t.Fatalf("unknown server %q", server)
 	}
-	srv, err := StartServer(args, os.Stdout, &mockDiagosticsWriter{ioutil.Discard}, dir, nil)
+	srv, err := StartServer(args, &Config{
+		w:          ioutil.Discard,
+		diagWriter: &mockDiagosticsWriter{ioutil.Discard},
+		rootdir:    dir,
+		workspaces: nil,
+	})
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -263,7 +268,12 @@ func main() {
 	}
 
 	ch := make(chan *protocol.Diagnostic)
-	srv, err := StartServer([]string{"gopls"}, ioutil.Discard, &chanDiagosticsWriter{ch}, dir, nil)
+	srv, err := StartServer([]string{"gopls"}, &Config{
+		w:          ioutil.Discard,
+		diagWriter: &chanDiagosticsWriter{ch},
+		rootdir:    dir,
+		workspaces: nil,
+	})
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -323,7 +333,12 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Conn, uri prot
 	}
 
 	// Start the server
-	srv, err := StartServer([]string{"pyls"}, os.Stdout, &mockDiagosticsWriter{ioutil.Discard}, dir, nil)
+	srv, err := StartServer([]string{"pyls"}, &Config{
+		w:          ioutil.Discard,
+		diagWriter: &mockDiagosticsWriter{ioutil.Discard},
+		rootdir:    dir,
+		workspaces: nil,
+	})
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}

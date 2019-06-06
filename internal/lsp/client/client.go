@@ -97,22 +97,31 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 	}
 }
 
+// Config contains LSP client configuration values.
+type Config struct {
+	w          io.Writer         // notification handler writes here by default
+	diagWriter DiagnosticsWriter // notification handler writes diagnostics here
+	rootdir    string            // directory for RootURI
+	workspaces []string          // initial workspaces
+}
+
+// Conn represents a LSP client connection.
 type Conn struct {
 	rpc          *jsonrpc2.Conn
 	ctx          context.Context
 	Capabilities *protocol.ServerCapabilities
 }
 
-func New(conn net.Conn, w io.Writer, diagWriter DiagnosticsWriter, rootdir string, workspaces []string) (*Conn, error) {
+func New(conn net.Conn, cfg *Config) (*Conn, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
 	rpc := jsonrpc2.NewConn(ctx, stream, &handler{
-		w:          w,
-		diagWriter: diagWriter,
+		w:          cfg.w,
+		diagWriter: cfg.diagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
 
-	d, err := filepath.Abs(rootdir)
+	d, err := filepath.Abs(cfg.rootdir)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +133,7 @@ func New(conn net.Conn, w io.Writer, diagWriter DiagnosticsWriter, rootdir strin
 			},
 		},
 	}
-	params.WorkspaceFolders, err = dirsToWorkspaceFolders(workspaces)
+	params.WorkspaceFolders, err = dirsToWorkspaceFolders(cfg.workspaces)
 	if err != nil {
 		return nil, err
 	}
