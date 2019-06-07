@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -28,15 +27,15 @@ type Cmd struct {
 	filename string
 }
 
-func CurrentWindowCmd(ss *client.ServerSet) (*Cmd, error) {
+func CurrentWindowCmd(ss *client.ServerSet, fm *FileManager) (*Cmd, error) {
 	id, err := strconv.Atoi(os.Getenv("winid"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse $winid")
 	}
-	return WindowCmd(ss, id)
+	return WindowCmd(ss, fm, id)
 }
 
-func WindowCmd(ss *client.ServerSet, winid int) (*Cmd, error) {
+func WindowCmd(ss *client.ServerSet, fm *FileManager, winid int) (*Cmd, error) {
 	w, err := acmeutil.OpenWin(winid)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to to open window %v", winid)
@@ -53,12 +52,10 @@ func WindowCmd(ss *client.ServerSet, winid int) (*Cmd, error) {
 		return nil, fmt.Errorf("no language server for filename %q", fname)
 	}
 
-	b, err := w.ReadAll("body")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read source body")
-	}
-	if err = srv.Conn.DidOpen(fname, b); err != nil {
-		return nil, errors.Wrap(err, "DidOpen failed")
+	// In case the window has unsaved changes (it's dirty),
+	// send changes to LSP server.
+	if err = fm.didChange(winid, fname); err != nil {
+		return nil, errors.Wrap(err, "DidChange failed")
 	}
 
 	return &Cmd{
@@ -69,9 +66,8 @@ func WindowCmd(ss *client.ServerSet, winid int) (*Cmd, error) {
 	}, nil
 }
 
-func (c *Cmd) Close() error {
+func (c *Cmd) Close() {
 	c.win.CloseFiles()
-	return c.conn.DidClose(c.filename)
 }
 
 func (c *Cmd) Completion() error {
@@ -160,36 +156,6 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 	}
 }
 
-func formatWin(serverSet *client.ServerSet, id int, fname string) error {
-	s, found, err := serverSet.StartForFile(fname)
-	if err != nil {
-		return err
-	}
-	if !found {
-		return nil // unknown language server
-	}
-
-	w, err := acmeutil.OpenWin(id)
-	if err != nil {
-		return err
-	}
-	defer w.CloseFiles()
-
-	b, err := w.ReadAll("body")
-	if err != nil {
-		log.Fatalf("failed to read source body: %v\n", err)
-	}
-	if err := s.Conn.DidOpen(fname, b); err != nil {
-		log.Fatalf("DidOpen failed: %v\n", err)
-	}
-	defer func() {
-		if err := s.Conn.DidClose(fname); err != nil {
-			log.Printf("DidClose failed: %v\n", err)
-		}
-	}()
-	return FormatFile(s.Conn, text.ToURI(fname), w)
-}
-
 // FormatFile organizes import paths and then formats the file f.
 func FormatFile(c *client.Conn, uri protocol.DocumentURI, f text.File) error {
 	if c.Capabilities.CodeActionProvider {
@@ -269,26 +235,6 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		w.CloseFiles()
 	}
 	return nil
-}
-
-// FormatOnPut watches for Put executed on an acme window and formats it using LSP.
-func FormatOnPut(serverSet *client.ServerSet) {
-	alog, err := acme.Log()
-	if err != nil {
-		panic(err)
-	}
-	defer alog.Close()
-	for {
-		ev, err := alog.Read()
-		if err != nil {
-			panic(err)
-		}
-		if ev.Op == "put" {
-			if err = formatWin(serverSet, ev.ID, ev.Name); err != nil {
-				log.Printf("formating window %v failed: %v\n", ev.ID, err)
-			}
-		}
-	}
 }
 
 // ParseFlags adds some standard flags, parses all flags, and returns the server set and debug.

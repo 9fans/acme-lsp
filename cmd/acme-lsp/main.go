@@ -67,11 +67,16 @@ func main() {
 	if len(ss.Data) == 0 {
 		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")
 	}
-	go acmelsp.FormatOnPut(ss)
-	readPlumb(ss)
+
+	fm, err := acmelsp.NewFileManager(ss)
+	if err != nil {
+		log.Fatalf("failed to create file manager: %v\n", err)
+	}
+	go acmelsp.ManageFiles(ss, fm)
+	readPlumb(ss, fm)
 }
 
-func readPlumb(ss *client.ServerSet) {
+func readPlumb(ss *client.ServerSet, fm *acmelsp.FileManager) {
 	for {
 		var fid *p9client.Fid
 
@@ -105,7 +110,7 @@ func readPlumb(ss *client.ServerSet) {
 			for a := m.Attr; a != nil; a = a.Next {
 				attr[a.Name] = a.Value
 			}
-			err = run(ss, string(m.Data), attr)
+			err = run(ss, fm, string(m.Data), attr)
 			if err != nil {
 				log.Printf("%v failed: %v\n", string(m.Data), err)
 			}
@@ -115,7 +120,7 @@ func readPlumb(ss *client.ServerSet) {
 	}
 }
 
-func run(ss *client.ServerSet, data string, attr map[string]string) error {
+func run(ss *client.ServerSet, fm *acmelsp.FileManager, data string, attr map[string]string) error {
 	args := strings.Fields(data)
 	switch args[0] {
 	case "workspaces":
@@ -134,7 +139,7 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to parse $winid")
 	}
-	cmd, err := acmelsp.WindowCmd(ss, winid)
+	cmd, err := acmelsp.WindowCmd(ss, fm, winid)
 	if err != nil {
 		return err
 	}
@@ -162,13 +167,13 @@ func run(ss *client.ServerSet, data string, attr map[string]string) error {
 	case "symbols":
 		return cmd.Symbols()
 	case "watch-completion":
-		go acmelsp.Watch(ss, "comp")
+		go acmelsp.Watch(ss, fm, "comp")
 		return nil
 	case "watch-signature":
-		go acmelsp.Watch(ss, "sig")
+		go acmelsp.Watch(ss, fm, "sig")
 		return nil
 	case "watch-hover":
-		go acmelsp.Watch(ss, "hov")
+		go acmelsp.Watch(ss, fm, "hov")
 		return nil
 	}
 	return fmt.Errorf("unknown command %v", args[0])

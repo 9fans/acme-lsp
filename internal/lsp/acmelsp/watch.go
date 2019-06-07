@@ -33,7 +33,7 @@ type focusWin struct {
 	q0   int
 	pos  *protocol.TextDocumentPositionParams
 	name string
-	w    *acmeutil.Win
+	w    *acmeutil.Win // TODO(fhs): remove this because acme/log doesn't deliver del event if ctl file open (issue #9)
 	mu   sync.Mutex
 }
 
@@ -112,9 +112,10 @@ type outputWin struct {
 	*acmeutil.Win
 	body  io.Writer
 	event <-chan *acme.Event
+	fm    *FileManager
 }
 
-func newOutputWin(name string) (*outputWin, error) {
+func newOutputWin(fm *FileManager, name string) (*outputWin, error) {
 	w, err := acmeutil.NewWin()
 	if err != nil {
 		return nil, err
@@ -124,6 +125,7 @@ func newOutputWin(name string) (*outputWin, error) {
 		Win:   w,
 		body:  w.FileReadWriter("body"),
 		event: w.EventChan(),
+		fm:    fm,
 	}, nil
 }
 
@@ -138,17 +140,12 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 		log.Printf("failed to read source body: %v\n", err)
 		return
 	}
-	err = c.DidOpen(fw.name, b)
+	// Assume file is already opened by file management.
+	err = c.DidChange(fw.name, b)
 	if err != nil {
 		log.Printf("DidOpen failed: %v\n", err)
 		return
 	}
-	defer func() {
-		err = c.DidClose(fw.name)
-		if err != nil {
-			log.Printf("DidClose failed: %v\n", err)
-		}
-	}()
 
 	w.Clear()
 	switch cmd {
@@ -177,8 +174,8 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 // Watch creates an acme window where output of cmd is written after each
 // cursor position change in acme. Cmd is either 'comp', 'sig', or 'hov',
 // for completion, signature, and hover respectively.
-func Watch(serverSet *client.ServerSet, cmd string) {
-	w, err := newOutputWin("/LSP/win/" + cmd)
+func Watch(serverSet *client.ServerSet, fm *FileManager, cmd string) {
+	w, err := newOutputWin(fm, "/LSP/win/"+cmd)
 	if err != nil {
 		log.Fatalf("failed to create acme window: %v\n", err)
 	}

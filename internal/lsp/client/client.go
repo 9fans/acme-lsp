@@ -351,6 +351,16 @@ func (c *Conn) DidClose(filename string) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)
 }
 
+func (c *Conn) DidSave(filename string) error {
+	params := &protocol.DidSaveTextDocumentParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: text.ToURI(filename),
+			// TODO(fhs): add text field for includeText option
+		},
+	}
+	return c.rpc.Notify(c.ctx, "textDocument/didSave", params)
+}
+
 func (c *Conn) DidChange(filename string, body []byte) error {
 	params := &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{

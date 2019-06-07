@@ -96,16 +96,21 @@ func main() {
 	if flag.NArg() < 1 {
 		usage()
 	}
+
+	fm, err := acmelsp.NewFileManager(serverSet)
+	if err != nil {
+		log.Fatalf("failed to create file manager: %v\n", err)
+	}
 	switch flag.Arg(0) {
 	case "win":
 		if flag.NArg() < 2 {
 			usage()
 		}
-		acmelsp.Watch(serverSet, flag.Arg(1))
+		acmelsp.Watch(serverSet, fm, flag.Arg(1))
 		return
 
 	case "monitor":
-		acmelsp.FormatOnPut(serverSet)
+		acmelsp.ManageFiles(serverSet, fm)
 		return
 
 	case "servers":
@@ -113,7 +118,7 @@ func main() {
 		return
 	}
 
-	cmd, err := acmelsp.CurrentWindowCmd(serverSet)
+	cmd, err := acmelsp.CurrentWindowCmd(serverSet, fm)
 	if err != nil {
 		log.Fatalf("CurrentWindowCmd failed: %v\n", err)
 	}
