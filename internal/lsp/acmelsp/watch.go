@@ -28,12 +28,16 @@ func watchLog(ch chan<- *acme.LogEvent) {
 	}
 }
 
+// focusWindow represents the last focused window.
+//
+// Note that we can't cache the *acmeutil.Win for the window
+// because having the ctl file open prevents del event from
+// being delivered to acme/log file.
 type focusWin struct {
 	id   int
 	q0   int
 	pos  *protocol.TextDocumentPositionParams
 	name string
-	w    *acmeutil.Win // TODO(fhs): remove this because acme/log doesn't deliver del event if ctl file open (issue #9)
 	mu   sync.Mutex
 }
 
@@ -48,17 +52,18 @@ func (fw *focusWin) Reset() {
 	fw.q0 = -1
 	fw.pos = nil
 	fw.name = ""
-	if fw.w != nil {
-		fw.w.CloseFiles()
-		fw.w = nil
-	}
 }
 
 func (fw *focusWin) Update() bool {
+	if fw.id < 0 {
+		return false
+	}
 	w, err := acmeutil.OpenWin(fw.id)
 	if err != nil {
 		return false
 	}
+	defer w.CloseFiles()
+
 	q0, _, err := w.CurrentAddr()
 	if err != nil {
 		return false
@@ -73,7 +78,6 @@ func (fw *focusWin) Update() bool {
 	fw.q0 = q0
 	fw.pos = pos
 	fw.name = name
-	fw.w = w
 	return true
 }
 
@@ -134,16 +138,12 @@ func (w *outputWin) Close() {
 	w.CloseFiles()
 }
 
+// Update writes result of cmd to output window.
 func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
-	b, err := fw.w.ReadAll("body")
-	if err != nil {
-		log.Printf("failed to read source body: %v\n", err)
-		return
-	}
 	// Assume file is already opened by file management.
-	err = c.DidChange(fw.name, b)
+	err := w.fm.didChange(fw.id, fw.name)
 	if err != nil {
-		log.Printf("DidOpen failed: %v\n", err)
+		log.Printf("DidChange failed: %v\n", err)
 		return
 	}
 
@@ -189,6 +189,7 @@ loop:
 		select {
 		case fw := <-fch:
 			fw.mu.Lock()
+			// TODO(fhs): There is a rece. fw.Reset() may be called before we have the lock.
 			s, found, err := serverSet.StartForFile(fw.name)
 			if err != nil {
 				log.Printf("failed to start language server: %v\n", err)

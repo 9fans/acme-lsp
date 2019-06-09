@@ -52,6 +52,10 @@ func ManageFiles(serverSet *client.ServerSet, fm *FileManager) {
 
 // FileManager keeps track of open files in acme.
 // It is used to synchronize text with LSP server.
+//
+// Note that we can't cache the *acmeutil.Win for the windows
+// because having the ctl file open prevents del event from
+// being delivered to acme/log file.
 type FileManager struct {
 	ss   *client.ServerSet
 	wins map[string]struct{} // set of open files
