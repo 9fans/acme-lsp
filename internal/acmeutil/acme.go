@@ -3,6 +3,7 @@ package acmeutil
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -110,4 +111,19 @@ func (f *winReadWriter) Read(b []byte) (int, error) {
 
 func (f *winReadWriter) Write(b []byte) (int, error) {
 	return f.w.Write(f.name, b)
+}
+
+// Hijack returns the first window named name
+// found in the set of existing acme windows.
+func Hijack(name string) (*Win, error) {
+	wins, err := acme.Windows()
+	if err != nil {
+		return nil, fmt.Errorf("hijack %q: %v", name, err)
+	}
+	for _, info := range wins {
+		if info.Name == name {
+			return OpenWin(info.ID)
+		}
+	}
+	return nil, fmt.Errorf("hijack %q: window not found", name)
 }

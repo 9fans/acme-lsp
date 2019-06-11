@@ -30,7 +30,10 @@ func (dw *diagWin) restart() error {
 	if !dw.dead {
 		return nil
 	}
-	w, err := acmeutil.NewWin()
+	w, err := acmeutil.Hijack(dw.name)
+	if err != nil {
+		w, err = acmeutil.NewWin()
+	}
 	if err != nil {
 		return err
 	}
