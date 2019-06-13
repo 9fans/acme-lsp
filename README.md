@@ -26,9 +26,9 @@ incompatibilities with those or other servers.
 
 ## gopls
 
-First install gopls:
+First install the latest release of gopls:
 
-	go get -u golang.org/x/tools/cmd/gopls
+	GO111MODULE=on go get golang.org/x/tools/gopls@latest
 
 Add an empty plumbing rule to $HOME/lib/plumbing for acme-lsp:
 
