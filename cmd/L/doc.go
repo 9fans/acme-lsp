@@ -47,5 +47,14 @@ List of sub-commands:
 		new window is created where the output of the given command
 		is shown each time cursor position is changed.
 
+	ws
+		List current set of workspace directories.
+
+	ws+ <directories...>
+		Add given workspace directories.
+
+	ws- <directories...>
+		Remove given workspace directories.
+
 */
 package main
