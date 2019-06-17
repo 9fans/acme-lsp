@@ -21,8 +21,8 @@ incompatibilities with those or other servers.
 
 ## Installation
 
-	go get -u github.com/thomasduplessis/acme-lsp/cmd/acme-lsp
-	go get -u github.com/thomasduplessis/acme-lsp/cmd/L
+	go get -u github.com/fhs/acme-lsp/cmd/acme-lsp
+	go get -u github.com/fhs/acme-lsp/cmd/L
 
 ## gopls
 
