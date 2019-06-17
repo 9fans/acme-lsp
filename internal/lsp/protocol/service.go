@@ -181,7 +181,7 @@ type ServerCapabilities struct {
 	DocumentFormattingProvider       bool                             `json:"documentFormattingProvider,omitempty"`
 	DocumentRangeFormattingProvider  bool                             `json:"documentRangeFormattingProvider,omitempty"`
 	DocumentOnTypeFormattingProvider *DocumentOnTypeFormattingOptions `json:"documentOnTypeFormattingProvider,omitempty"`
-	RenameProvider                   bool                             `json:"renameProvider,omitempty"`
+	RenameProvider                   *RenameOptions                   `json:"renameProvider,omitempty"`
 	ExecuteCommandProvider           *ExecuteCommandOptions           `json:"executeCommandProvider,omitempty"`
 
 	/*Workspace defined:
@@ -251,6 +251,10 @@ type ExecuteCommandOptions struct {
 type ExecuteCommandParams struct {
 	Command   string        `json:"command"`
 	Arguments []interface{} `json:"arguments,omitempty"`
+}
+
+type RenameOptions struct {
+	PrepareProvider bool `json:"prepareProvider,omitempty"`
 }
 
 type CompletionItemKind int
