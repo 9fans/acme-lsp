@@ -1,9 +1,12 @@
 package acmelsp
 
 import (
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"time"
+	"unicode"
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
@@ -128,6 +131,30 @@ func (w *outputWin) Close() {
 	w.CloseFiles()
 }
 
+func readLeftRight(id int, q0 int) (left, right rune, err error) {
+	w, err := acmeutil.OpenWin(id)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer w.CloseFiles()
+
+	err = w.Addr("#%v,#%v", q0-1, q0+1)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	b, err := ioutil.ReadAll(w.FileReadWriter("xdata"))
+	if err != nil {
+		return 0, 0, err
+	}
+	r := []rune(string(b))
+	if len(r) != 2 {
+		// TODO(fhs): deal with EOF and beginning of file
+		return 0, 0, fmt.Errorf("could not find rune left and right of cursor")
+	}
+	return r[0], r[1], nil
+}
+
 func winPosition(id int) (*protocol.TextDocumentPositionParams, string, error) {
 	w, err := acmeutil.OpenWin(id)
 	if err != nil {
@@ -138,8 +165,38 @@ func winPosition(id int) (*protocol.TextDocumentPositionParams, string, error) {
 	return text.Position(w)
 }
 
+func isIdentifier(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsNumber(r) || r == '_'
+}
+
+func helpType(left, right rune) string {
+	if unicode.IsSpace(left) && unicode.IsSpace(right) {
+		return ""
+	}
+	if isIdentifier(left) && isIdentifier(right) {
+		return "hov"
+	}
+	switch left {
+	case '(', '[', '<', '{':
+		return "sig"
+	}
+	return "comp"
+}
+
 // Update writes result of cmd to output window.
 func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
+	if cmd == "auto" {
+		left, right, err := readLeftRight(fw.id, fw.q0)
+		if err != nil {
+			log.Printf("read left/right rune: %v\n", err)
+			return
+		}
+		cmd = helpType(left, right)
+		if cmd == "" {
+			return
+		}
+	}
+
 	pos, _, err := winPosition(fw.id)
 	if err != nil {
 		log.Printf("failed to get window position: %v\n", err)

@@ -140,6 +140,8 @@ func run(args []string) error {
 			return plumbAcmeCmd(nil, "watch-signature")
 		case "hov":
 			return plumbAcmeCmd(nil, "watch-hover")
+		case "auto":
+			return plumbAcmeCmd(nil, "watch-auto")
 		}
 		return fmt.Errorf("unknown win command %q", flag.Arg(1))
 	case "ws":

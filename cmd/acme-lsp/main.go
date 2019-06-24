@@ -175,6 +175,9 @@ func run(ss *client.ServerSet, fm *acmelsp.FileManager, data string, attr map[st
 	case "watch-hover":
 		go acmelsp.Watch(ss, fm, "hov")
 		return nil
+	case "watch-auto":
+		go acmelsp.Watch(ss, fm, "auto")
+		return nil
 	}
 	return fmt.Errorf("unknown command %v", args[0])
 }
