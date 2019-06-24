@@ -88,7 +88,7 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			h.Printf("window/logMessage unmarshal failed: %v\n", err)
 			return
 		}
-		if params.Type != protocol.Log || Debug {
+		if params.Type == protocol.MTError || params.Type == protocol.MTWarning || Debug {
 			h.Printf("log: LSP %v: %v\n", params.Type, params.Message)
 		}
 
