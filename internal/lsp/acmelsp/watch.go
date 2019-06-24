@@ -3,7 +3,6 @@ package acmelsp
 import (
 	"io"
 	"log"
-	"sync"
 	"time"
 
 	"9fans.net/go/acme"
@@ -36,9 +35,7 @@ func watchLog(ch chan<- *acme.LogEvent) {
 type focusWin struct {
 	id   int
 	q0   int
-	pos  *protocol.TextDocumentPositionParams
 	name string
-	mu   sync.Mutex
 }
 
 func newFocusWin() *focusWin {
@@ -50,11 +47,10 @@ func newFocusWin() *focusWin {
 func (fw *focusWin) Reset() {
 	fw.id = -1
 	fw.q0 = -1
-	fw.pos = nil
 	fw.name = ""
 }
 
-func (fw *focusWin) Update() bool {
+func (fw *focusWin) SetQ0() bool {
 	if fw.id < 0 {
 		return false
 	}
@@ -68,16 +64,7 @@ func (fw *focusWin) Update() bool {
 	if err != nil {
 		return false
 	}
-	if q0 == fw.q0 {
-		return false
-	}
-	pos, name, err := text.Position(w)
-	if err != nil {
-		return false
-	}
 	fw.q0 = q0
-	fw.pos = pos
-	fw.name = name
 	return true
 }
 
@@ -93,21 +80,24 @@ func notifyPosChange(serverSet *client.ServerSet, ch chan<- *focusWin) {
 	for {
 		select {
 		case ev := <-logch:
-			fw.mu.Lock()
 			if serverSet.MatchFile(ev.Name) != nil && ev.Op == "focus" {
+				// TODO(fhs): we should really make use of context
+				// and cancel outstanding rpc requests on previously focused window.
 				fw.id = ev.ID
+				fw.name = ev.Name
 			} else {
 				fw.Reset()
 			}
-			fw.mu.Unlock()
 
 		case <-ticker.C:
-			fw.mu.Lock()
-			if fw.Update() && pos[fw.id] != fw.q0 {
+			if fw.SetQ0() && pos[fw.id] != fw.q0 {
 				pos[fw.id] = fw.q0
-				ch <- fw
+				ch <- &focusWin{ // send a copy
+					id:   fw.id,
+					q0:   fw.q0,
+					name: fw.name,
+				}
 			}
-			fw.mu.Unlock()
 		}
 	}
 }
@@ -138,10 +128,26 @@ func (w *outputWin) Close() {
 	w.CloseFiles()
 }
 
+func winPosition(id int) (*protocol.TextDocumentPositionParams, string, error) {
+	w, err := acmeutil.OpenWin(id)
+	if err != nil {
+		return nil, "", err
+	}
+	defer w.CloseFiles()
+
+	return text.Position(w)
+}
+
 // Update writes result of cmd to output window.
 func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
+	pos, _, err := winPosition(fw.id)
+	if err != nil {
+		log.Printf("failed to get window position: %v\n", err)
+		return
+	}
+
 	// Assume file is already opened by file management.
-	err := w.fm.didChange(fw.id, fw.name)
+	err = w.fm.didChange(fw.id, fw.name)
 	if err != nil {
 		log.Printf("DidChange failed: %v\n", err)
 		return
@@ -150,18 +156,18 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	w.Clear()
 	switch cmd {
 	case "comp":
-		err = c.Completion(fw.pos, w.body)
+		err = c.Completion(pos, w.body)
 		if err != nil {
 			log.Printf("Completion failed: %v\n", err)
 		}
 
 	case "sig":
-		err = c.SignatureHelp(fw.pos, w.body)
+		err = c.SignatureHelp(pos, w.body)
 		if err != nil {
 			log.Printf("SignatureHelp failed: %v\n", err)
 		}
 	case "hov":
-		err = c.Hover(fw.pos, w.body)
+		err = c.Hover(pos, w.body)
 		if err != nil {
 			log.Printf("Hover failed: %v\n", err)
 		}
@@ -188,8 +194,6 @@ loop:
 	for {
 		select {
 		case fw := <-fch:
-			fw.mu.Lock()
-			// TODO(fhs): There is a rece. fw.Reset() may be called before we have the lock.
 			s, found, err := serverSet.StartForFile(fw.name)
 			if err != nil {
 				log.Printf("failed to start language server: %v\n", err)
@@ -197,7 +201,6 @@ loop:
 			if found {
 				w.Update(fw, s.Conn, cmd)
 			}
-			fw.mu.Unlock()
 
 		case ev := <-w.event:
 			if ev == nil {
