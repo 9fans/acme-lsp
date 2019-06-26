@@ -186,7 +186,7 @@ func main() {
 				},
 			}
 			if !reflect.DeepEqual(want, got) {
-				t.Errorf("defintion result is %q; expected %q", got, want)
+				t.Errorf("definition result is %q; expected %q", got, want)
 			}
 		})
 	}
@@ -239,7 +239,7 @@ func main() {
 				},
 			}
 			if !reflect.DeepEqual(want, got) {
-				t.Errorf("type defintion result is %q; expected %q", got, want)
+				t.Errorf("type definition result is %q; expected %q", got, want)
 			}
 		})
 	}
@@ -438,7 +438,7 @@ if __name__ == '__main__':
 			},
 		}
 		if !reflect.DeepEqual(want, got) {
-			t.Errorf("defintion result is %q; expected %q", got, want)
+			t.Errorf("definition result is %q; expected %q", got, want)
 		}
 	})
 }

@@ -202,7 +202,7 @@ type ServerCapabilities struct {
 			 * change notifications.
 			 *
 			 * If a strings is provided the string is treated as a ID
-			 * under which the notification is registed on the client
+			 * under which the notification is registered on the client
 			 * side. The ID can be used to unregister for these events
 			 * using the `client/unregisterCapability` request.
 			 */
@@ -769,7 +769,7 @@ type WorkspaceFolder struct {
 
 	/*Name defined:
 	 * The name of the workspace folder. Used to refer to this
-	 * workspace folder in thge user interface.
+	 * workspace folder in the user interface.
 	 */
 	Name string `json:"name"`
 }
