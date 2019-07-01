@@ -183,12 +183,18 @@ func helpType(left, right rune) string {
 	return "comp"
 }
 
+func dprintf(format string, args ...interface{}) {
+	if client.Debug {
+		log.Printf(format, args...)
+	}
+}
+
 // Update writes result of cmd to output window.
 func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	if cmd == "auto" {
 		left, right, err := readLeftRight(fw.id, fw.q0)
 		if err != nil {
-			log.Printf("read left/right rune: %v\n", err)
+			dprintf("read left/right rune: %v\n", err)
 			return
 		}
 		cmd = helpType(left, right)
@@ -199,14 +205,14 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 
 	pos, _, err := winPosition(fw.id)
 	if err != nil {
-		log.Printf("failed to get window position: %v\n", err)
+		dprintf("failed to get window position: %v\n", err)
 		return
 	}
 
 	// Assume file is already opened by file management.
 	err = w.fm.didChange(fw.id, fw.name)
 	if err != nil {
-		log.Printf("DidChange failed: %v\n", err)
+		dprintf("DidChange failed: %v\n", err)
 		return
 	}
 
@@ -215,18 +221,18 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	case "comp":
 		err = c.Completion(pos, w.body)
 		if err != nil {
-			log.Printf("Completion failed: %v\n", err)
+			dprintf("Completion failed: %v\n", err)
 		}
 
 	case "sig":
 		err = c.SignatureHelp(pos, w.body)
 		if err != nil {
-			log.Printf("SignatureHelp failed: %v\n", err)
+			dprintf("SignatureHelp failed: %v\n", err)
 		}
 	case "hov":
 		err = c.Hover(pos, w.body)
 		if err != nil {
-			log.Printf("Hover failed: %v\n", err)
+			dprintf("Hover failed: %v\n", err)
 		}
 	default:
 		log.Fatalf("invalid command %q\n", cmd)
