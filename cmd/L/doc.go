@@ -50,11 +50,13 @@ List of sub-commands:
 	ws
 		List current set of workspace directories.
 
-	ws+ <directories...>
-		Add given workspace directories.
+	ws+ [directories...]
+		Add given directories to the set of workspace directories.
+		Current working directory is added if no directory is specified.
 
-	ws- <directories...>
-		Remove given workspace directories.
+	ws- [directories...]
+		Remove given directories to the set of workspace directories.
+		Current working directory is removed if no directory is specified.
 
 */
 package main

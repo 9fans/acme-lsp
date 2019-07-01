@@ -66,11 +66,13 @@ List of sub-commands:
 	ws
 		List current set of workspace directories.
 
-	ws+ <directories...>
-		Add given workspace directories.
+	ws+ [directories...]
+		Add given directories to the set of workspace directories.
+		Current working directory is added if no directory is specified.
 
-	ws- <directories...>
-		Remove given workspace directories.
+	ws- [directories...]
+		Remove given directories to the set of workspace directories.
+		Current working directory is removed if no directory is specified.
 `
 
 func usage() {
@@ -147,20 +149,14 @@ func run(args []string) error {
 	case "ws":
 		return plumbCmd(nil, "workspaces")
 	case "ws+":
-		if len(args) < 2 {
-			usage()
-		}
-		dirs, err := client.AbsDirs(args[1:])
+		dirs, err := dirsOrCurrentDir(args[1:])
 		if err != nil {
 			return err
 		}
 		args = append([]string{"workspaces-add"}, dirs...)
 		return plumbCmd(nil, args...)
 	case "ws-":
-		if len(args) < 2 {
-			usage()
-		}
-		dirs, err := client.AbsDirs(args[1:])
+		dirs, err := dirsOrCurrentDir(args[1:])
 		if err != nil {
 			return err
 		}
@@ -212,4 +208,15 @@ func portOpen() bool {
 	}
 	defer fid.Close()
 	return true
+}
+
+func dirsOrCurrentDir(dirs []string) ([]string, error) {
+	if len(dirs) == 0 {
+		d, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		dirs = []string{d}
+	}
+	return client.AbsDirs(dirs)
 }
