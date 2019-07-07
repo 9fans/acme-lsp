@@ -241,22 +241,16 @@ func (c *Conn) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 	return nil
 }
 
-func (c *Conn) Completion(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+func (c *Conn) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
 	comp := &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
 		Context:                    protocol.CompletionContext{},
 	}
 	var cl protocol.CompletionList
 	if err := c.rpc.Call(c.ctx, "textDocument/completion", comp, &cl); err != nil {
-		return err
+		return nil, err
 	}
-	if len(cl.Items) == 0 {
-		fmt.Fprintf(w, "no completion\n")
-	}
-	for _, item := range cl.Items {
-		fmt.Fprintf(w, "%v %v\n", item.Label, item.Detail)
-	}
-	return nil
+	return cl.Items, nil
 }
 
 func (c *Conn) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {

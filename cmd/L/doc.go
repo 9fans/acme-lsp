@@ -10,8 +10,11 @@ acme-lsp, which uses it to compute the context for LSP commands.
 
 List of sub-commands:
 
-	comp
-		Show auto-completion for the current cursor position.
+	comp [-e]
+		Ask acme-lsp to print candidate completions at current
+		cursor position. If -e (edit) flag is given and there
+		is only one candidate, the completion is applied instead
+		of being printed.
 
 	def
 		Find where identifier at the cursor position is define and

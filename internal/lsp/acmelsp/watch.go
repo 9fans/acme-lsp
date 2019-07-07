@@ -219,10 +219,11 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	w.Clear()
 	switch cmd {
 	case "comp":
-		err = c.Completion(pos, w.body)
+		items, err := c.Completion(pos)
 		if err != nil {
 			dprintf("Completion failed: %v\n", err)
 		}
+		printCompletionItems(w.body, items)
 
 	case "sig":
 		err = c.SignatureHelp(pos, w.body)

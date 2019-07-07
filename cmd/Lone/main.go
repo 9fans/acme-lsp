@@ -126,7 +126,7 @@ func main() {
 
 	switch flag.Arg(0) {
 	case "comp":
-		err = cmd.Completion()
+		err = cmd.Completion(false)
 	case "def":
 		err = cmd.Definition()
 	case "fmt":

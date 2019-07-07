@@ -4,6 +4,7 @@ package acmelsp
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -70,8 +71,33 @@ func (c *Cmd) Close() {
 	c.win.CloseFiles()
 }
 
-func (c *Cmd) Completion() error {
-	return c.conn.Completion(c.pos, os.Stdout)
+func (c *Cmd) Completion(edit bool) error {
+	items, err := c.conn.Completion(c.pos)
+	if err != nil {
+		return err
+	}
+	if edit && len(items) == 1 {
+		textEdit := items[0].TextEdit
+		if textEdit == nil {
+			// TODO(fhs): Use insertText or label instead.
+			return fmt.Errorf("nil TextEdit in completion item")
+		}
+		if err := text.Edit(c.win, []protocol.TextEdit{*textEdit}); err != nil {
+			return errors.Wrapf(err, "failed to apply completion edit")
+		}
+		return nil
+	}
+	printCompletionItems(os.Stdout, items)
+	return nil
+}
+
+func printCompletionItems(w io.Writer, items []protocol.CompletionItem) {
+	if len(items) == 0 {
+		fmt.Fprintf(w, "no completion\n")
+	}
+	for _, item := range items {
+		fmt.Fprintf(w, "%v %v\n", item.Label, item.Detail)
+	}
 }
 
 func (c *Cmd) Definition() error {

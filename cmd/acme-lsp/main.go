@@ -147,7 +147,9 @@ func run(ss *client.ServerSet, fm *acmelsp.FileManager, data string, attr map[st
 
 	switch args[0] {
 	case "completion":
-		return cmd.Completion()
+		return cmd.Completion(false)
+	case "completion-edit":
+		return cmd.Completion(true)
 	case "definition":
 		return cmd.Definition()
 	case "type-definition":
