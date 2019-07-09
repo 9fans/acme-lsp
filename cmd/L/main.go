@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"9fans.net/go/plan9"
+	p9client "9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/pkg/errors"
@@ -19,8 +24,13 @@ const mainDoc = `The program L sends messages to the Language Server Protocol
 proxy server acme-lsp.
 
 L is usually run from within the acme text editor, where $winid
-environment variable is set to the window ID.  It sends $winid to
-acme-lsp, which uses it to compute the context for LSP commands.
+environment variable is set to the ID of currently focused window.
+It sends this ID to acme-lsp, which uses it to compute the context for
+LSP commands.
+
+If L is run outside of acme (therefore $winid is not set), L will
+attempt to find the focused window ID by connecting to acmefocused
+(https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
 
 	Usage: L <sub-command> [args...]
 
@@ -196,9 +206,9 @@ func plumbCmd(attr *plumb.Attribute, args ...string) error {
 }
 
 func plumbAcmeCmd(attr *plumb.Attribute, args ...string) error {
-	winid := os.Getenv("winid")
-	if winid == "" {
-		return fmt.Errorf("$winid is empty")
+	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
+	if err != nil {
+		return errors.Wrap(err, "could not get focused window ID")
 	}
 	attr = &plumb.Attribute{
 		Name:  "winid",
@@ -226,4 +236,21 @@ func dirsOrCurrentDir(dirs []string) ([]string, error) {
 		dirs = []string{d}
 	}
 	return client.AbsDirs(dirs)
+}
+
+func getFocusedWinID(addr string) (string, error) {
+	winid := os.Getenv("winid")
+	if winid == "" {
+		conn, err := net.Dial("unix", addr)
+		if err != nil {
+			return "", errors.Wrap(err, "$winid is empty and could not dial acmefocused")
+		}
+		defer conn.Close()
+		b, err := ioutil.ReadAll(conn)
+		if err != nil {
+			return "", errors.Wrap(err, "$winid is empty and could not read acmefocused")
+		}
+		return string(bytes.TrimSpace(b)), nil
+	}
+	return winid, nil
 }

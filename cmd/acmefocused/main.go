@@ -36,6 +36,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("listen failed: %v\n", err)
 	}
+	defer ln.Close()
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
