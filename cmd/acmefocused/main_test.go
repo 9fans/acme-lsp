@@ -44,8 +44,12 @@ func TestListenAndServe(t *testing.T) {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	killed := make(chan struct{})
+	err = cmd.Start()
+	if err != nil {
+		t.Fatalf("command start failed: %v", err)
+	}
 	go func() {
-		err := cmd.Run()
+		err := cmd.Wait()
 		if e, ok := err.(*exec.ExitError); !ok || !strings.Contains(e.Error(), "killed") {
 			t.Errorf("process exited with error %v; want exit due to kill", err)
 		}
