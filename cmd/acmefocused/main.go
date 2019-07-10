@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
+	"syscall"
 
 	"9fans.net/go/acme"
 	"9fans.net/go/plan9/client"
@@ -29,25 +31,12 @@ import (
 
 func main() {
 	var fw focusedWin
-
 	go fw.readLog()
 
-	ln, err := net.Listen("unix", filepath.Join(client.Namespace(), "acmefocused"))
-	if err != nil {
-		log.Fatalf("listen failed: %v\n", err)
-	}
-	defer ln.Close()
-
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Fatalf("accept failed: %v\n", err)
-		}
-		go func() {
-			fmt.Fprintf(conn, "%d\n", fw.ID())
-			conn.Close()
-		}()
-	}
+	listenAndServe(listenAddr(), func(conn net.Conn) {
+		fmt.Fprintf(conn, "%d\n", fw.ID())
+		conn.Close()
+	})
 }
 
 type focusedWin struct {
@@ -79,4 +68,59 @@ func (fw *focusedWin) readLog() {
 			fw.mu.Unlock()
 		}
 	}
+}
+
+func listenAddr() string {
+	return filepath.Join(client.Namespace(), "acmefocused")
+}
+
+func listenAndServe(addr string, handle func(net.Conn)) {
+	ln, err := Listen("unix", addr)
+	if err != nil {
+		log.Fatalf("listen failed: %v\n", err)
+	}
+	defer ln.Close()
+
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			log.Fatalf("accept failed: %v\n", err)
+		}
+		go handle(conn)
+	}
+}
+
+// Listen is the same as net.Listen but it reuses dead unix domain socket.
+func Listen(network, address string) (net.Listener, error) {
+	ln, err := net.Listen(network, address)
+	if err != nil && network == "unix" && isAddrInUse(err) {
+		if _, err1 := net.Dial(network, address); !isConnRefused(err1) {
+			return nil, err // Listen error
+		}
+		// Dead socket, so remove it.
+		err = os.Remove(address)
+		if err != nil {
+			return nil, err
+		}
+		ln, err = net.Listen(network, address)
+	}
+	return ln, err
+}
+
+func isAddrInUse(err error) bool {
+	if err, ok := err.(*net.OpError); ok {
+		if err, ok := err.Err.(*os.SyscallError); ok {
+			return err.Err == syscall.EADDRINUSE
+		}
+	}
+	return false
+}
+
+func isConnRefused(err error) bool {
+	if err, ok := err.(*net.OpError); ok {
+		if err, ok := err.Err.(*os.SyscallError); ok {
+			return err.Err == syscall.ECONNREFUSED
+		}
+	}
+	return false
 }
