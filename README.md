@@ -52,6 +52,32 @@ will update import paths and gofmt the window buffer if needed.  It also
 enables commands like `L def` (jump to defenition), `L sig` (signature
 help), etc. within acme.
 
+## Hints & Tips
+
+* If a file gets out of sync in the LSP server (e.g. because you edited
+the file outside of acme), executing `Get` on the file will update it
+in the LSP server.
+
+* Create custom keybindings that allow you to do completion
+(`L comp -e`) and show signature help (`L sig`) while you're
+typing. This can be achieved by using a general keybinding daemon
+(e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
+in X11) and running
+[acmefocused](https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
+
+* Create scripts like `Ldef`, `Lrefs`, `Ltype`, etc., so that you can
+easily execute those commands with a single middle click:
+```
+for cmd in comp def fmt hov refs rn sig syms type assist ws ws+ ws-
+do
+	cat > L${cmd} <<EOF
+#!/bin/sh
+exec L ${cmd} "\$@"
+EOF
+	chmod +x L${cmd}
+done
+```
+
 ## See also
 
 * https://github.com/davidrjenni/A - Similar tool but only for Go programming language
