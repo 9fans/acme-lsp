@@ -52,10 +52,14 @@ List of sub-commands:
 	syms
 		List symbols in the current file.
 
-	win <command>
-		The command argument can be either "comp", "hov" or "sig". A
-		new window is created where the output of the given command
-		is shown each time cursor position is changed.
+	assist [comp|hov|sig]
+		A new window is created where completion (comp), hover
+		(hov), or signature help (sig) output is shown depending
+		on the cursor position in the focused window and the
+		text surrounding the cursor. If the optional argument is
+		given, the output will be limited to only that command.
+		Note: this is a very experimental feature, and may not
+		be very useful in practice.
 
   -debug
     	turn on debugging prints

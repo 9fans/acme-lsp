@@ -50,7 +50,7 @@ List of sub-commands:
 		Find where the type of identifier at the cursor position is define
 		and send the location to the plumber.
 
-	win [comp|hov|sig]
+	assist [comp|hov|sig]
 		A new window is created where completion (comp), hover
 		(hov), or signature help (sig) output is shown depending
 		on the cursor position in the focused window and the

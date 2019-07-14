@@ -169,16 +169,16 @@ func run(ss *client.ServerSet, fm *acmelsp.FileManager, data string, attr map[st
 	case "symbols":
 		return cmd.Symbols()
 	case "watch-completion":
-		go acmelsp.Watch(ss, fm, "comp")
+		go acmelsp.Assist(ss, fm, "comp")
 		return nil
 	case "watch-signature":
-		go acmelsp.Watch(ss, fm, "sig")
+		go acmelsp.Assist(ss, fm, "sig")
 		return nil
 	case "watch-hover":
-		go acmelsp.Watch(ss, fm, "hov")
+		go acmelsp.Assist(ss, fm, "hov")
 		return nil
 	case "watch-auto":
-		go acmelsp.Watch(ss, fm, "auto")
+		go acmelsp.Assist(ss, fm, "auto")
 		return nil
 	}
 	return fmt.Errorf("unknown command %v", args[0])

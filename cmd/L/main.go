@@ -71,7 +71,7 @@ List of sub-commands:
 		Find where the type of identifier at the cursor position is define
 		and send the location to the plumber.
 
-	win [comp|hov|sig]
+	assist [comp|hov|sig]
 		A new window is created where completion (comp), hover
 		(hov), or signature help (sig) output is shown depending
 		on the cursor position in the focused window and the
@@ -152,7 +152,7 @@ func run(args []string) error {
 		return plumbAcmeCmd(nil, "symbols")
 	case "type":
 		return plumbAcmeCmd(nil, "type-definition")
-	case "win":
+	case "win", "assist": // "win" is deprecated
 		args = args[1:]
 		if len(args) == 0 {
 			return plumbAcmeCmd(nil, "watch-auto")
@@ -167,7 +167,7 @@ func run(args []string) error {
 		case "auto":
 			return plumbAcmeCmd(nil, "watch-auto")
 		}
-		return fmt.Errorf("unknown win command %q", args[0])
+		return fmt.Errorf("unknown assist command %q", args[0])
 	case "ws":
 		return plumbCmd(nil, "workspaces")
 	case "ws+":

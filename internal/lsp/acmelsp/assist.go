@@ -241,11 +241,15 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 	w.Ctl("clean")
 }
 
-// Watch creates an acme window where output of cmd is written after each
-// cursor position change in acme. Cmd is either 'comp', 'sig', or 'hov',
-// for completion, signature, and hover respectively.
-func Watch(serverSet *client.ServerSet, fm *FileManager, cmd string) {
-	w, err := newOutputWin(fm, "/LSP/win/"+cmd)
+// Assist creates an acme window where output of cmd is written after each
+// cursor position change in acme. Cmd is either "comp", "sig", "hov", or "auto"
+// for completion, signature help, hover, or auto-detection of the former three.
+func Assist(serverSet *client.ServerSet, fm *FileManager, cmd string) {
+	name := "/LSP/assist"
+	if cmd != "auto" {
+		name += "/" + cmd
+	}
+	w, err := newOutputWin(fm, name)
 	if err != nil {
 		log.Fatalf("failed to create acme window: %v\n", err)
 	}
