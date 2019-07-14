@@ -26,8 +26,12 @@ and then the rules must be reload by running:
 
 	cat $HOME/lib/plumbing | 9p write plumb/rules
 
-Acme-lsp also watches for Put executed in an acme window, organizes
-import paths in the window and formats it.
+Acme-lsp watches for files created (New), loaded (Get), saved (Put), or
+deleted (Del) in acme, and tells the LSP server about these changes. The
+LSP server in turn responds by sending diagnostics information (compiler
+errors, lint errors, etc.) which are shown in a "/LSP/Diagnostics" window.
+Also, when Put is executed in an acme window, acme-lsp organizes import
+paths in the window and formats it.
 
 	Usage: acme-lsp [flags]
 
