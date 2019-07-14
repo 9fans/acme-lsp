@@ -3,8 +3,13 @@ The program L sends messages to the Language Server Protocol
 proxy server acme-lsp.
 
 L is usually run from within the acme text editor, where $winid
-environment variable is set to the window ID.  It sends $winid to
-acme-lsp, which uses it to compute the context for LSP commands.
+environment variable is set to the ID of currently focused window.
+It sends this ID to acme-lsp, which uses it to compute the context for
+LSP commands.
+
+If L is run outside of acme (therefore $winid is not set), L will
+attempt to find the focused window ID by connecting to acmefocused
+(https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
 
 	Usage: L <sub-command> [args...]
 
@@ -45,10 +50,14 @@ List of sub-commands:
 		Find where the type of identifier at the cursor position is define
 		and send the location to the plumber.
 
-	win <command>
-		The command argument can be either "comp", "hov" or "sig". A
-		new window is created where the output of the given command
-		is shown each time cursor position is changed.
+	win [comp|hov|sig]
+		A new window is created where completion (comp), hover
+		(hov), or signature help (sig) output is shown depending
+		on the cursor position in the focused window and the
+		text surrounding the cursor. If the optional argument is
+		given, the output will be limited to only that command.
+		Note: this is a very experimental feature, and may not
+		be very useful in practice.
 
 	ws
 		List current set of workspace directories.

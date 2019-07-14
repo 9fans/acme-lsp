@@ -71,10 +71,14 @@ List of sub-commands:
 		Find where the type of identifier at the cursor position is define
 		and send the location to the plumber.
 
-	win <command>
-		The command argument can be either "comp", "hov" or "sig". A
-		new window is created where the output of the given command
-		is shown each time cursor position is changed.
+	win [comp|hov|sig]
+		A new window is created where completion (comp), hover
+		(hov), or signature help (sig) output is shown depending
+		on the cursor position in the focused window and the
+		text surrounding the cursor. If the optional argument is
+		given, the output will be limited to only that command.
+		Note: this is a very experimental feature, and may not
+		be very useful in practice.
 
 	ws
 		List current set of workspace directories.
@@ -149,10 +153,11 @@ func run(args []string) error {
 	case "type":
 		return plumbAcmeCmd(nil, "type-definition")
 	case "win":
-		if len(args) < 2 {
-			usage()
+		args = args[1:]
+		if len(args) == 0 {
+			return plumbAcmeCmd(nil, "watch-auto")
 		}
-		switch args[1] {
+		switch args[0] {
 		case "comp":
 			return plumbAcmeCmd(nil, "watch-completion")
 		case "sig":
@@ -162,7 +167,7 @@ func run(args []string) error {
 		case "auto":
 			return plumbAcmeCmd(nil, "watch-auto")
 		}
-		return fmt.Errorf("unknown win command %q", flag.Arg(1))
+		return fmt.Errorf("unknown win command %q", args[0])
 	case "ws":
 		return plumbCmd(nil, "workspaces")
 	case "ws+":
