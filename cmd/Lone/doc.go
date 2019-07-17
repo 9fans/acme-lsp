@@ -1,9 +1,9 @@
 /*
 The program Lone is a standalone client for the acme text editor that
-interacts with a Language Server. (deprecated by L)
+interacts with a Language Server.
 
-Note: this program is similar to the L command, except it also does
-the work of acme-lsp command by executing a LSP server on demand. It's
+Deprecated: This program is similar to the L command, except it also does
+the work of acme-lsp command by executing a LSP server on-demand. It's
 recommended to use the L and acme-lsp commands instead, which takes
 advantage of LSP server caches and should give faster responses.
 
