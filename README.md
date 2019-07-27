@@ -9,9 +9,13 @@
 The main tool is
 [acme-lsp](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp),
 which listens on the plumber port `lsp` for commands from the [L
-command](https://godoc.org/github.com/fhs/acme-lsp/cmd/L). It also
-watches for `Put` executed in an acme window, organizes import paths in
-the window and formats it.
+command](https://godoc.org/github.com/fhs/acme-lsp/cmd/L).
+It also watches for files created (`New`), loaded (`Get`), saved
+(`Put`), or deleted (`Del`) in acme, and tells the LSP server about
+these changes. The LSP server in turn responds by sending diagnostics
+information (compiler errors, lint errors, etc.) which are shown in an
+`acme` window.  When Put is executed in an acme window, `acme-lsp`
+also organizes import paths in the window and formats it.
 
 Currently, acme-lsp has been tested with
 [gopls](https://godoc.org/golang.org/x/tools/cmd/gopls),
@@ -49,21 +53,16 @@ by using the `L ws+` and `L ws-` sub-commands.
 
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also
-enables commands like `L def` (jump to defenition), `L sig` (signature
-help), etc. within acme.
+enables commands like `L def` (jump to defenition), `L refs` (list of
+references), etc. within acme. Note: any output from these commands are
+printed to stdout by `acme-lsp`, so it's beneficial to start `acme-lsp` from
+within acme, where the output is written to `+Errors` window.
 
 ## Hints & Tips
 
 * If a file gets out of sync in the LSP server (e.g. because you edited
 the file outside of acme), executing `Get` on the file will update it
 in the LSP server.
-
-* Create custom keybindings that allow you to do completion
-(`L comp -e`) and show signature help (`L sig`) while you're
-typing. This can be achieved by using a general keybinding daemon
-(e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
-in X11) and running
-[acmefocused](https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
 
 * Create scripts like `Ldef`, `Lrefs`, `Ltype`, etc., so that you can
 easily execute those commands with a single middle click:
@@ -78,8 +77,15 @@ EOF
 done
 ```
 
+* Create custom keybindings that allow you to do completion
+(`L comp -e`) and show signature help (`L sig`) while you're
+typing. This can be achieved by using a general keybinding daemon
+(e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
+in X11) and running
+[acmefocused](https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
+
 ## See also
 
 * https://github.com/davidrjenni/A - Similar tool but only for Go programming language
-* https://godoc.org/9fans.net/go/acme/acmego - Similar to `L monitor` sub-command but only for Go
+* https://godoc.org/9fans.net/go/acme/acmego - Implements formatting and import fixes for Go
 * https://godoc.org/github.com/fhs/misc/cmd/acmepy - Python formatter based on acmego

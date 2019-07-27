@@ -26,7 +26,8 @@ proxy server acme-lsp.
 L is usually run from within the acme text editor, where $winid
 environment variable is set to the ID of currently focused window.
 It sends this ID to acme-lsp, which uses it to compute the context for
-LSP commands.
+LSP commands. Note: L merely asks acme-lsp to run an LSP command--any
+output of the command is printed to stdout by acme-lsp, not L.
 
 If L is run outside of acme (therefore $winid is not set), L will
 attempt to find the focused window ID by connecting to acmefocused
@@ -37,10 +38,9 @@ attempt to find the focused window ID by connecting to acmefocused
 List of sub-commands:
 
 	comp [-e]
-		Ask acme-lsp to print candidate completions at current
-		cursor position. If -e (edit) flag is given and there
-		is only one candidate, the completion is applied instead
-		of being printed.
+		Print candidate completions at current cursor position. If
+		-e (edit) flag is given and there is only one candidate,
+		the completion is applied instead of being printed.
 
 	def
 		Find where identifier at the cursor position is define and
