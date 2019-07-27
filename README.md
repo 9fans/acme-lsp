@@ -14,10 +14,10 @@ It also watches for files created (`New`), loaded (`Get`), saved
 (`Put`), or deleted (`Del`) in acme, and tells the LSP server about
 these changes. The LSP server in turn responds by sending diagnostics
 information (compiler errors, lint errors, etc.) which are shown in an
-`acme` window.  When Put is executed in an acme window, `acme-lsp`
+acme window.  When `Put` is executed in an acme window, `acme-lsp`
 also organizes import paths in the window and formats it.
 
-Currently, acme-lsp has been tested with
+Currently, `acme-lsp` has been tested with
 [gopls](https://godoc.org/golang.org/x/tools/cmd/gopls),
 [go-langserver](https://github.com/sourcegraph/go-langserver) and
 [pyls](https://github.com/palantir/python-language-server). Please report
