@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestTextDocumentSyncOptionsOrKind_MarshalUnmarshalJSON(t *testing.T) {
@@ -224,6 +226,33 @@ func TestMessageTypeString(t *testing.T) {
 		if s != test.s {
 			t.Errorf("String representation of MessageType(%v) is %v; expected %v",
 				int(test.m), s, test.s)
+		}
+	}
+}
+
+func TestChangeNotificationsUnmarshalJSON(t *testing.T) {
+	tt := []struct {
+		data []byte
+		cn   ChangeNotifications
+	}{
+		{[]byte("true"), ChangeNotifications{Value: true}},
+		{[]byte("false"), ChangeNotifications{Value: false}},
+		{[]byte(`"true"`), ChangeNotifications{Value: "true"}},
+		{[]byte(`"false"`), ChangeNotifications{Value: "false"}},
+		{
+			[]byte(`"workspace/didChangeWorkspaceFolders"`), // gopls
+			ChangeNotifications{Value: "workspace/didChangeWorkspaceFolders"},
+		},
+	}
+
+	for _, tc := range tt {
+		var cn ChangeNotifications
+		err := json.Unmarshal(tc.data, &cn)
+		if err != nil {
+			t.Fatalf("unmarshal of %q returned error %v", tc.data, err)
+		}
+		if got, want := &cn, &tc.cn; !cmp.Equal(got, want) {
+			t.Errorf("unmarshal of %q returned %#v; want %#v", tc.data, got, want)
 		}
 	}
 }

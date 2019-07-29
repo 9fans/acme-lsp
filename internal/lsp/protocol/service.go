@@ -206,7 +206,7 @@ type ServerCapabilities struct {
 			 * side. The ID can be used to unregister for these events
 			 * using the `client/unregisterCapability` request.
 			 */
-			ChangeNotifications string `json:"changeNotifications,omitempty"` // string | boolean
+			ChangeNotifications ChangeNotifications `json:"changeNotifications,omitempty"` // string | boolean
 		} `json:"workspaceFolders,omitempty"`
 	} `json:"workspace,omitempty"`
 
@@ -224,6 +224,27 @@ type ServerCapabilities struct {
 	XWorkspaceSymbolByProperties bool `json:"xworkspaceSymbolByProperties,omitempty"`
 
 	Experimental interface{} `json:"experimental,omitempty"`
+}
+
+// ChangeNotifications contains either a bool or a string value.
+type ChangeNotifications struct {
+	Value interface{}
+}
+
+// UnmarshalJSON unmarshals JSON data into ChangeNotifications.
+func (cn *ChangeNotifications) UnmarshalJSON(data []byte) error {
+	var b bool
+	if err := json.Unmarshal(data, &b); err == nil {
+		cn.Value = b
+		return nil
+	}
+
+	var s string
+	err := json.Unmarshal(data, &s)
+	if err == nil {
+		cn.Value = s
+	}
+	return err
 }
 
 type CompletionOptions struct {
