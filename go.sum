@@ -2,13 +2,5 @@
 9fans.net/go v0.0.0-20181112161441-237454027057/go.mod h1:diCsxrliIURU9xsYtjCp5AbpQKqdhKmf0ujWDUSkfoY=
 github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
-github.com/pkg/errors v0.8.0 h1:WdK/asTD0HN+q6hsWO3/vpuAkAr+tw6aNJNDFFf0+qw=
-github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
-github.com/sourcegraph/go-lsp v0.0.0-20181119182933-0c7d621186c1 h1:O1d7nVzpGmP5pGAZBSlp9TSpjNwwI0xThxhPd9oVJuU=
-github.com/sourcegraph/go-lsp v0.0.0-20181119182933-0c7d621186c1/go.mod h1:tpps84QRlOVVLYk5QpKYX8Tr289D1v/UTWDLqeguiqM=
-github.com/sourcegraph/jsonrpc2 v0.0.0-20180831160525-549eb959f029 h1:86fjxPjv7RGdGho8ShBSEDZQPERPNnZbny8fJ0FcOGo=
-github.com/sourcegraph/jsonrpc2 v0.0.0-20180831160525-549eb959f029/go.mod h1:eESpbCslcLDs8j2D7IEdGVgul7xuk9odqDTaor30IUU=
-github.com/sourcegraph/jsonrpc2 v0.0.0-20190106185902-35a74f039c6a h1:jTZwOlrDhmk4Ez2vhWh7kA0eKUahp1lCO2uyM4fi/Qk=
-github.com/sourcegraph/jsonrpc2 v0.0.0-20190106185902-35a74f039c6a/go.mod h1:eESpbCslcLDs8j2D7IEdGVgul7xuk9odqDTaor30IUU=

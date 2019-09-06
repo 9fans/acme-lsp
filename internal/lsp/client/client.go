@@ -12,10 +12,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fhs/acme-lsp/internal/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/jsonrpc2"
 )
 
 var Debug = false
@@ -36,6 +36,7 @@ var _ = (jsonrpc2.Handler)(&handler{})
 // handler handles JSON-RPC requests and notifications.
 // Diagnostics and other messages sent by the server are printed to writer w.
 type handler struct {
+	jsonrpc2.EmptyHandler
 	w io.Writer
 
 	diagWriter DiagnosticsWriter
@@ -59,34 +60,34 @@ func (h *handler) updateDiagnostics(params *protocol.PublishDiagnosticsParams) {
 	h.diagWriter.WriteDiagnostics(h.diag)
 }
 
-func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+func (h *handler) Deliver(ctx context.Context, req *jsonrpc2.Request, delivered bool) bool {
 	if strings.HasPrefix(req.Method, "$/") {
 		// Ignore server dependent notifications
 		if Debug {
 			h.Printf("Handle: got request %#v\n", req)
 		}
-		return
+		return true
 	}
 	switch req.Method {
 	case "textDocument/publishDiagnostics":
 		var params protocol.PublishDiagnosticsParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			h.Printf("diagnostics unmarshal failed: %v\n", err)
-			return
+			return true
 		}
 		h.updateDiagnostics(&params)
 	case "window/showMessage":
 		var params protocol.ShowMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			h.Printf("window/showMessage unmarshal failed: %v\n", err)
-			return
+			return true
 		}
 		h.Printf("LSP %v: %v\n", params.Type, params.Message)
 	case "window/logMessage":
 		var params protocol.LogMessageParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			h.Printf("window/logMessage unmarshal failed: %v\n", err)
-			return
+			return true
 		}
 		if params.Type == protocol.MTError || params.Type == protocol.MTWarning || Debug {
 			h.Printf("log: LSP %v: %v\n", params.Type, params.Message)
@@ -95,6 +96,7 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 	default:
 		h.Printf("Handle: got request %#v\n", req)
 	}
+	return true
 }
 
 // Config contains LSP client configuration values.
@@ -114,12 +116,19 @@ type Conn struct {
 
 func New(conn net.Conn, cfg *Config) (*Conn, error) {
 	ctx := context.Background()
-	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
-	rpc := jsonrpc2.NewConn(ctx, stream, &handler{
+	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	rpc := jsonrpc2.NewConn(stream)
+	rpc.AddHandler(&handler{
 		w:          cfg.Writer,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
+	go func() {
+		err := rpc.Run(ctx)
+		if err != nil {
+			fmt.Fprintf(cfg.Writer, "connection terminated: %v", err)
+		}
+	}()
 
 	d, err := filepath.Abs(cfg.RootDir)
 	if err != nil {
@@ -149,7 +158,8 @@ func New(conn net.Conn, cfg *Config) (*Conn, error) {
 }
 
 func (c *Conn) Close() error {
-	return c.rpc.Close()
+	// TODO(fhs): Cancel all outstanding requests?
+	return nil
 }
 
 func (c *Conn) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
