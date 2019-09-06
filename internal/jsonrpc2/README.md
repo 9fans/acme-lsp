@@ -1,0 +1,1 @@
+This package is copied from [golang.org/x/tools/internal/jsonrpc2](https://godoc.org/golang.org/x/tools/internal/jsonrpc2) (as of Sep 6, 2019, revision [93dcc2f04](https://github.com/golang/tools/commit/93dcc2f048f5c4d0369b73a355ba598c8e61e48d)).
