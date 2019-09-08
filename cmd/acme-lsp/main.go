@@ -1,21 +1,13 @@
 package main
 
 import (
-	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"strings"
-	"time"
 
-	"9fans.net/go/plan9"
-	p9client "9fans.net/go/plan9/client"
-	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
-	"github.com/pkg/errors"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -77,113 +69,9 @@ func main() {
 		log.Fatalf("failed to create file manager: %v\n", err)
 	}
 	go acmelsp.ManageFiles(ss, fm)
-	readPlumb(ss, fm)
-}
 
-func readPlumb(ss *client.ServerSet, fm *acmelsp.FileManager) {
-	for {
-		var fid *p9client.Fid
-
-		retrying := false
-		for {
-			var err error
-			fid, err = plumb.Open("lsp", plan9.OREAD|plan9.OCEXEC)
-			if err == nil {
-				break
-			}
-			if !retrying {
-				log.Printf("plumb open failed: %v", err)
-				fmt.Printf("Make sure plumber is running with this empty rule:\n")
-				fmt.Printf("\tplumb to lsp\n")
-				retrying = true
-			}
-			// wait and retry
-			time.Sleep(2 * time.Second)
-		}
-
-		rd := bufio.NewReader(fid)
-
-		for {
-			var m plumb.Message
-			err := m.Recv(rd)
-			if err != nil {
-				log.Printf("plumb recv failed: %v", err)
-				break
-			}
-			attr := make(map[string]string)
-			for a := m.Attr; a != nil; a = a.Next {
-				attr[a.Name] = a.Value
-			}
-			err = run(ss, fm, string(m.Data), attr)
-			if err != nil {
-				log.Printf("%v failed: %v\n", string(m.Data), err)
-			}
-		}
-
-		fid.Close()
-	}
-}
-
-func run(ss *client.ServerSet, fm *acmelsp.FileManager, data string, attr map[string]string) error {
-	args := strings.Fields(data)
-	switch args[0] {
-	case "workspaces":
-		fmt.Printf("Workspaces:\n")
-		for _, d := range ss.Workspaces() {
-			fmt.Printf(" %v\n", d)
-		}
-		return nil
-	case "workspaces-add":
-		return ss.AddWorkspaces(args[1:])
-	case "workspaces-remove":
-		return ss.RemoveWorkspaces(args[1:])
-	}
-
-	winid, err := strconv.Atoi(attr["winid"])
+	err = acmelsp.ListenAndServeProxy(context.Background(), ss, fm)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse $winid")
+		log.Fatalf("proxy failed: %v\n", err)
 	}
-	cmd, err := acmelsp.WindowCmd(ss, fm, winid)
-	if err != nil {
-		return err
-	}
-	defer cmd.Close()
-
-	switch args[0] {
-	case "completion":
-		return cmd.Completion(false)
-	case "completion-edit":
-		return cmd.Completion(true)
-	case "definition":
-		return cmd.Definition()
-	case "type-definition":
-		return cmd.TypeDefinition()
-	case "format":
-		return cmd.Format()
-	case "hover":
-		return cmd.Hover()
-	case "implementation":
-		return cmd.Implementation()
-	case "references":
-		return cmd.References()
-	case "rename":
-		return cmd.Rename(attr["newname"])
-	case "signature":
-		return cmd.SignatureHelp()
-	case "symbols":
-		return cmd.Symbols()
-	case "watch-completion":
-		go acmelsp.Assist(ss, fm, "comp")
-		return nil
-	case "watch-signature":
-		go acmelsp.Assist(ss, fm, "sig")
-		return nil
-	case "watch-hover":
-		go acmelsp.Assist(ss, fm, "hov")
-		return nil
-	case "watch-auto":
-		go acmelsp.Assist(ss, fm, "auto")
-		return nil
-	}
-	return fmt.Errorf("unknown command %v", args[0])
 }

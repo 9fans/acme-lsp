@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -11,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"9fans.net/go/plan9"
 	p9client "9fans.net/go/plan9/client"
-	"9fans.net/go/plumb"
+	"github.com/fhs/acme-lsp/internal/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/pkg/errors"
 )
@@ -103,17 +104,8 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	// This is racy but better than nothing.
-	if !portOpen() {
-		log.Fatalf("lsp plumber port is not open. Make sure it's open and acme-lsp is running.\n")
-	}
-
 	err := run(flag.Args())
 	if err != nil {
-		if strings.Contains(err.Error(), "no start action for plumb message") {
-			// Clarify confusing error.
-			err = fmt.Errorf("acme-lsp is not running")
-		}
 		log.Fatalf("%v\n", err)
 	}
 }
@@ -141,9 +133,8 @@ func run(args []string) error {
 		if len(args) < 2 {
 			usage()
 		}
-		attr := &plumb.Attribute{
-			Name:  "newname",
-			Value: args[1],
+		attr := map[string]string{
+			"newname": args[1],
 		}
 		return plumbAcmeCmd(attr, "rename")
 	case "sig":
@@ -188,48 +179,36 @@ func run(args []string) error {
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
-func plumbCmd(attr *plumb.Attribute, args ...string) error {
-	p, err := plumb.Open("send", plan9.OWRITE)
-	if err != nil {
-		return errors.Wrap(err, "failed to open plumber")
-	}
-	defer p.Close()
+func plumbCmd(attr map[string]string, args ...string) error {
+	ctx := context.Background()
 
-	cwd, err := os.Getwd()
+	conn, err := net.Dial("unix", acmelsp.ProxyAddr())
 	if err != nil {
-		return err
+		return fmt.Errorf("dial failed: %v", err)
 	}
-	m := &plumb.Message{
-		Src:  "L",
-		Dst:  "lsp",
-		Dir:  cwd,
-		Type: "text",
+	defer conn.Close()
+
+	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	rpc := jsonrpc2.NewConn(stream)
+	go rpc.Run(ctx)
+
+	m := acmelsp.ProxyMessage{
+		Data: strings.Join(args, " "),
 		Attr: attr,
-		Data: []byte(strings.Join(args, " ")),
 	}
-	return m.Send(p)
+	return rpc.Call(ctx, "acme-lsp/rpc", m, nil)
 }
 
-func plumbAcmeCmd(attr *plumb.Attribute, args ...string) error {
+func plumbAcmeCmd(attr map[string]string, args ...string) error {
 	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
 	if err != nil {
 		return errors.Wrap(err, "could not get focused window ID")
 	}
-	attr = &plumb.Attribute{
-		Name:  "winid",
-		Value: winid,
-		Next:  attr,
+	if attr == nil {
+		attr = make(map[string]string)
 	}
+	attr["winid"] = winid
 	return plumbCmd(attr, args...)
-}
-
-func portOpen() bool {
-	fid, err := plumb.Open("lsp", plan9.OREAD|plan9.OCEXEC)
-	if err != nil {
-		return false
-	}
-	defer fid.Close()
-	return true
 }
 
 func dirsOrCurrentDir(dirs []string) ([]string, error) {
