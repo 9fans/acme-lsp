@@ -45,8 +45,8 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	// See https://github.com/golang/go/wiki/gopls#textdocumentformatting-response
 	for i := len(edits) - 1; i >= 0; i-- {
 		e := edits[i]
-		q0 := off.LineToOffset(e.Range.Start.Line, e.Range.Start.Character)
-		q1 := off.LineToOffset(e.Range.End.Line, e.Range.End.Character)
+		q0 := off.LineToOffset(int(e.Range.Start.Line), int(e.Range.Start.Character))
+		q1 := off.LineToOffset(int(e.Range.End.Line), int(e.Range.End.Character))
 		f.WriteAt(q0, q1, []byte(e.NewText))
 	}
 	return nil
@@ -96,8 +96,8 @@ func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, file
 			URI: ToURI(name),
 		},
 		Position: protocol.Position{
-			Line:      line,
-			Character: col,
+			Line:      float64(line),
+			Character: float64(col),
 		},
 	}, name, nil
 }

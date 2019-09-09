@@ -9,54 +9,66 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestTextDocumentSyncOptionsOrKind_MarshalUnmarshalJSON(t *testing.T) {
+func TestTextDocumentSync_MarshalUnmarshalJSON(t *testing.T) {
 	kindPtr := func(kind TextDocumentSyncKind) *TextDocumentSyncKind {
 		return &kind
 	}
 
 	tests := []struct {
-		data []byte
-		want *TextDocumentSyncOptionsOrKind
+		name        string
+		data        []byte
+		wantKind    *TextDocumentSyncKind
+		wantOptions *TextDocumentSyncOptions
 	}{
 		{
-			data: []byte(`2`),
-			want: &TextDocumentSyncOptionsOrKind{
-				Options: &TextDocumentSyncOptions{
-					OpenClose: true,
-					Change:    TDSKIncremental,
-				},
-				Kind: kindPtr(2),
-			},
+			name:     "Kind",
+			data:     []byte(`2`),
+			wantKind: kindPtr(2),
 		},
 		{
+			name: "Options",
 			data: []byte(`{"openClose":true,"change":1,"save":{"includeText":true}}`),
-			want: &TextDocumentSyncOptionsOrKind{
-				Options: &TextDocumentSyncOptions{
-					OpenClose: true,
-					Change:    TDSKFull,
-					Save:      &SaveOptions{IncludeText: true},
-				},
+			wantOptions: &TextDocumentSyncOptions{
+				OpenClose: true,
+				Change:    Full,
+				Save:      &SaveOptions{IncludeText: true},
 			},
 		},
 	}
 	for _, test := range tests {
-		var got TextDocumentSyncOptionsOrKind
-		if err := json.Unmarshal(test.data, &got); err != nil {
-			t.Error(err)
-			continue
-		}
-		if !reflect.DeepEqual(&got, test.want) {
-			t.Errorf("got %+v, want %+v", got, test.want)
-			continue
-		}
-		data, err := json.Marshal(&got)
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		if !bytes.Equal(data, test.data) {
-			t.Errorf("got JSON %q, want %q", data, test.data)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			if test.wantKind != nil {
+				var got TextDocumentSyncKind
+				if err := json.Unmarshal(test.data, &got); err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(&got, test.wantKind) {
+					t.Fatalf("got %+v, want %+v", got, test.wantKind)
+				}
+				data, err := json.Marshal(&got)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(data, test.data) {
+					t.Fatalf("got JSON %q, want %q", data, test.data)
+				}
+			} else {
+				var got TextDocumentSyncOptions
+				if err := json.Unmarshal(test.data, &got); err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(&got, test.wantOptions) {
+					t.Fatalf("got %+v, want %+v", got, test.wantKind)
+				}
+				data, err := json.Marshal(&got)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(data, test.data) {
+					t.Fatalf("got JSON %q, want %q", data, test.data)
+				}
+			}
+		})
 	}
 }
 
@@ -185,7 +197,7 @@ func TestFormattingOptions(t *testing.T) {
 			opt: FormattingOptions{
 				TabSize:      0,
 				InsertSpaces: false,
-				Key:          map[string]interface{}{},
+				Key:          map[string]bool{},
 			},
 		},
 	}
@@ -216,8 +228,8 @@ func TestMessageTypeString(t *testing.T) {
 		m MessageType
 		s string
 	}{
-		{MTError, "Error"},
-		{MTWarning, "Warning"},
+		{Error, "Error"},
+		{Warning, "Warning"},
 		{Info, "Info"},
 		{Log, "Log"},
 		{42, "MessageType(42)"},
@@ -230,7 +242,7 @@ func TestMessageTypeString(t *testing.T) {
 	}
 }
 
-func TestChangeNotificationsUnmarshalJSON(t *testing.T) {
+func TestChangeNotifications_UnmarshalJSON(t *testing.T) {
 	tt := []struct {
 		data []byte
 		cn   ChangeNotifications

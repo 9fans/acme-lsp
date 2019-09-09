@@ -89,7 +89,7 @@ func (h *handler) Deliver(ctx context.Context, req *jsonrpc2.Request, delivered 
 			h.Printf("window/logMessage unmarshal failed: %v\n", err)
 			return true
 		}
-		if params.Type == protocol.MTError || params.Type == protocol.MTWarning || Debug {
+		if params.Type == protocol.Error || params.Type == protocol.Warning || Debug {
 			h.Printf("log: LSP %v: %v\n", params.Type, params.Message)
 		}
 
@@ -111,7 +111,7 @@ type Config struct {
 type Client struct {
 	rpc          *jsonrpc2.Conn
 	ctx          context.Context
-	Capabilities *protocol.ServerCapabilities
+	Capabilities *protocol.ServerCapabilities1
 }
 
 func New(conn net.Conn, cfg *Config) (*Client, error) {
@@ -136,17 +136,16 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	}
 	params := &protocol.InitializeParams{
 		RootURI: text.ToURI(d),
-		Capabilities: protocol.ClientCapabilities{
-			Workspace: protocol.WorkspaceClientCapabilities{
-				WorkspaceFolders: true,
-			},
-		},
 	}
+	params.Capabilities.Workspace.WorkspaceFolders = true
+	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport = new(protocol.CodeActionLiteralSupport)
+	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
+		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 	params.WorkspaceFolders, err = dirsToWorkspaceFolders(cfg.Workspaces)
 	if err != nil {
 		return nil, err
 	}
-	var result protocol.InitializeResult
+	var result protocol.InitializeResult1
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}
@@ -254,7 +253,7 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 func (c *Client) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
 	comp := &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
-		Context:                    protocol.CompletionContext{},
+		Context:                    &protocol.CompletionContext{},
 	}
 	var cl protocol.CompletionList
 	if err := c.rpc.Call(c.ctx, "textDocument/completion", comp, &cl); err != nil {
@@ -357,8 +356,10 @@ func (c *Client) DidClose(filename string) error {
 
 func (c *Client) DidSave(filename string) error {
 	params := &protocol.DidSaveTextDocumentParams{
-		TextDocument: protocol.TextDocumentIdentifier{
-			URI: text.ToURI(filename),
+		TextDocument: protocol.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
+				URI: text.ToURI(filename),
+			},
 			// TODO(fhs): add text field for includeText option
 		},
 	}

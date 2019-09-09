@@ -1,15 +1,6 @@
-The code in this directory is
-based on [sourcegraph/go-lsp](github.com/sourcegraph/go-lsp)
+The code in this directory is based on
+[golang.org/x/tools/internal/lsp/protocol](https://godoc.org/golang.org/x/tools/internal/lsp/protocol)
 and are subject to the license found in this directory. We've
-added more types and more flexibility in the JSON parser, which
+added more flexibility in the JSON parser (see compat.go), which
 needs to be compatible with a wider set of LSP servers, not just
-[go-langserver](github.com/sourcegraph/go-langserver).
-
-# go-lsp
-
-Package lsp contains Go types for the messages used in the Language Server
-Protocol.
-
-See
-https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md
-for more information.
+[gopls](https://godoc.org/golang.org/x/tools/gopls).

@@ -184,7 +184,20 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 
 // FormatFile organizes import paths and then formats the file f.
 func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
-	if c.Capabilities.CodeActionProvider {
+	importsSupported := false
+	switch ap := c.Capabilities.CodeActionProvider.(type) {
+	case bool:
+		importsSupported = ap
+	case protocol.CodeActionOptions:
+		for _, kind := range ap.CodeActionKinds {
+			if kind == protocol.SourceOrganizeImports {
+				importsSupported = true
+				break
+			}
+		}
+	}
+
+	if importsSupported {
 		actions, err := c.OrganizeImports(uri)
 		if err != nil {
 			return err
@@ -242,13 +255,13 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		winid[info.Name] = info.ID
 	}
 
-	for uri := range we.Changes {
+	for uri := range *we.Changes {
 		fname := text.ToPath(uri)
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
-	for uri, edits := range we.Changes {
+	for uri, edits := range *we.Changes {
 		fname := text.ToPath(uri)
 		id := winid[fname]
 		w, err := acmeutil.OpenWin(id)
