@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -85,7 +85,7 @@ func usage() {
 func main() {
 	flag.Usage = usage
 
-	serverSet := client.NewServerSet(acmelsp.DefaultConfig())
+	serverSet := lsp.NewServerSet(acmelsp.DefaultConfig())
 
 	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
 	// references, and rename yet.

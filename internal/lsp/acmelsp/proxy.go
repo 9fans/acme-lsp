@@ -14,7 +14,7 @@ import (
 
 	p9client "9fans.net/go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/jsonrpc2"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +26,7 @@ type ProxyMessage struct {
 type proxyHandler struct {
 	jsonrpc2.EmptyHandler
 
-	ss  *client.ServerSet // client connections to upstream LSP server (e.g. gopls)
+	ss  *lsp.ServerSet // client connections to upstream LSP server (e.g. gopls)
 	fm  *FileManager
 	rpc *jsonrpc2.Conn // listen for requests on this connection
 	log *log.Logger
@@ -52,7 +52,7 @@ func (h *proxyHandler) Deliver(ctx context.Context, req *jsonrpc2.Request, deliv
 	return false
 }
 
-func ListenAndServeProxy(ctx context.Context, ss *client.ServerSet, fm *FileManager) error {
+func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {
 	ln, err := Listen("unix", ProxyAddr())
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func ProxyAddr() string {
 	return filepath.Join(p9client.Namespace(), "acme-lsp.rpc")
 }
 
-func runRPC(ss *client.ServerSet, fm *FileManager, data string, attr map[string]string) error {
+func runRPC(ss *lsp.ServerSet, fm *FileManager, data string, attr map[string]string) error {
 	args := strings.Fields(data)
 	switch args[0] {
 	case "workspaces":

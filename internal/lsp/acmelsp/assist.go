@@ -10,7 +10,7 @@ import (
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
@@ -71,7 +71,7 @@ func (fw *focusWin) SetQ0() bool {
 	return true
 }
 
-func notifyPosChange(serverSet *client.ServerSet, ch chan<- *focusWin) {
+func notifyPosChange(serverSet *lsp.ServerSet, ch chan<- *focusWin) {
 	fw := newFocusWin()
 	logch := make(chan *acme.LogEvent)
 	go watchLog(logch)
@@ -184,13 +184,13 @@ func helpType(left, right rune) string {
 }
 
 func dprintf(format string, args ...interface{}) {
-	if client.Debug {
+	if lsp.Debug {
 		log.Printf(format, args...)
 	}
 }
 
 // Update writes result of cmd to output window.
-func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
+func (w *outputWin) Update(fw *focusWin, c *lsp.Conn, cmd string) {
 	if cmd == "auto" {
 		left, right, err := readLeftRight(fw.id, fw.q0)
 		if err != nil {
@@ -244,7 +244,7 @@ func (w *outputWin) Update(fw *focusWin, c *client.Conn, cmd string) {
 // Assist creates an acme window where output of cmd is written after each
 // cursor position change in acme. Cmd is either "comp", "sig", "hov", or "auto"
 // for completion, signature help, hover, or auto-detection of the former three.
-func Assist(serverSet *client.ServerSet, fm *FileManager, cmd string) {
+func Assist(serverSet *lsp.ServerSet, fm *FileManager, cmd string) {
 	name := "/LSP/assist"
 	if cmd != "auto" {
 		name += "/" + cmd

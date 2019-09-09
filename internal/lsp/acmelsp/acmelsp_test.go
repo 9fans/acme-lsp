@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"9fans.net/go/plumb"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
@@ -46,7 +46,7 @@ func TestParseFlagSet(t *testing.T) {
 	tt := []struct {
 		args       []string
 		debug      bool
-		serverInfo []*client.ServerInfo
+		serverInfo []*lsp.ServerInfo
 		workspaces []string
 		err        string
 	}{
@@ -68,7 +68,7 @@ func TestParseFlagSet(t *testing.T) {
 		{
 			[]string{"-server", `\.go$:gopls -rpc.trace`},
 			false,
-			[]*client.ServerInfo{
+			[]*lsp.ServerInfo{
 				{
 					Re:   regexp.MustCompile(`\.go$`),
 					Args: []string{"gopls", "-rpc.trace"},
@@ -80,7 +80,7 @@ func TestParseFlagSet(t *testing.T) {
 		{
 			[]string{"-dial", `\.go$:localhost:4389`},
 			false,
-			[]*client.ServerInfo{
+			[]*lsp.ServerInfo{
 				{
 					Re:   regexp.MustCompile(`\.go$`),
 					Addr: "localhost:4389",

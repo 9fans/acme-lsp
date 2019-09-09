@@ -14,8 +14,8 @@ import (
 
 	p9client "9fans.net/go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
 	"github.com/pkg/errors"
 )
 
@@ -219,7 +219,7 @@ func dirsOrCurrentDir(dirs []string) ([]string, error) {
 		}
 		dirs = []string{d}
 	}
-	return client.AbsDirs(dirs)
+	return lsp.AbsDirs(dirs)
 }
 
 func getFocusedWinID(addr string) (string, error) {

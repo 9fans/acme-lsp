@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
@@ -82,12 +82,12 @@ func (dw *diagWin) WriteDiagnostics(diags map[protocol.DocumentURI][]protocol.Di
 				URI:   uri,
 				Range: diag.Range,
 			}
-			fmt.Fprintf(body, "%v: %v\n", client.LocationLink(loc), diag.Message)
+			fmt.Fprintf(body, "%v: %v\n", lsp.LocationLink(loc), diag.Message)
 		}
 	}
 	return dw.Ctl("clean")
 }
 
-func NewDiagnosticsWriter() client.DiagnosticsWriter {
+func NewDiagnosticsWriter() lsp.DiagnosticsWriter {
 	return newDiagWin("/LSP/Diagnostics")
 }

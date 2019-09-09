@@ -7,14 +7,14 @@ import (
 
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
 
 // ManageFiles watches for files opened, closed, saved, or refreshed in acme
 // and tells LSP server about it. It also formats files when it's saved.
-func ManageFiles(serverSet *client.ServerSet, fm *FileManager) {
+func ManageFiles(serverSet *lsp.ServerSet, fm *FileManager) {
 	alog, err := acme.Log()
 	if err != nil {
 		panic(err)
@@ -57,13 +57,13 @@ func ManageFiles(serverSet *client.ServerSet, fm *FileManager) {
 // because having the ctl file open prevents del event from
 // being delivered to acme/log file.
 type FileManager struct {
-	ss   *client.ServerSet
+	ss   *lsp.ServerSet
 	wins map[string]struct{} // set of open files
 	mu   sync.Mutex
 }
 
 // NewFileManager creates a new file manager, initialized with files currently open in acme.
-func NewFileManager(ss *client.ServerSet) (*FileManager, error) {
+func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
 	fm := &FileManager{
 		ss:   ss,
 		wins: make(map[string]struct{}),
@@ -82,7 +82,7 @@ func NewFileManager(ss *client.ServerSet) (*FileManager, error) {
 	return fm, nil
 }
 
-func (fm *FileManager) withClient(winid int, name string, f func(*client.Conn, *acmeutil.Win) error) error {
+func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Conn, *acmeutil.Win) error) error {
 	s, found, err := fm.ss.StartForFile(name)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (fm *FileManager) withClient(winid int, name string, f func(*client.Conn, *
 }
 
 func (fm *FileManager) didOpen(winid int, name string) error {
-	return fm.withClient(winid, name, func(c *client.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
 		fm.mu.Lock()
 		defer fm.mu.Unlock()
 
@@ -130,7 +130,7 @@ func (fm *FileManager) didClose(name string) error {
 	}
 	delete(fm.wins, name)
 
-	return fm.withClient(-1, name, func(c *client.Conn, _ *acmeutil.Win) error {
+	return fm.withClient(-1, name, func(c *lsp.Conn, _ *acmeutil.Win) error {
 		return c.DidClose(name)
 	})
 }
@@ -142,7 +142,7 @@ func (fm *FileManager) didChange(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *client.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
 		b, err := w.ReadAll("body")
 		if err != nil {
 			return err
@@ -158,7 +158,7 @@ func (fm *FileManager) didSave(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *client.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
 		b, err := w.ReadAll("body")
 		if err != nil {
 			return err
@@ -180,7 +180,7 @@ func (fm *FileManager) format(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *client.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
 		return FormatFile(c, text.ToURI(name), w)
 	})
 }

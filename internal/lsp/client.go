@@ -1,5 +1,5 @@
-// Package client implements a general LSP client.
-package client
+// Package lsp implements a general LSP client.
+package lsp
 
 import (
 	"context"

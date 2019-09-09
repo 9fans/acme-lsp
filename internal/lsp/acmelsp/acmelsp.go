@@ -14,7 +14,7 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp/client"
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
@@ -22,13 +22,13 @@ import (
 
 // Cmd contains the states required to execute an LSP command in an acme window.
 type Cmd struct {
-	conn     *client.Conn
+	conn     *lsp.Conn
 	win      *acmeutil.Win
 	pos      *protocol.TextDocumentPositionParams
 	filename string
 }
 
-func CurrentWindowCmd(ss *client.ServerSet, fm *FileManager) (*Cmd, error) {
+func CurrentWindowCmd(ss *lsp.ServerSet, fm *FileManager) (*Cmd, error) {
 	id, err := strconv.Atoi(os.Getenv("winid"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse $winid")
@@ -36,7 +36,7 @@ func CurrentWindowCmd(ss *client.ServerSet, fm *FileManager) (*Cmd, error) {
 	return WindowCmd(ss, fm, id)
 }
 
-func WindowCmd(ss *client.ServerSet, fm *FileManager, winid int) (*Cmd, error) {
+func WindowCmd(ss *lsp.ServerSet, fm *FileManager, winid int) (*Cmd, error) {
 	w, err := acmeutil.OpenWin(winid)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to to open window %v", winid)
@@ -183,7 +183,7 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 }
 
 // FormatFile organizes import paths and then formats the file f.
-func FormatFile(c *client.Conn, uri protocol.DocumentURI, f text.File) error {
+func FormatFile(c *lsp.Conn, uri protocol.DocumentURI, f text.File) error {
 	if c.Capabilities.CodeActionProvider {
 		actions, err := c.OrganizeImports(uri)
 		if err != nil {
@@ -224,7 +224,7 @@ func FormatFile(c *client.Conn, uri protocol.DocumentURI, f text.File) error {
 }
 
 // Rename renames the identifier at position pos to newname.
-func Rename(c *client.Conn, pos *protocol.TextDocumentPositionParams, newname string) error {
+func Rename(c *lsp.Conn, pos *protocol.TextDocumentPositionParams, newname string) error {
 	we, err := c.Rename(pos, newname)
 	if err != nil {
 		return err
@@ -264,7 +264,7 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 }
 
 // ParseFlags adds some standard flags, parses all flags, and returns the server set and debug.
-func ParseFlags(serverSet *client.ServerSet) (*client.ServerSet, bool) {
+func ParseFlags(serverSet *lsp.ServerSet) (*lsp.ServerSet, bool) {
 	serverSet, debug, err := ParseFlagSet(flag.CommandLine, os.Args[1:], serverSet)
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
@@ -273,7 +273,7 @@ func ParseFlags(serverSet *client.ServerSet) (*client.ServerSet, bool) {
 	return serverSet, debug
 }
 
-func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *client.ServerSet) (*client.ServerSet, bool, error) {
+func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *lsp.ServerSet) (*lsp.ServerSet, bool, error) {
 	var (
 		userServers serverFlag
 		dialServers serverFlag
@@ -288,11 +288,11 @@ func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *client.ServerS
 	}
 
 	if *debug {
-		client.Debug = true
+		lsp.Debug = true
 	}
 
 	if serverSet == nil {
-		serverSet = client.NewServerSet(DefaultConfig())
+		serverSet = lsp.NewServerSet(DefaultConfig())
 	}
 	if len(*workspaces) > 0 {
 		serverSet.InitWorkspaces(strings.Split(*workspaces, ":"))
@@ -328,8 +328,8 @@ func (sf *serverFlag) Set(val string) error {
 	return nil
 }
 
-func DefaultConfig() *client.Config {
-	return &client.Config{
+func DefaultConfig() *lsp.Config {
+	return &lsp.Config{
 		Writer:     os.Stdout,
 		DiagWriter: NewDiagnosticsWriter(),
 		RootDir:    "/",
