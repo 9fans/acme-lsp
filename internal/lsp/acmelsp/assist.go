@@ -267,7 +267,7 @@ loop:
 				log.Printf("failed to start language server: %v\n", err)
 			}
 			if found {
-				w.Update(fw, s.Conn, cmd)
+				w.Update(fw, s.Client, cmd)
 			}
 
 		case ev := <-w.event:

@@ -18,12 +18,12 @@ import (
 type Server struct {
 	cmd      *exec.Cmd
 	protocol net.Conn
-	Conn     *Client
+	Client   *Client
 }
 
 func (s *Server) Close() {
 	if s != nil {
-		s.Conn.Close()
+		s.Client.Close()
 		s.protocol.Close()
 	}
 }
@@ -54,7 +54,7 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 	return &Server{
 		cmd:      cmd,
 		protocol: p1,
-		Conn:     lsp,
+		Client:   lsp,
 	}, nil
 }
 
@@ -70,7 +70,7 @@ func DialServer(addr string, cfg *Config) (*Server, error) {
 	return &Server{
 		cmd:      nil,
 		protocol: conn,
-		Conn:     lsp,
+		Client:   lsp,
 	}, nil
 }
 
@@ -188,7 +188,7 @@ func (ss *ServerSet) forEach(f func(*Client) error) error {
 		if err != nil {
 			return err
 		}
-		err = f(srv.Conn)
+		err = f(srv.Client)
 		if err != nil {
 			return err
 		}

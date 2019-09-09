@@ -100,7 +100,7 @@ func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Client, *a
 		defer w.CloseFiles()
 		win = w
 	}
-	return f(s.Conn, win)
+	return f(s.Client, win)
 }
 
 func (fm *FileManager) didOpen(winid int, name string) error {

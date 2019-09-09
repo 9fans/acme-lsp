@@ -22,7 +22,7 @@ import (
 
 // Cmd contains the states required to execute an LSP command in an acme window.
 type Cmd struct {
-	conn     *lsp.Client
+	Client   *lsp.Client
 	win      *acmeutil.Win
 	pos      *protocol.TextDocumentPositionParams
 	filename string
@@ -60,7 +60,7 @@ func WindowCmd(ss *lsp.ServerSet, fm *FileManager, winid int) (*Cmd, error) {
 	}
 
 	return &Cmd{
-		conn:     srv.Conn,
+		Client:   srv.Client,
 		win:      w,
 		pos:      pos,
 		filename: fname,
@@ -72,7 +72,7 @@ func (c *Cmd) Close() {
 }
 
 func (c *Cmd) Completion(edit bool) error {
-	items, err := c.conn.Completion(c.pos)
+	items, err := c.Client.Completion(c.pos)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func printCompletionItems(w io.Writer, items []protocol.CompletionItem) {
 }
 
 func (c *Cmd) Definition() error {
-	locations, err := c.conn.Definition(c.pos)
+	locations, err := c.Client.Definition(c.pos)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (c *Cmd) Definition() error {
 }
 
 func (c *Cmd) TypeDefinition() error {
-	locations, err := c.conn.TypeDefinition(c.pos)
+	locations, err := c.Client.TypeDefinition(c.pos)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (c *Cmd) TypeDefinition() error {
 }
 
 func (c *Cmd) Implementation() error {
-	locations, err := c.conn.Implementation(c.pos)
+	locations, err := c.Client.Implementation(c.pos)
 	if err != nil {
 		return err
 	}
@@ -125,27 +125,27 @@ func (c *Cmd) Implementation() error {
 }
 
 func (c *Cmd) Format() error {
-	return FormatFile(c.conn, c.pos.TextDocument.URI, c.win)
+	return FormatFile(c.Client, c.pos.TextDocument.URI, c.win)
 }
 
 func (c *Cmd) Hover() error {
-	return c.conn.Hover(c.pos, os.Stdout)
+	return c.Client.Hover(c.pos, os.Stdout)
 }
 
 func (c *Cmd) References() error {
-	return c.conn.References(c.pos, os.Stdout)
+	return c.Client.References(c.pos, os.Stdout)
 }
 
 func (c *Cmd) Rename(newname string) error {
-	return Rename(c.conn, c.pos, newname)
+	return Rename(c.Client, c.pos, newname)
 }
 
 func (c *Cmd) SignatureHelp() error {
-	return c.conn.SignatureHelp(c.pos, os.Stdout)
+	return c.Client.SignatureHelp(c.pos, os.Stdout)
 }
 
 func (c *Cmd) Symbols() error {
-	return c.conn.Symbols(c.pos.TextDocument.URI, os.Stdout)
+	return c.Client.Symbols(c.pos.TextDocument.URI, os.Stdout)
 }
 
 // PlumbLocations sends the locations to the plumber.
