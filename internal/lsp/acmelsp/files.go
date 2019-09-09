@@ -82,7 +82,7 @@ func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
 	return fm, nil
 }
 
-func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Conn, *acmeutil.Win) error) error {
+func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Client, *acmeutil.Win) error) error {
 	s, found, err := fm.ss.StartForFile(name)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Conn, *acm
 }
 
 func (fm *FileManager) didOpen(winid int, name string) error {
-	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
 		fm.mu.Lock()
 		defer fm.mu.Unlock()
 
@@ -130,7 +130,7 @@ func (fm *FileManager) didClose(name string) error {
 	}
 	delete(fm.wins, name)
 
-	return fm.withClient(-1, name, func(c *lsp.Conn, _ *acmeutil.Win) error {
+	return fm.withClient(-1, name, func(c *lsp.Client, _ *acmeutil.Win) error {
 		return c.DidClose(name)
 	})
 }
@@ -142,7 +142,7 @@ func (fm *FileManager) didChange(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
 		b, err := w.ReadAll("body")
 		if err != nil {
 			return err
@@ -158,7 +158,7 @@ func (fm *FileManager) didSave(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
 		b, err := w.ReadAll("body")
 		if err != nil {
 			return err
@@ -180,7 +180,7 @@ func (fm *FileManager) format(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *lsp.Conn, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
 		return FormatFile(c, text.ToURI(name), w)
 	})
 }

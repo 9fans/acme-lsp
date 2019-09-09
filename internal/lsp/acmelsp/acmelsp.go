@@ -22,7 +22,7 @@ import (
 
 // Cmd contains the states required to execute an LSP command in an acme window.
 type Cmd struct {
-	conn     *lsp.Conn
+	conn     *lsp.Client
 	win      *acmeutil.Win
 	pos      *protocol.TextDocumentPositionParams
 	filename string
@@ -183,7 +183,7 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 }
 
 // FormatFile organizes import paths and then formats the file f.
-func FormatFile(c *lsp.Conn, uri protocol.DocumentURI, f text.File) error {
+func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
 	if c.Capabilities.CodeActionProvider {
 		actions, err := c.OrganizeImports(uri)
 		if err != nil {
@@ -224,7 +224,7 @@ func FormatFile(c *lsp.Conn, uri protocol.DocumentURI, f text.File) error {
 }
 
 // Rename renames the identifier at position pos to newname.
-func Rename(c *lsp.Conn, pos *protocol.TextDocumentPositionParams, newname string) error {
+func Rename(c *lsp.Client, pos *protocol.TextDocumentPositionParams, newname string) error {
 	we, err := c.Rename(pos, newname)
 	if err != nil {
 		return err

@@ -190,7 +190,7 @@ func dprintf(format string, args ...interface{}) {
 }
 
 // Update writes result of cmd to output window.
-func (w *outputWin) Update(fw *focusWin, c *lsp.Conn, cmd string) {
+func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 	if cmd == "auto" {
 		left, right, err := readLeftRight(fw.id, fw.q0)
 		if err != nil {

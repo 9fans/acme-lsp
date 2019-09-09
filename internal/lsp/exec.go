@@ -18,7 +18,7 @@ import (
 type Server struct {
 	cmd      *exec.Cmd
 	protocol net.Conn
-	Conn     *Conn
+	Conn     *Client
 }
 
 func (s *Server) Close() {
@@ -182,7 +182,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 	}
 }
 
-func (ss *ServerSet) forEach(f func(*Conn) error) error {
+func (ss *ServerSet) forEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
 		srv, err := info.start(&ss.cfg)
 		if err != nil {
@@ -227,8 +227,8 @@ func (ss *ServerSet) AddWorkspaces(dirs []string) error {
 	if err != nil {
 		return err
 	}
-	err = ss.forEach(func(conn *Conn) error {
-		return conn.DidChangeWorkspaceFolders(dirs, nil)
+	err = ss.forEach(func(c *Client) error {
+		return c.DidChangeWorkspaceFolders(dirs, nil)
 	})
 	if err != nil {
 		return err
@@ -247,8 +247,8 @@ func (ss *ServerSet) RemoveWorkspaces(dirs []string) error {
 	if err != nil {
 		return err
 	}
-	err = ss.forEach(func(conn *Conn) error {
-		return conn.DidChangeWorkspaceFolders(nil, dirs)
+	err = ss.forEach(func(c *Client) error {
+		return c.DidChangeWorkspaceFolders(nil, dirs)
 	})
 	if err != nil {
 		return err

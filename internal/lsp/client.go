@@ -107,14 +107,14 @@ type Config struct {
 	Workspaces []string          // initial workspaces
 }
 
-// Conn represents a LSP client connection.
-type Conn struct {
+// Client represents a LSP client connection.
+type Client struct {
 	rpc          *jsonrpc2.Conn
 	ctx          context.Context
 	Capabilities *protocol.ServerCapabilities
 }
 
-func New(conn net.Conn, cfg *Config) (*Conn, error) {
+func New(conn net.Conn, cfg *Config) (*Client, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	rpc := jsonrpc2.NewConn(stream)
@@ -150,19 +150,19 @@ func New(conn net.Conn, cfg *Config) (*Conn, error) {
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}
-	return &Conn{
+	return &Client{
 		rpc:          rpc,
 		ctx:          ctx,
 		Capabilities: &result.Capabilities,
 	}, nil
 }
 
-func (c *Conn) Close() error {
+func (c *Client) Close() error {
 	// TODO(fhs): Cancel all outstanding requests?
 	return nil
 }
 
-func (c *Conn) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+func (c *Client) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
 	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/definition", pos, &loc); err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func (c *Conn) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.
 	return loc, nil
 }
 
-func (c *Conn) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+func (c *Client) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
 	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/typeDefinition", pos, &loc); err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (c *Conn) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]proto
 	return loc, nil
 }
 
-func (c *Conn) Implementation(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+func (c *Client) Implementation(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
 	loc := make([]protocol.Location, 1)
 	if err := c.rpc.Call(c.ctx, "textDocument/implementation", pos, &loc); err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (c *Conn) Implementation(pos *protocol.TextDocumentPositionParams) ([]proto
 	return loc, nil
 }
 
-func (c *Conn) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
 	var hov protocol.Hover
 	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
 		return err
@@ -195,7 +195,7 @@ func (c *Conn) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) erro
 	return nil
 }
 
-func (c *Conn) References(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+func (c *Client) References(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
 	rp := &protocol.ReferenceParams{
 		TextDocumentPositionParams: *pos,
 		Context: protocol.ReferenceContext{
@@ -230,7 +230,7 @@ func (c *Conn) References(pos *protocol.TextDocumentPositionParams, w io.Writer)
 	return nil
 }
 
-func (c *Conn) Symbols(uri protocol.DocumentURI, w io.Writer) error {
+func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 	params := &protocol.DocumentSymbolParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
@@ -251,7 +251,7 @@ func (c *Conn) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 	return nil
 }
 
-func (c *Conn) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
+func (c *Client) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
 	comp := &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
 		Context:                    protocol.CompletionContext{},
@@ -263,7 +263,7 @@ func (c *Conn) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.
 	return cl.Items, nil
 }
 
-func (c *Conn) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
 	var sh protocol.SignatureHelp
 	if err := c.rpc.Call(c.ctx, "textDocument/signatureHelp", pos, &sh); err != nil {
 		return err
@@ -275,7 +275,7 @@ func (c *Conn) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writ
 	return nil
 }
 
-func (c *Conn) Rename(pos *protocol.TextDocumentPositionParams, newname string) (*protocol.WorkspaceEdit, error) {
+func (c *Client) Rename(pos *protocol.TextDocumentPositionParams, newname string) (*protocol.WorkspaceEdit, error) {
 	params := &protocol.RenameParams{
 		TextDocument: pos.TextDocument,
 		Position:     pos.Position,
@@ -288,7 +288,7 @@ func (c *Conn) Rename(pos *protocol.TextDocumentPositionParams, newname string) 
 	return &we, nil
 }
 
-func (c *Conn) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
+func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
 	params := &protocol.DocumentFormattingParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
@@ -301,7 +301,7 @@ func (c *Conn) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
 	return edits, nil
 }
 
-func (c *Conn) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeAction, error) {
+func (c *Client) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeAction, error) {
 	params := &protocol.CodeActionParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
@@ -334,7 +334,7 @@ func fileLanguage(filename string) string {
 	return lang
 }
 
-func (c *Conn) DidOpen(filename string, body []byte) error {
+func (c *Client) DidOpen(filename string, body []byte) error {
 	params := &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
 			URI:        text.ToURI(filename),
@@ -346,7 +346,7 @@ func (c *Conn) DidOpen(filename string, body []byte) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didOpen", params)
 }
 
-func (c *Conn) DidClose(filename string) error {
+func (c *Client) DidClose(filename string) error {
 	params := &protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: text.ToURI(filename),
@@ -355,7 +355,7 @@ func (c *Conn) DidClose(filename string) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)
 }
 
-func (c *Conn) DidSave(filename string) error {
+func (c *Client) DidSave(filename string) error {
 	params := &protocol.DidSaveTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: text.ToURI(filename),
@@ -365,7 +365,7 @@ func (c *Conn) DidSave(filename string) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didSave", params)
 }
 
-func (c *Conn) DidChange(filename string, body []byte) error {
+func (c *Client) DidChange(filename string, body []byte) error {
 	params := &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
@@ -381,7 +381,7 @@ func (c *Conn) DidChange(filename string, body []byte) error {
 	return c.rpc.Notify(c.ctx, "textDocument/didChange", params)
 }
 
-func (c *Conn) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) error {
+func (c *Client) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) error {
 	added, err := dirsToWorkspaceFolders(addedDirs)
 	if err != nil {
 		return err
