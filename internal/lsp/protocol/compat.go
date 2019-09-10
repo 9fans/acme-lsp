@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
@@ -47,20 +46,6 @@ func (m *MarkupContent) UnmarshalJSON(data []byte) error {
 	type noUnmarshal MarkupContent
 	m.Kind = PlainText // for MarkedString
 	return json.Unmarshal(data, (*noUnmarshal)(m))
-}
-
-func (mt MessageType) String() string {
-	switch mt {
-	case Error:
-		return "Error"
-	case Warning:
-		return "Warning"
-	case Info:
-		return "Info"
-	case Log:
-		return "Log"
-	}
-	return fmt.Sprintf("MessageType(%v)", int(mt))
 }
 
 type InitializeResult1 struct {

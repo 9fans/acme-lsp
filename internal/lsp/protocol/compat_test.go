@@ -223,25 +223,6 @@ func TestFormattingOptions(t *testing.T) {
 	}
 }
 
-func TestMessageTypeString(t *testing.T) {
-	for _, test := range []struct {
-		m MessageType
-		s string
-	}{
-		{Error, "Error"},
-		{Warning, "Warning"},
-		{Info, "Info"},
-		{Log, "Log"},
-		{42, "MessageType(42)"},
-	} {
-		s := test.m.String()
-		if s != test.s {
-			t.Errorf("String representation of MessageType(%v) is %v; expected %v",
-				int(test.m), s, test.s)
-		}
-	}
-}
-
 func TestChangeNotifications_UnmarshalJSON(t *testing.T) {
 	tt := []struct {
 		data []byte
