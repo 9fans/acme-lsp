@@ -149,6 +149,9 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}
+	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
+		return nil, errors.Wrap(err, "initialized failed")
+	}
 	return &Client{
 		rpc:          rpc,
 		ctx:          ctx,
