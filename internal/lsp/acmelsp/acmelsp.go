@@ -184,20 +184,7 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 
 // FormatFile organizes import paths and then formats the file f.
 func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
-	importsSupported := false
-	switch ap := c.Capabilities.CodeActionProvider.(type) {
-	case bool:
-		importsSupported = ap
-	case protocol.CodeActionOptions:
-		for _, kind := range ap.CodeActionKinds {
-			if kind == protocol.SourceOrganizeImports {
-				importsSupported = true
-				break
-			}
-		}
-	}
-
-	if importsSupported {
+	if c.ProvidesCodeAction(protocol.SourceOrganizeImports) {
 		actions, err := c.OrganizeImports(uri)
 		if err != nil {
 			return err

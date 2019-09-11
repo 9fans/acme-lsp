@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -520,4 +521,46 @@ func (f *BytesFile) Mark() error {
 
 func (f *BytesFile) DisableMark() error {
 	return nil
+}
+
+func TestClientProvidesCodeAction(t *testing.T) {
+	for _, tc := range []struct {
+		provider interface{}
+		kind     protocol.CodeActionKind
+		want     bool
+	}{
+		{true, protocol.SourceOrganizeImports, true},
+		{false, protocol.SourceOrganizeImports, false},
+		{false, protocol.SourceOrganizeImports, false},
+		{
+			map[string]interface{}{"codeActionKinds": []interface{}{"quickfix", "source.organizeImports"}},
+			protocol.SourceOrganizeImports,
+			true,
+		},
+		{
+			map[string]interface{}{"codeActionKinds": []interface{}{"quickfix"}},
+			protocol.SourceOrganizeImports,
+			false,
+		},
+		{
+			map[string]interface{}{"codeActionKinds": []interface{}{0}},
+			protocol.SourceOrganizeImports,
+			false,
+		},
+	} {
+		c := &Client{
+			Capabilities: &protocol.ServerCapabilities1{
+				ServerCapabilities: protocol.ServerCapabilities{
+					CodeActionProvider: tc.provider,
+				},
+			},
+			logger: log.New(ioutil.Discard, "", 0),
+		}
+		got := c.ProvidesCodeAction(tc.kind)
+		want := tc.want
+		if got != want {
+			t.Errorf("got %v for provider %v and kind %v; want %v",
+				got, tc.provider, tc.kind, want)
+		}
+	}
 }

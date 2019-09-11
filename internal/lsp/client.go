@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"path/filepath"
 	"sort"
@@ -112,6 +113,7 @@ type Client struct {
 	rpc          *jsonrpc2.Conn
 	ctx          context.Context
 	Capabilities *protocol.ServerCapabilities1
+	logger       *log.Logger
 }
 
 func New(conn net.Conn, cfg *Config) (*Client, error) {
@@ -156,6 +158,7 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 		rpc:          rpc,
 		ctx:          ctx,
 		Capabilities: &result.Capabilities,
+		logger:       log.New(cfg.Writer, "", 0),
 	}, nil
 }
 
@@ -401,6 +404,25 @@ func (c *Client) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) erro
 		},
 	}
 	return c.rpc.Notify(c.ctx, "workspace/didChangeWorkspaceFolders", params)
+}
+
+func (c *Client) ProvidesCodeAction(kind protocol.CodeActionKind) bool {
+	switch ap := c.Capabilities.CodeActionProvider.(type) {
+	case bool:
+		return ap
+	case map[string]interface{}:
+		opt, err := protocol.ToCodeActionOptions(ap)
+		if err != nil {
+			c.logger.Printf("failed to decode CodeActionOptions: %v", err)
+			return false
+		}
+		for _, k := range opt.CodeActionKinds {
+			if k == kind {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func dirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {

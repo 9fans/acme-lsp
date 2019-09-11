@@ -249,3 +249,19 @@ func TestChangeNotifications_UnmarshalJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestToCodeActionOptions(t *testing.T) {
+	v := map[string]interface{}{
+		"codeActionKinds": []interface{}{"quickfix", "source.organizeImports"},
+	}
+	want := &CodeActionOptions{
+		CodeActionKinds: []CodeActionKind{QuickFix, SourceOrganizeImports},
+	}
+	got, err := ToCodeActionOptions(v)
+	if err != nil {
+		t.Fatalf("marshal or unmarshal failed: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v; want %#v", got, want)
+	}
+}

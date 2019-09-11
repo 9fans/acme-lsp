@@ -91,3 +91,16 @@ type CodeActionLiteralSupport = struct {
 		ValueSet []CodeActionKind `json:"valueSet"`
 	} `json:"codeActionKind"`
 }
+
+func ToCodeActionOptions(v map[string]interface{}) (*CodeActionOptions, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var opt CodeActionOptions
+	err = json.Unmarshal(b, &opt)
+	if err != nil {
+		return nil, err
+	}
+	return &opt, nil
+}
