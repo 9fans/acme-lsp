@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -61,7 +60,6 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 		t.Fatalf("unknown server %q", server)
 	}
 	srv, err := StartServer(args, &Config{
-		Writer:     ioutil.Discard,
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
 		RootDir:    dir,
 		Workspaces: nil,
@@ -270,7 +268,6 @@ func main() {
 
 	ch := make(chan *protocol.Diagnostic)
 	srv, err := StartServer([]string{"gopls"}, &Config{
-		Writer:     ioutil.Discard,
 		DiagWriter: &chanDiagosticsWriter{ch},
 		RootDir:    dir,
 		Workspaces: nil,
@@ -335,7 +332,6 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 
 	// Start the server
 	srv, err := StartServer([]string{"pyls"}, &Config{
-		Writer:     ioutil.Discard,
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
 		RootDir:    dir,
 		Workspaces: nil,
@@ -554,7 +550,6 @@ func TestClientProvidesCodeAction(t *testing.T) {
 					CodeActionProvider: tc.provider,
 				},
 			},
-			logger: log.New(ioutil.Discard, "", 0),
 		}
 		got := c.ProvidesCodeAction(tc.kind)
 		want := tc.want

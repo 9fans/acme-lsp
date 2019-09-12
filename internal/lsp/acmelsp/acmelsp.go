@@ -330,7 +330,6 @@ func (sf *serverFlag) Set(val string) error {
 
 func DefaultConfig() *lsp.Config {
 	return &lsp.Config{
-		Writer:     os.Stdout,
 		DiagWriter: NewDiagnosticsWriter(),
 		RootDir:    "/",
 		Workspaces: nil,

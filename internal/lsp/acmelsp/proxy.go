@@ -29,7 +29,6 @@ type proxyHandler struct {
 	ss  *lsp.ServerSet // client connections to upstream LSP server (e.g. gopls)
 	fm  *FileManager
 	rpc *jsonrpc2.Conn // listen for requests on this connection
-	log *log.Logger
 }
 
 func (h *proxyHandler) Deliver(ctx context.Context, req *jsonrpc2.Request, delivered bool) bool {
@@ -38,14 +37,14 @@ func (h *proxyHandler) Deliver(ctx context.Context, req *jsonrpc2.Request, deliv
 		var msg ProxyMessage
 		err := json.Unmarshal(*req.Params, &msg)
 		if err != nil {
-			h.log.Printf("could not unmarshal request params in proxy: %v", err)
+			log.Printf("could not unmarshal request params in proxy: %v", err)
 			return true
 		}
 
 		err = runRPC(h.ss, h.fm, msg.Data, msg.Attr)
 		err = req.Reply(ctx, nil, err)
 		if err != nil {
-			h.log.Printf("could not reply to request: %v", err)
+			log.Printf("could not reply to request: %v", err)
 		}
 		return true
 	}
@@ -57,7 +56,6 @@ func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager
 	if err != nil {
 		return err
 	}
-	logger := log.New(os.Stderr, "", log.LstdFlags)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -69,7 +67,6 @@ func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager
 			ss:  ss,
 			fm:  fm,
 			rpc: rpc,
-			log: logger,
 		})
 		go rpc.Run(ctx)
 	}

@@ -38,7 +38,6 @@ func TestAbsDirs(t *testing.T) {
 
 func TestServerSetWorkspaces(t *testing.T) {
 	ss := NewServerSet(&Config{
-		Writer:     ioutil.Discard,
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
 		RootDir:    "/",
 		Workspaces: nil,
