@@ -8,7 +8,7 @@
 
 The main tool is
 [acme-lsp](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp),
-which listens on the plumber port `lsp` for commands from the [L
+which listens for commands from the [L
 command](https://godoc.org/github.com/fhs/acme-lsp/cmd/L).
 It also watches for files created (`New`), loaded (`Get`), saved
 (`Put`), or deleted (`Del`) in acme, and tells the LSP server about
@@ -33,15 +33,6 @@ incompatibilities with those or other servers.
 First install the latest release of gopls:
 
 	GO111MODULE=on go get golang.org/x/tools/gopls@latest
-
-Add an empty plumbing rule to $HOME/lib/plumbing for acme-lsp:
-
-	# declarations of ports without rules
-	plumb to lsp
-
-Make sure plumber is running and reload the rules by running:
-
-	cat $HOME/lib/plumbing | 9p write plumb/rules
 
 Start acme-lsp like this:
 

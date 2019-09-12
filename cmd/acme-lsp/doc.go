@@ -10,21 +10,11 @@ installed in the system.  See this page of a list of language servers:
 https://microsoft.github.io/language-server-protocol/implementors/servers/.
 
 Acme-lsp executes or connects to a set of LSP servers specified using the
--server or -dial flags.  It then listens for messages sent to the plumber
-(https://9fans.github.io/plan9port/man/man4/plumber.html) port named
-"lsp".  The messages direct acme-lsp to run commands on the LSP servers
-and apply/show the results in acme.  The format of the plumbing messages
-is implementation dependent and subject to change. The L command should
-be used to send the messages instead of plumb(1) command.
-
-This following plumbing rule must be added to $HOME/lib/plumbing:
-
-	# declarations of ports without rules
-	plumb to lsp
-
-and then the rules must be reload by running:
-
-	cat $HOME/lib/plumbing | 9p write plumb/rules
+-server or -dial flags. It then listens for messages sent by the L command
+to unix domain socket located at $NAMESPACE/acme-lsp.rpc. The messages
+direct acme-lsp to run commands on the LSP servers and apply/show the
+results in acme. The communication protocol used here is jsonrpc2 (same
+as LSP) but it's an implementation detail that is subject to change.
 
 Acme-lsp watches for files created (New), loaded (Get), saved (Put), or
 deleted (Del) in acme, and tells the LSP server about these changes. The
