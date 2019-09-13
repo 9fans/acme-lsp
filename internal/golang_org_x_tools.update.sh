@@ -16,6 +16,8 @@ git clone $REPO
 mkdir $DIR
 mv tools/LICENSE $DIR/LICENSE
 mv tools/internal/jsonrpc2 $DIR/jsonrpc2
+mv tools/internal/telemetry $DIR/telemetry
+mv tools/internal/xcontext $DIR/xcontext
 
 (
 	cd tools
