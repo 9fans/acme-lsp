@@ -3,7 +3,6 @@ package lsp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -32,67 +31,64 @@ type DiagnosticsWriter interface {
 	WriteDiagnostics(map[protocol.DocumentURI][]protocol.Diagnostic) error
 }
 
-var _ = (jsonrpc2.Handler)(&handler{})
-
-// handler handles JSON-RPC requests and notifications.
-// Diagnostics and other messages sent by the server are printed to writer w.
-type handler struct {
-	jsonrpc2.EmptyHandler
-
+// clientHandler handles JSON-RPC requests and notifications.
+type clientHandler struct {
 	diagWriter DiagnosticsWriter
 	diag       map[protocol.DocumentURI][]protocol.Diagnostic
 	mu         sync.Mutex
 }
 
-func (h *handler) updateDiagnostics(params *protocol.PublishDiagnosticsParams) {
+func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMessageParams) error {
+	log.Printf("LSP %v: %v\n", params.Type, params.Message)
+	return nil
+}
+
+func (h *clientHandler) LogMessage(ctx context.Context, params *protocol.LogMessageParams) error {
+	if params.Type == protocol.Error || params.Type == protocol.Warning || Debug {
+		log.Printf("log: LSP %v: %v\n", params.Type, params.Message)
+	}
+	return nil
+}
+
+func (h *clientHandler) Event(context.Context, *interface{}) error {
+	return nil
+}
+
+func (h *clientHandler) PublishDiagnostics(ctx context.Context, params *protocol.PublishDiagnosticsParams) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	if len(h.diag[params.URI]) == 0 && len(params.Diagnostics) == 0 {
-		return
+		return nil
 	}
 	h.diag[params.URI] = params.Diagnostics
 
 	h.diagWriter.WriteDiagnostics(h.diag)
+	return nil
 }
 
-func (h *handler) Deliver(ctx context.Context, req *jsonrpc2.Request, delivered bool) bool {
-	if strings.HasPrefix(req.Method, "$/") {
-		// Ignore server dependent notifications
-		if Debug {
-			log.Printf("Handle: got request %#v\n", req)
-		}
-		return true
-	}
-	switch req.Method {
-	case "textDocument/publishDiagnostics":
-		var params protocol.PublishDiagnosticsParams
-		if err := json.Unmarshal(*req.Params, &params); err != nil {
-			log.Printf("diagnostics unmarshal failed: %v\n", err)
-			return true
-		}
-		h.updateDiagnostics(&params)
-	case "window/showMessage":
-		var params protocol.ShowMessageParams
-		if err := json.Unmarshal(*req.Params, &params); err != nil {
-			log.Printf("window/showMessage unmarshal failed: %v\n", err)
-			return true
-		}
-		log.Printf("LSP %v: %v\n", params.Type, params.Message)
-	case "window/logMessage":
-		var params protocol.LogMessageParams
-		if err := json.Unmarshal(*req.Params, &params); err != nil {
-			log.Printf("window/logMessage unmarshal failed: %v\n", err)
-			return true
-		}
-		if params.Type == protocol.Error || params.Type == protocol.Warning || Debug {
-			log.Printf("log: LSP %v: %v\n", params.Type, params.Message)
-		}
+func (h *clientHandler) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
+	return nil, nil
+}
 
-	default:
-		log.Printf("Handle: got request %#v\n", req)
-	}
-	return true
+func (h *clientHandler) Configuration(context.Context, *protocol.ParamConfig) ([]interface{}, error) {
+	return nil, nil
+}
+
+func (h *clientHandler) RegisterCapability(context.Context, *protocol.RegistrationParams) error {
+	return nil
+}
+
+func (h *clientHandler) UnregisterCapability(context.Context, *protocol.UnregistrationParams) error {
+	return nil
+}
+
+func (h *clientHandler) ShowMessageRequest(context.Context, *protocol.ShowMessageRequestParams) (*protocol.MessageActionItem, error) {
+	return nil, nil
+}
+
+func (h *clientHandler) ApplyEdit(context.Context, *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResponse, error) {
+	return &protocol.ApplyWorkspaceEditResponse{Applied: false, FailureReason: "not implemented"}, nil
 }
 
 // Config contains LSP client configuration values.
@@ -112,8 +108,7 @@ type Client struct {
 func New(conn net.Conn, cfg *Config) (*Client, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	rpc := jsonrpc2.NewConn(stream)
-	rpc.AddHandler(&handler{
+	ctx, rpc, _ := protocol.NewClient(ctx, stream, &clientHandler{
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
