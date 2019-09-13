@@ -48,42 +48,6 @@ func (m *MarkupContent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*noUnmarshal)(m))
 }
 
-type InitializeResult1 struct {
-	InitializeResult
-	Capabilities ServerCapabilities1 `json:"capabilities"`
-}
-
-type ServerCapabilities1 struct {
-	ServerCapabilities
-	Workspace *struct {
-		WorkspaceFolders *struct {
-			Supported           bool                `json:"supported,omitempty"`
-			ChangeNotifications ChangeNotifications `json:"changeNotifications,omitempty"` // string | boolean
-		} `json:"workspaceFolders,omitempty"`
-	} `json:"workspace,omitempty"`
-}
-
-// ChangeNotifications contains either a bool or a string value.
-type ChangeNotifications struct {
-	Value interface{}
-}
-
-// UnmarshalJSON unmarshals JSON data into ChangeNotifications.
-func (cn *ChangeNotifications) UnmarshalJSON(data []byte) error {
-	var b bool
-	if err := json.Unmarshal(data, &b); err == nil {
-		cn.Value = b
-		return nil
-	}
-
-	var s string
-	err := json.Unmarshal(data, &s)
-	if err == nil {
-		cn.Value = s
-	}
-	return err
-}
-
 // CodeActionLiteralSupport is a type alias that works around difficulty in initializing the pointer
 // InitializeParams.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.
 type CodeActionLiteralSupport = struct {

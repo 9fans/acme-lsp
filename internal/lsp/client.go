@@ -106,7 +106,7 @@ type Config struct {
 type Client struct {
 	rpc          *jsonrpc2.Conn
 	ctx          context.Context
-	Capabilities *protocol.ServerCapabilities1
+	Capabilities *protocol.ServerCapabilities
 }
 
 func New(conn net.Conn, cfg *Config) (*Client, error) {
@@ -139,7 +139,7 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	var result protocol.InitializeResult1
+	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
 	}

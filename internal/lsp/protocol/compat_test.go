@@ -226,20 +226,20 @@ func TestFormattingOptions(t *testing.T) {
 func TestChangeNotifications_UnmarshalJSON(t *testing.T) {
 	tt := []struct {
 		data []byte
-		cn   ChangeNotifications
+		cn   interface{}
 	}{
-		{[]byte("true"), ChangeNotifications{Value: true}},
-		{[]byte("false"), ChangeNotifications{Value: false}},
-		{[]byte(`"true"`), ChangeNotifications{Value: "true"}},
-		{[]byte(`"false"`), ChangeNotifications{Value: "false"}},
+		{[]byte("true"), true},
+		{[]byte("false"), false},
+		{[]byte(`"true"`), "true"},
+		{[]byte(`"false"`), "false"},
 		{
 			[]byte(`"workspace/didChangeWorkspaceFolders"`), // gopls
-			ChangeNotifications{Value: "workspace/didChangeWorkspaceFolders"},
+			"workspace/didChangeWorkspaceFolders",
 		},
 	}
 
 	for _, tc := range tt {
-		var cn ChangeNotifications
+		var cn interface{}
 		err := json.Unmarshal(tc.data, &cn)
 		if err != nil {
 			t.Fatalf("unmarshal of %q returned error %v", tc.data, err)

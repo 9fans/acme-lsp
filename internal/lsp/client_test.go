@@ -545,10 +545,8 @@ func TestClientProvidesCodeAction(t *testing.T) {
 		},
 	} {
 		c := &Client{
-			Capabilities: &protocol.ServerCapabilities1{
-				ServerCapabilities: protocol.ServerCapabilities{
-					CodeActionProvider: tc.provider,
-				},
+			Capabilities: &protocol.ServerCapabilities{
+				CodeActionProvider: tc.provider,
 			},
 		}
 		got := c.ProvidesCodeAction(tc.kind)
