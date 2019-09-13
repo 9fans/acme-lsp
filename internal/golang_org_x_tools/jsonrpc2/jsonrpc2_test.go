@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fhs/acme-lsp/internal/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 )
 
 var logRPC = flag.Bool("logrpc", false, "Enable jsonrpc2 communication logging")
@@ -115,7 +115,7 @@ func run(ctx context.Context, t *testing.T, withHeaders bool, r io.ReadCloser, w
 			w.Close()
 		}()
 		if err := conn.Run(ctx); err != nil {
-			t.Errorf("Stream failed: %v", err)
+			t.Fatalf("Stream failed: %v", err)
 		}
 	}()
 	return conn

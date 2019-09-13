@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	p9client "9fans.net/go/plan9/client"
-	"github.com/fhs/acme-lsp/internal/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/pkg/errors"
