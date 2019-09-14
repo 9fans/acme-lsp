@@ -9,7 +9,7 @@ script:
   - go get github.com/sourcegraph/go-langserver
   - sudo pip install 'python-language-server[yapf]'
   - go install -v ./...
-  - test `gofmt -l -s . | wc -l` = 0
+  - test `gofmt -l . | wc -l` = 0
   - go test -race -v -coverprofile=coverage.txt -covermode=atomic ./...
 
 after_success:
