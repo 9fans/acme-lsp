@@ -33,7 +33,7 @@ type proxyHandler struct {
 
 func (h *proxyHandler) Deliver(ctx context.Context, req *jsonrpc2.Request, delivered bool) bool {
 	switch req.Method {
-	case "acme-lsp/rpc":
+	case "acme-lsp/rpc": // req
 		var msg ProxyMessage
 		err := json.Unmarshal(*req.Params, &msg)
 		if err != nil {
@@ -43,6 +43,14 @@ func (h *proxyHandler) Deliver(ctx context.Context, req *jsonrpc2.Request, deliv
 
 		err = runRPC(h.ss, h.fm, msg.Data, msg.Attr)
 		err = req.Reply(ctx, nil, err)
+		if err != nil {
+			log.Printf("could not reply to request: %v", err)
+		}
+		return true
+
+	case "acme-lsp/workspaceDirectories": // req
+		dirs := h.ss.Workspaces()
+		err := req.Reply(ctx, &dirs, nil)
 		if err != nil {
 			log.Printf("could not reply to request: %v", err)
 		}
@@ -79,12 +87,6 @@ func ProxyAddr() string {
 func runRPC(ss *lsp.ServerSet, fm *FileManager, data string, attr map[string]string) error {
 	args := strings.Fields(data)
 	switch args[0] {
-	case "workspaces":
-		fmt.Printf("Workspaces:\n")
-		for _, d := range ss.Workspaces() {
-			fmt.Printf(" %v\n", d)
-		}
-		return nil
 	case "workspaces-add":
 		return ss.AddWorkspaces(args[1:])
 	case "workspaces-remove":

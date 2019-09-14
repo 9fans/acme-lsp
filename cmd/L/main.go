@@ -111,6 +111,8 @@ func main() {
 }
 
 func run(args []string) error {
+	ctx := context.Background()
+
 	if len(args) == 0 {
 		usage()
 	}
@@ -160,7 +162,15 @@ func run(args []string) error {
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
 	case "ws":
-		return plumbCmd(nil, "workspaces")
+		var dirs []string
+		err := proxyCall(ctx, "acme-lsp/workspaceDirectories", nil, &dirs)
+		if err != nil {
+			return err
+		}
+		for _, d := range dirs {
+			fmt.Printf("%v\n", d)
+		}
+		return nil
 	case "ws+":
 		dirs, err := dirsOrCurrentDir(args[1:])
 		if err != nil {
@@ -182,6 +192,14 @@ func run(args []string) error {
 func plumbCmd(attr map[string]string, args ...string) error {
 	ctx := context.Background()
 
+	m := acmelsp.ProxyMessage{
+		Data: strings.Join(args, " "),
+		Attr: attr,
+	}
+	return proxyCall(ctx, "acme-lsp/rpc", m, nil)
+}
+
+func proxyCall(ctx context.Context, method string, params, result interface{}) error {
 	conn, err := net.Dial("unix", acmelsp.ProxyAddr())
 	if err != nil {
 		return fmt.Errorf("dial failed: %v", err)
@@ -192,11 +210,7 @@ func plumbCmd(attr map[string]string, args ...string) error {
 	rpc := jsonrpc2.NewConn(stream)
 	go rpc.Run(ctx)
 
-	m := acmelsp.ProxyMessage{
-		Data: strings.Join(args, " "),
-		Attr: attr,
-	}
-	return rpc.Call(ctx, "acme-lsp/rpc", m, nil)
+	return rpc.Call(ctx, method, params, result)
 }
 
 func plumbAcmeCmd(attr map[string]string, args ...string) error {
