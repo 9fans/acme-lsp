@@ -101,6 +101,7 @@ type Config struct {
 // Client represents a LSP client connection.
 type Client struct {
 	rpc          *jsonrpc2.Conn
+	server       protocol.Server
 	ctx          context.Context
 	Capabilities *protocol.ServerCapabilities
 }
@@ -108,7 +109,7 @@ type Client struct {
 func New(conn net.Conn, cfg *Config) (*Client, error) {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	ctx, rpc, _ := protocol.NewClient(ctx, stream, &clientHandler{
+	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
@@ -143,6 +144,7 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	}
 	return &Client{
 		rpc:          rpc,
+		server:       server,
 		ctx:          ctx,
 		Capabilities: &result.Capabilities,
 	}, nil
@@ -154,32 +156,28 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	loc := make([]protocol.Location, 1)
-	if err := c.rpc.Call(c.ctx, "textDocument/definition", pos, &loc); err != nil {
-		return nil, err
-	}
-	return loc, nil
+	return c.server.Definition(c.ctx, &protocol.DefinitionParams{
+		TextDocumentPositionParams: *pos,
+	})
 }
 
 func (c *Client) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	loc := make([]protocol.Location, 1)
-	if err := c.rpc.Call(c.ctx, "textDocument/typeDefinition", pos, &loc); err != nil {
-		return nil, err
-	}
-	return loc, nil
+	return c.server.TypeDefinition(c.ctx, &protocol.TypeDefinitionParams{
+		TextDocumentPositionParams: *pos,
+	})
 }
 
 func (c *Client) Implementation(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	loc := make([]protocol.Location, 1)
-	if err := c.rpc.Call(c.ctx, "textDocument/implementation", pos, &loc); err != nil {
-		return nil, err
-	}
-	return loc, nil
+	return c.server.Implementation(c.ctx, &protocol.ImplementationParams{
+		TextDocumentPositionParams: *pos,
+	})
 }
 
 func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	var hov protocol.Hover
-	if err := c.rpc.Call(c.ctx, "textDocument/hover", pos, &hov); err != nil {
+	hov, err := c.server.Hover(c.ctx, &protocol.HoverParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
 		return err
 	}
 	fmt.Fprintf(w, "%v\n", hov.Contents.Value)
@@ -187,14 +185,13 @@ func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) er
 }
 
 func (c *Client) References(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	rp := &protocol.ReferenceParams{
+	loc, err := c.server.References(c.ctx, &protocol.ReferenceParams{
 		TextDocumentPositionParams: *pos,
 		Context: protocol.ReferenceContext{
 			IncludeDeclaration: true,
 		},
-	}
-	loc := make([]protocol.Location, 1)
-	if err := c.rpc.Call(c.ctx, "textDocument/references", rp, &loc); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 	if len(loc) == 0 {
@@ -243,20 +240,21 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 }
 
 func (c *Client) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
-	comp := &protocol.CompletionParams{
+	cl, err := c.server.Completion(c.ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
 		Context:                    &protocol.CompletionContext{},
-	}
-	var cl protocol.CompletionList
-	if err := c.rpc.Call(c.ctx, "textDocument/completion", comp, &cl); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 	return cl.Items, nil
 }
 
 func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	var sh protocol.SignatureHelp
-	if err := c.rpc.Call(c.ctx, "textDocument/signatureHelp", pos, &sh); err != nil {
+	sh, err := c.server.SignatureHelp(c.ctx, &protocol.SignatureHelpParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
 		return err
 	}
 	for _, sig := range sh.Signatures {
@@ -267,33 +265,23 @@ func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Wr
 }
 
 func (c *Client) Rename(pos *protocol.TextDocumentPositionParams, newname string) (*protocol.WorkspaceEdit, error) {
-	params := &protocol.RenameParams{
+	return c.server.Rename(c.ctx, &protocol.RenameParams{
 		TextDocument: pos.TextDocument,
 		Position:     pos.Position,
 		NewName:      newname,
-	}
-	var we protocol.WorkspaceEdit
-	if err := c.rpc.Call(c.ctx, "textDocument/rename", params, &we); err != nil {
-		return nil, err
-	}
-	return &we, nil
+	})
 }
 
 func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
-	params := &protocol.DocumentFormattingParams{
+	return c.server.Formatting(c.ctx, &protocol.DocumentFormattingParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
-	}
-	var edits []protocol.TextEdit
-	if err := c.rpc.Call(c.ctx, "textDocument/formatting", params, &edits); err != nil {
-		return nil, err
-	}
-	return edits, nil
+	})
 }
 
 func (c *Client) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeAction, error) {
-	params := &protocol.CodeActionParams{
+	return c.server.CodeAction(c.ctx, &protocol.CodeActionParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
@@ -302,12 +290,7 @@ func (c *Client) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeActio
 			Diagnostics: nil,
 			Only:        []protocol.CodeActionKind{protocol.SourceOrganizeImports},
 		},
-	}
-	var actions []protocol.CodeAction
-	if err := c.rpc.Call(c.ctx, "textDocument/codeAction", params, &actions); err != nil {
-		return nil, err
-	}
-	return actions, nil
+	})
 }
 
 func fileLanguage(filename string) string {
@@ -326,40 +309,37 @@ func fileLanguage(filename string) string {
 }
 
 func (c *Client) DidOpen(filename string, body []byte) error {
-	params := &protocol.DidOpenTextDocumentParams{
+	return c.server.DidOpen(c.ctx, &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
 			URI:        text.ToURI(filename),
 			LanguageID: fileLanguage(filename),
 			Version:    0,
 			Text:       string(body),
 		},
-	}
-	return c.rpc.Notify(c.ctx, "textDocument/didOpen", params)
+	})
 }
 
 func (c *Client) DidClose(filename string) error {
-	params := &protocol.DidCloseTextDocumentParams{
+	return c.server.DidClose(c.ctx, &protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: text.ToURI(filename),
 		},
-	}
-	return c.rpc.Notify(c.ctx, "textDocument/didClose", params)
+	})
 }
 
 func (c *Client) DidSave(filename string) error {
-	params := &protocol.DidSaveTextDocumentParams{
+	return c.server.DidSave(c.ctx, &protocol.DidSaveTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
 			},
 			// TODO(fhs): add text field for includeText option
 		},
-	}
-	return c.rpc.Notify(c.ctx, "textDocument/didSave", params)
+	})
 }
 
 func (c *Client) DidChange(filename string, body []byte) error {
-	params := &protocol.DidChangeTextDocumentParams{
+	return c.server.DidChange(c.ctx, &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
@@ -370,8 +350,7 @@ func (c *Client) DidChange(filename string, body []byte) error {
 				Text: string(body),
 			},
 		},
-	}
-	return c.rpc.Notify(c.ctx, "textDocument/didChange", params)
+	})
 }
 
 func (c *Client) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) error {
@@ -383,13 +362,12 @@ func (c *Client) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) erro
 	if err != nil {
 		return err
 	}
-	params := &protocol.DidChangeWorkspaceFoldersParams{
+	return c.server.DidChangeWorkspaceFolders(c.ctx, &protocol.DidChangeWorkspaceFoldersParams{
 		Event: protocol.WorkspaceFoldersChangeEvent{
 			Added:   added,
 			Removed: removed,
 		},
-	}
-	return c.rpc.Notify(c.ctx, "workspace/didChangeWorkspaceFolders", params)
+	})
 }
 
 func (c *Client) ProvidesCodeAction(kind protocol.CodeActionKind) bool {
