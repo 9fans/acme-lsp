@@ -100,7 +100,6 @@ type Config struct {
 
 // Client represents a LSP client connection.
 type Client struct {
-	rpc          *jsonrpc2.Conn
 	server       protocol.Server
 	ctx          context.Context
 	Capabilities *protocol.ServerCapabilities
@@ -131,6 +130,7 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport = new(protocol.CodeActionLiteralSupport)
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
+	params.Capabilities.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = true
 	params.WorkspaceFolders, err = dirsToWorkspaceFolders(cfg.Workspaces)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,6 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 		return nil, errors.Wrap(err, "initialized failed")
 	}
 	return &Client{
-		rpc:          rpc,
 		server:       server,
 		ctx:          ctx,
 		Capabilities: &result.Capabilities,
@@ -218,14 +217,27 @@ func (c *Client) References(pos *protocol.TextDocumentPositionParams, w io.Write
 	return nil
 }
 
+func walkDocumentSymbols(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
+	for _, s := range syms {
+		f(&s, depth)
+		walkDocumentSymbols(s.Children, depth+1, f)
+	}
+}
+
 func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
-	params := &protocol.DocumentSymbolParams{
+	// TODO(fhs): DocumentSymbol request can return either a
+	// []DocumentSymbol (hierarchical) or []SymbolInformation (flat).
+	// We only handle the hierarchical type below.
+
+	// TODO(fhs): Make use of DocumentSymbol.Range to optionally filter out
+	// symbols that aren't within current cursor position?
+
+	syms, err := c.server.DocumentSymbol(c.ctx, &protocol.DocumentSymbolParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
-	}
-	var syms []protocol.SymbolInformation
-	if err := c.rpc.Call(c.ctx, "textDocument/documentSymbol", params, &syms); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 	if len(syms) == 0 {
@@ -233,9 +245,15 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 		return nil
 	}
 	fmt.Printf("Symbols:\n")
-	for _, s := range syms {
-		fmt.Fprintf(w, " %v %v %v %v\n", s.ContainerName, s.Name, s.Kind, LocationLink(&s.Location))
-	}
+	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
+		loc := &protocol.Location{
+			URI:   uri,
+			Range: s.SelectionRange,
+		}
+		indent := strings.Repeat(" ", depth)
+		fmt.Fprintf(w, "%v %v %v %v\n", indent, s.Kind, s.Name, s.Detail)
+		fmt.Fprintf(w, "%v  %v\n", indent, LocationLink(loc))
+	})
 	return nil
 }
 
