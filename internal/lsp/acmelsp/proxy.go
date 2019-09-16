@@ -24,12 +24,6 @@ type proxyServer struct {
 
 func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error {
 	args := strings.Fields(msg.Data)
-	switch args[0] {
-	case "workspaces-add":
-		return s.ss.AddWorkspaces(args[1:])
-	case "workspaces-remove":
-		return s.ss.RemoveWorkspaces(args[1:])
-	}
 
 	winid, err := strconv.Atoi(msg.Attr["winid"])
 	if err != nil {
@@ -82,6 +76,14 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 
 func (s *proxyServer) WorkspaceDirectories(context.Context) ([]string, error) {
 	return s.ss.Workspaces(), nil
+}
+
+func (s *proxyServer) AddWorkspaceDirectories(ctx context.Context, dirs []string) error {
+	return s.ss.AddWorkspaces(dirs)
+}
+
+func (s *proxyServer) RemoveWorkspaceDirectories(ctx context.Context, dirs []string) error {
+	return s.ss.RemoveWorkspaces(dirs)
 }
 
 func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {

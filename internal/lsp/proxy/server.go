@@ -11,6 +11,8 @@ import (
 type Server interface {
 	SendMessage(context.Context, *Message) error
 	WorkspaceDirectories(context.Context) ([]string, error)
+	AddWorkspaceDirectories(context.Context, []string) error
+	RemoveWorkspaceDirectories(context.Context, []string) error
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -45,6 +47,28 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
+	case "acme-lsp/addWorkspaceDirectories": // notif
+		var params []string
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		if err := h.server.AddWorkspaceDirectories(ctx, params); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
+	case "acme-lsp/removeWorkspaceDirectories": // notif
+		var params []string
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		if err := h.server.RemoveWorkspaceDirectories(ctx, params); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	default:
 		return false
 	}
@@ -64,6 +88,14 @@ func (s *serverDispatcher) WorkspaceDirectories(ctx context.Context) ([]string, 
 		return nil, err
 	}
 	return result, nil
+}
+
+func (s *serverDispatcher) AddWorkspaceDirectories(ctx context.Context, params []string) error {
+	return s.Conn.Notify(ctx, "acme-lsp/addWorkspaceDirectories", &params)
+}
+
+func (s *serverDispatcher) RemoveWorkspaceDirectories(ctx context.Context, params []string) error {
+	return s.Conn.Notify(ctx, "acme-lsp/removeWorkspaceDirectories", &params)
 }
 
 type CancelParams struct {

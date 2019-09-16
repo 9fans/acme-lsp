@@ -191,15 +191,13 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		args = append([]string{"workspaces-add"}, dirs...)
-		return sendMessage(ctx, server, nil, args...)
+		return server.AddWorkspaceDirectories(ctx, dirs)
 	case "ws-":
 		dirs, err := dirsOrCurrentDir(args[1:])
 		if err != nil {
 			return err
 		}
-		args = append([]string{"workspaces-remove"}, dirs...)
-		return sendMessage(ctx, server, nil, args...)
+		return server.RemoveWorkspaceDirectories(ctx, dirs)
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }
