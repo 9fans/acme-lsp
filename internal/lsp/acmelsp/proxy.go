@@ -2,9 +2,7 @@ package acmelsp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,89 +13,29 @@ import (
 	p9client "9fans.net/go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
 )
 
-type ProxyMessage struct {
-	Data string
-	Attr map[string]string
+type proxyServer struct {
+	ss *lsp.ServerSet // client connections to upstream LSP server (e.g. gopls)
+	fm *FileManager
 }
 
-type proxyHandler struct {
-	jsonrpc2.EmptyHandler
-
-	ss  *lsp.ServerSet // client connections to upstream LSP server (e.g. gopls)
-	fm  *FileManager
-	rpc *jsonrpc2.Conn // listen for requests on this connection
-}
-
-func (h *proxyHandler) Deliver(ctx context.Context, req *jsonrpc2.Request, delivered bool) bool {
-	switch req.Method {
-	case "acme-lsp/rpc": // req
-		var msg ProxyMessage
-		err := json.Unmarshal(*req.Params, &msg)
-		if err != nil {
-			log.Printf("could not unmarshal request params in proxy: %v", err)
-			return true
-		}
-
-		err = runRPC(h.ss, h.fm, msg.Data, msg.Attr)
-		err = req.Reply(ctx, nil, err)
-		if err != nil {
-			log.Printf("could not reply to request: %v", err)
-		}
-		return true
-
-	case "acme-lsp/workspaceDirectories": // req
-		dirs := h.ss.Workspaces()
-		err := req.Reply(ctx, &dirs, nil)
-		if err != nil {
-			log.Printf("could not reply to request: %v", err)
-		}
-		return true
-	}
-	return false
-}
-
-func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {
-	ln, err := Listen("unix", ProxyAddr())
-	if err != nil {
-		return err
-	}
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			return err
-		}
-		stream := jsonrpc2.NewHeaderStream(conn, conn)
-		rpc := jsonrpc2.NewConn(stream)
-		rpc.AddHandler(&proxyHandler{
-			ss:  ss,
-			fm:  fm,
-			rpc: rpc,
-		})
-		go rpc.Run(ctx)
-	}
-}
-
-func ProxyAddr() string {
-	return filepath.Join(p9client.Namespace(), "acme-lsp.rpc")
-}
-
-func runRPC(ss *lsp.ServerSet, fm *FileManager, data string, attr map[string]string) error {
-	args := strings.Fields(data)
+func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error {
+	args := strings.Fields(msg.Data)
 	switch args[0] {
 	case "workspaces-add":
-		return ss.AddWorkspaces(args[1:])
+		return s.ss.AddWorkspaces(args[1:])
 	case "workspaces-remove":
-		return ss.RemoveWorkspaces(args[1:])
+		return s.ss.RemoveWorkspaces(args[1:])
 	}
 
-	winid, err := strconv.Atoi(attr["winid"])
+	winid, err := strconv.Atoi(msg.Attr["winid"])
 	if err != nil {
 		return errors.Wrap(err, "failed to parse $winid")
 	}
-	cmd, err := WindowCmd(ss, fm, winid)
+	cmd, err := WindowCmd(s.ss, s.fm, winid)
 	if err != nil {
 		return err
 	}
@@ -121,25 +59,52 @@ func runRPC(ss *lsp.ServerSet, fm *FileManager, data string, attr map[string]str
 	case "references":
 		return cmd.References()
 	case "rename":
-		return cmd.Rename(attr["newname"])
+		return cmd.Rename(msg.Attr["newname"])
 	case "signature":
 		return cmd.SignatureHelp()
 	case "symbols":
 		return cmd.Symbols()
 	case "watch-completion":
-		go Assist(ss, fm, "comp")
+		go Assist(s.ss, s.fm, "comp")
 		return nil
 	case "watch-signature":
-		go Assist(ss, fm, "sig")
+		go Assist(s.ss, s.fm, "sig")
 		return nil
 	case "watch-hover":
-		go Assist(ss, fm, "hov")
+		go Assist(s.ss, s.fm, "hov")
 		return nil
 	case "watch-auto":
-		go Assist(ss, fm, "auto")
+		go Assist(s.ss, s.fm, "auto")
 		return nil
 	}
 	return fmt.Errorf("unknown command %v", args[0])
+}
+
+func (s *proxyServer) WorkspaceDirectories(context.Context) ([]string, error) {
+	return s.ss.Workspaces(), nil
+}
+
+func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {
+	ln, err := Listen("unix", ProxyAddr())
+	if err != nil {
+		return err
+	}
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			return err
+		}
+		stream := jsonrpc2.NewHeaderStream(conn, conn)
+		ctx, rpc, _ := proxy.NewServer(ctx, stream, &proxyServer{
+			ss: ss,
+			fm: fm,
+		})
+		go rpc.Run(ctx)
+	}
+}
+
+func ProxyAddr() string {
+	return filepath.Join(p9client.Namespace(), "acme-lsp.rpc")
 }
 
 // Listen is like net.Listen but it removes dead unix sockets.

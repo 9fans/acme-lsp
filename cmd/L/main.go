@@ -16,6 +16,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
+	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
 )
 
@@ -116,21 +117,36 @@ func run(args []string) error {
 	if len(args) == 0 {
 		usage()
 	}
+
+	conn, err := net.Dial("unix", acmelsp.ProxyAddr())
+	if err != nil {
+		return fmt.Errorf("dial failed: %v", err)
+	}
+	defer conn.Close()
+
+	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
+	go rpc.Run(ctx)
+
+	sendMsg := func(attr map[string]string, args ...string) error {
+		return sendMessageWithWinID(ctx, server, attr, args...)
+	}
+
 	switch args[0] {
 	case "comp":
 		args = args[1:]
 		if len(args) > 0 && args[0] == "-e" {
-			return plumbAcmeCmd(nil, "completion-edit")
+			return sendMsg(nil, "completion-edit")
 		}
-		return plumbAcmeCmd(nil, "completion")
+		return sendMsg(nil, "completion")
 	case "def":
-		return plumbAcmeCmd(nil, "definition")
+		return sendMsg(nil, "definition")
 	case "fmt":
-		return plumbAcmeCmd(nil, "format")
+		return sendMsg(nil, "format")
 	case "hov":
-		return plumbAcmeCmd(nil, "hover")
+		return sendMsg(nil, "hover")
 	case "refs":
-		return plumbAcmeCmd(nil, "references")
+		return sendMsg(nil, "references")
 	case "rn":
 		if len(args) < 2 {
 			usage()
@@ -138,32 +154,31 @@ func run(args []string) error {
 		attr := map[string]string{
 			"newname": args[1],
 		}
-		return plumbAcmeCmd(attr, "rename")
+		return sendMsg(attr, "rename")
 	case "sig":
-		return plumbAcmeCmd(nil, "signature")
+		return sendMsg(nil, "signature")
 	case "syms":
-		return plumbAcmeCmd(nil, "symbols")
+		return sendMsg(nil, "symbols")
 	case "type":
-		return plumbAcmeCmd(nil, "type-definition")
+		return sendMsg(nil, "type-definition")
 	case "win", "assist": // "win" is deprecated
 		args = args[1:]
 		if len(args) == 0 {
-			return plumbAcmeCmd(nil, "watch-auto")
+			return sendMsg(nil, "watch-auto")
 		}
 		switch args[0] {
 		case "comp":
-			return plumbAcmeCmd(nil, "watch-completion")
+			return sendMsg(nil, "watch-completion")
 		case "sig":
-			return plumbAcmeCmd(nil, "watch-signature")
+			return sendMsg(nil, "watch-signature")
 		case "hov":
-			return plumbAcmeCmd(nil, "watch-hover")
+			return sendMsg(nil, "watch-hover")
 		case "auto":
-			return plumbAcmeCmd(nil, "watch-auto")
+			return sendMsg(nil, "watch-auto")
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
 	case "ws":
-		var dirs []string
-		err := proxyCall(ctx, "acme-lsp/workspaceDirectories", nil, &dirs)
+		dirs, err := server.WorkspaceDirectories(ctx)
 		if err != nil {
 			return err
 		}
@@ -177,43 +192,19 @@ func run(args []string) error {
 			return err
 		}
 		args = append([]string{"workspaces-add"}, dirs...)
-		return plumbCmd(nil, args...)
+		return sendMessage(ctx, server, nil, args...)
 	case "ws-":
 		dirs, err := dirsOrCurrentDir(args[1:])
 		if err != nil {
 			return err
 		}
 		args = append([]string{"workspaces-remove"}, dirs...)
-		return plumbCmd(nil, args...)
+		return sendMessage(ctx, server, nil, args...)
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
-func plumbCmd(attr map[string]string, args ...string) error {
-	ctx := context.Background()
-
-	m := acmelsp.ProxyMessage{
-		Data: strings.Join(args, " "),
-		Attr: attr,
-	}
-	return proxyCall(ctx, "acme-lsp/rpc", m, nil)
-}
-
-func proxyCall(ctx context.Context, method string, params, result interface{}) error {
-	conn, err := net.Dial("unix", acmelsp.ProxyAddr())
-	if err != nil {
-		return fmt.Errorf("dial failed: %v", err)
-	}
-	defer conn.Close()
-
-	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	rpc := jsonrpc2.NewConn(stream)
-	go rpc.Run(ctx)
-
-	return rpc.Call(ctx, method, params, result)
-}
-
-func plumbAcmeCmd(attr map[string]string, args ...string) error {
+func sendMessageWithWinID(ctx context.Context, server proxy.Server, attr map[string]string, args ...string) error {
 	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
 	if err != nil {
 		return errors.Wrap(err, "could not get focused window ID")
@@ -222,7 +213,15 @@ func plumbAcmeCmd(attr map[string]string, args ...string) error {
 		attr = make(map[string]string)
 	}
 	attr["winid"] = winid
-	return plumbCmd(attr, args...)
+	return sendMessage(ctx, server, attr, args...)
+}
+
+func sendMessage(ctx context.Context, server proxy.Server, attr map[string]string, args ...string) error {
+	m := &proxy.Message{
+		Data: strings.Join(args, " "),
+		Attr: attr,
+	}
+	return server.SendMessage(ctx, m)
 }
 
 func dirsOrCurrentDir(dirs []string) ([]string, error) {
