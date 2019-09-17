@@ -15,6 +15,7 @@ type Server interface {
 	WorkspaceDirectories(context.Context) ([]string, error)
 	AddWorkspaceDirectories(context.Context, []string) error
 	RemoveWorkspaceDirectories(context.Context, []string) error
+	Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
 }
@@ -224,10 +225,6 @@ func (s *lspServerDispatcher) Shutdown(context.Context) error {
 }
 
 func (s *lspServerDispatcher) WillSaveWaitUntil(context.Context, *protocol.WillSaveTextDocumentParams) ([]protocol.TextEdit, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

@@ -38,10 +38,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	defer cmd.Close()
 
 	switch args[0] {
-	case "completion":
-		return cmd.Completion(false)
-	case "completion-edit":
-		return cmd.Completion(true)
 	case "type-definition":
 		return cmd.TypeDefinition()
 	case "format":
@@ -82,6 +78,14 @@ func (s *proxyServer) AddWorkspaceDirectories(ctx context.Context, dirs []string
 
 func (s *proxyServer) RemoveWorkspaceDirectories(ctx context.Context, dirs []string) error {
 	return s.ss.RemoveWorkspaces(dirs)
+}
+
+func (s *proxyServer) Completion(ctx context.Context, params *protocol.CompletionParams) (*protocol.CompletionList, error) {
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.Completion(ctx, params)
 }
 
 func (s *proxyServer) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {

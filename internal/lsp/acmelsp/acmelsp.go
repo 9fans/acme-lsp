@@ -73,7 +73,7 @@ func (c *Cmd) Close() {
 }
 
 func (c *Cmd) Completion(edit bool) error {
-	items, err := c.Client.Completion(c.pos)
+	items, err := c.Client.Completion1(c.pos)
 	if err != nil {
 		return err
 	}

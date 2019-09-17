@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 
@@ -35,6 +36,39 @@ func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, fi
 	defer w.CloseFiles()
 
 	return text.Position(w)
+}
+
+func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
+	w, err := acmeutil.OpenWin(rc.winid)
+	if err != nil {
+		return err
+	}
+	defer w.CloseFiles()
+
+	pos, _, err := text.Position(w)
+	if err != nil {
+		return err
+	}
+	result, err := rc.server.Completion(ctx, &protocol.CompletionParams{
+		TextDocumentPositionParams: *pos,
+		Context:                    &protocol.CompletionContext{},
+	})
+	if err != nil {
+		return err
+	}
+	if edit && len(result.Items) == 1 {
+		textEdit := result.Items[0].TextEdit
+		if textEdit == nil {
+			// TODO(fhs): Use insertText or label instead.
+			return fmt.Errorf("nil TextEdit in completion item")
+		}
+		if err := text.Edit(w, []protocol.TextEdit{*textEdit}); err != nil {
+			return errors.Wrapf(err, "failed to apply completion edit")
+		}
+		return nil
+	}
+	printCompletionItems(os.Stdout, result.Items)
+	return nil
 }
 
 func (rc *RemoteCmd) Definition(ctx context.Context) error {

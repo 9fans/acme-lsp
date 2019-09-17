@@ -140,11 +140,9 @@ func run(args []string) error {
 
 	switch args[0] {
 	case "comp":
+		rc := acmelsp.NewRemoteCmd(server, winid)
 		args = args[1:]
-		if len(args) > 0 && args[0] == "-e" {
-			return sendMsg(nil, "completion-edit")
-		}
-		return sendMsg(nil, "completion")
+		return rc.Completion(ctx, len(args) > 0 && args[0] == "-e")
 	case "def":
 		rc := acmelsp.NewRemoteCmd(server, winid)
 		return rc.Definition(ctx)

@@ -219,7 +219,7 @@ func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 	w.Clear()
 	switch cmd {
 	case "comp":
-		items, err := c.Completion(pos)
+		items, err := c.Completion1(pos)
 		if err != nil {
 			dprintf("Completion failed: %v\n", err)
 		}

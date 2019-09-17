@@ -259,7 +259,7 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 	return nil
 }
 
-func (c *Client) Completion(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
+func (c *Client) Completion1(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
 	cl, err := c.server.Completion(c.ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
 		Context:                    &protocol.CompletionContext{},
@@ -268,6 +268,10 @@ func (c *Client) Completion(pos *protocol.TextDocumentPositionParams) ([]protoco
 		return nil, err
 	}
 	return cl.Items, nil
+}
+
+func (c *Client) Completion(ctx context.Context, params *protocol.CompletionParams) (*protocol.CompletionList, error) {
+	return c.server.Completion(ctx, params)
 }
 
 func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
