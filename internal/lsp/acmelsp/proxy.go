@@ -13,7 +13,9 @@ import (
 	p9client "9fans.net/go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
+	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
 
@@ -40,8 +42,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 		return cmd.Completion(false)
 	case "completion-edit":
 		return cmd.Completion(true)
-	case "definition":
-		return cmd.Definition()
 	case "type-definition":
 		return cmd.TypeDefinition()
 	case "format":
@@ -84,6 +84,18 @@ func (s *proxyServer) AddWorkspaceDirectories(ctx context.Context, dirs []string
 
 func (s *proxyServer) RemoveWorkspaceDirectories(ctx context.Context, dirs []string) error {
 	return s.ss.RemoveWorkspaces(dirs)
+}
+
+func (s *proxyServer) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
+	filename := text.ToPath(params.TextDocumentPositionParams.TextDocument.URI)
+	srv, found, err := s.ss.StartForFile(filename)
+	if !found {
+		return nil, fmt.Errorf("unknown language server for file %v", filename)
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "cound not start language server")
+	}
+	return srv.Client.Definition(ctx, params)
 }
 
 func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 type Server interface {
@@ -13,6 +14,7 @@ type Server interface {
 	WorkspaceDirectories(context.Context) ([]string, error)
 	AddWorkspaceDirectories(context.Context, []string) error
 	RemoveWorkspaceDirectories(context.Context, []string) error
+	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -69,6 +71,18 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
+	case "textDocument/definition": // req
+		var params protocol.DefinitionParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.Definition(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	default:
 		return false
 	}
@@ -96,6 +110,14 @@ func (s *serverDispatcher) AddWorkspaceDirectories(ctx context.Context, params [
 
 func (s *serverDispatcher) RemoveWorkspaceDirectories(ctx context.Context, params []string) error {
 	return s.Conn.Notify(ctx, "acme-lsp/removeWorkspaceDirectories", &params)
+}
+
+func (s *serverDispatcher) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
+	var result []protocol.Location
+	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 type CancelParams struct {

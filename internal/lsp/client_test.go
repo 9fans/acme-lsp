@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"os"
@@ -156,16 +157,18 @@ func main() {
 		"go-langserver",
 	} {
 		testGoModule(t, srv, src, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
-			pos := &protocol.TextDocumentPositionParams{
-				TextDocument: protocol.TextDocumentIdentifier{
-					URI: uri,
-				},
-				Position: protocol.Position{
-					Line:      7,
-					Character: 22,
+			params := &protocol.DefinitionParams{
+				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+					TextDocument: protocol.TextDocumentIdentifier{
+						URI: uri,
+					},
+					Position: protocol.Position{
+						Line:      7,
+						Character: 22,
+					},
 				},
 			}
-			got, err := c.Definition(pos)
+			got, err := c.Definition(context.Background(), params)
 			if err != nil {
 				t.Fatalf("Definition failed: %v", err)
 			}
@@ -406,16 +409,18 @@ if __name__ == '__main__':
 `
 
 	testPython(t, src, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
-		pos := &protocol.TextDocumentPositionParams{
-			TextDocument: protocol.TextDocumentIdentifier{
-				URI: uri,
-			},
-			Position: protocol.Position{
-				Line:      4,
-				Character: 6,
+		params := &protocol.DefinitionParams{
+			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+				TextDocument: protocol.TextDocumentIdentifier{
+					URI: uri,
+				},
+				Position: protocol.Position{
+					Line:      4,
+					Character: 6,
+				},
 			},
 		}
-		got, err := c.Definition(pos)
+		got, err := c.Definition(context.Background(), params)
 		if err != nil {
 			t.Fatalf("Definition failed: %v", err)
 		}

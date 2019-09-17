@@ -2,6 +2,7 @@
 package acmelsp
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -101,7 +102,9 @@ func printCompletionItems(w io.Writer, items []protocol.CompletionItem) {
 }
 
 func (c *Cmd) Definition() error {
-	locations, err := c.Client.Definition(c.pos)
+	locations, err := c.Client.Definition(context.Background(), &protocol.DefinitionParams{
+		TextDocumentPositionParams: *c.pos,
+	})
 	if err != nil {
 		return err
 	}

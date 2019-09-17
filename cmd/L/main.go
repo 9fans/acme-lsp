@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	p9client "9fans.net/go/plan9/client"
@@ -132,6 +133,11 @@ func run(args []string) error {
 		return sendMessageWithWinID(ctx, server, attr, args...)
 	}
 
+	winid, err := getWinID()
+	if err != nil {
+		return err
+	}
+
 	switch args[0] {
 	case "comp":
 		args = args[1:]
@@ -140,7 +146,8 @@ func run(args []string) error {
 		}
 		return sendMsg(nil, "completion")
 	case "def":
-		return sendMsg(nil, "definition")
+		rc := acmelsp.NewRemoteCmd(server, winid)
+		return rc.Definition(ctx)
 	case "fmt":
 		return sendMsg(nil, "format")
 	case "hov":
@@ -212,6 +219,18 @@ func sendMessageWithWinID(ctx context.Context, server proxy.Server, attr map[str
 	}
 	attr["winid"] = winid
 	return sendMessage(ctx, server, attr, args...)
+}
+
+func getWinID() (int, error) {
+	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
+	if err != nil {
+		return 0, errors.Wrap(err, "could not get focused window ID")
+	}
+	n, err := strconv.Atoi(winid)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to parse $winid")
+	}
+	return n, nil
 }
 
 func sendMessage(ctx context.Context, server proxy.Server, attr map[string]string, args ...string) error {

@@ -154,10 +154,8 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) Definition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	return c.server.Definition(c.ctx, &protocol.DefinitionParams{
-		TextDocumentPositionParams: *pos,
-	})
+func (c *Client) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
+	return c.server.Definition(ctx, params)
 }
 
 func (c *Client) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
