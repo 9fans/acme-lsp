@@ -100,7 +100,7 @@ type Config struct {
 
 // Client represents a LSP client connection.
 type Client struct {
-	server       protocol.Server
+	protocol.Server
 	ctx          context.Context
 	Capabilities *protocol.ServerCapabilities
 }
@@ -143,7 +143,7 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 		return nil, errors.Wrap(err, "initialized failed")
 	}
 	return &Client{
-		server:       server,
+		Server:       server,
 		ctx:          ctx,
 		Capabilities: &result.Capabilities,
 	}, nil
@@ -154,24 +154,20 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
-	return c.server.Definition(ctx, params)
-}
-
 func (c *Client) TypeDefinition(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	return c.server.TypeDefinition(c.ctx, &protocol.TypeDefinitionParams{
+	return c.Server.TypeDefinition(c.ctx, &protocol.TypeDefinitionParams{
 		TextDocumentPositionParams: *pos,
 	})
 }
 
 func (c *Client) Implementation(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	return c.server.Implementation(c.ctx, &protocol.ImplementationParams{
+	return c.Server.Implementation(c.ctx, &protocol.ImplementationParams{
 		TextDocumentPositionParams: *pos,
 	})
 }
 
 func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	hov, err := c.server.Hover(c.ctx, &protocol.HoverParams{
+	hov, err := c.Server.Hover(c.ctx, &protocol.HoverParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
@@ -182,7 +178,7 @@ func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) er
 }
 
 func (c *Client) References1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	loc, err := c.server.References(c.ctx, &protocol.ReferenceParams{
+	loc, err := c.Server.References(c.ctx, &protocol.ReferenceParams{
 		TextDocumentPositionParams: *pos,
 		Context: protocol.ReferenceContext{
 			IncludeDeclaration: true,
@@ -215,10 +211,6 @@ func (c *Client) References1(pos *protocol.TextDocumentPositionParams, w io.Writ
 	return nil
 }
 
-func (c *Client) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
-	return c.server.References(ctx, params)
-}
-
 func walkDocumentSymbols(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
 	for _, s := range syms {
 		f(&s, depth)
@@ -234,7 +226,7 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 	// TODO(fhs): Make use of DocumentSymbol.Range to optionally filter out
 	// symbols that aren't within current cursor position?
 
-	syms, err := c.server.DocumentSymbol(c.ctx, &protocol.DocumentSymbolParams{
+	syms, err := c.Server.DocumentSymbol(c.ctx, &protocol.DocumentSymbolParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
@@ -260,7 +252,7 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 }
 
 func (c *Client) Completion1(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
-	cl, err := c.server.Completion(c.ctx, &protocol.CompletionParams{
+	cl, err := c.Server.Completion(c.ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
 		Context:                    &protocol.CompletionContext{},
 	})
@@ -270,12 +262,8 @@ func (c *Client) Completion1(pos *protocol.TextDocumentPositionParams) ([]protoc
 	return cl.Items, nil
 }
 
-func (c *Client) Completion(ctx context.Context, params *protocol.CompletionParams) (*protocol.CompletionList, error) {
-	return c.server.Completion(ctx, params)
-}
-
 func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	sh, err := c.server.SignatureHelp(c.ctx, &protocol.SignatureHelpParams{
+	sh, err := c.Server.SignatureHelp(c.ctx, &protocol.SignatureHelpParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
@@ -289,7 +277,7 @@ func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Wr
 }
 
 func (c *Client) Rename(pos *protocol.TextDocumentPositionParams, newname string) (*protocol.WorkspaceEdit, error) {
-	return c.server.Rename(c.ctx, &protocol.RenameParams{
+	return c.Server.Rename(c.ctx, &protocol.RenameParams{
 		TextDocument: pos.TextDocument,
 		Position:     pos.Position,
 		NewName:      newname,
@@ -297,7 +285,7 @@ func (c *Client) Rename(pos *protocol.TextDocumentPositionParams, newname string
 }
 
 func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
-	return c.server.Formatting(c.ctx, &protocol.DocumentFormattingParams{
+	return c.Server.Formatting(c.ctx, &protocol.DocumentFormattingParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
@@ -305,7 +293,7 @@ func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
 }
 
 func (c *Client) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeAction, error) {
-	return c.server.CodeAction(c.ctx, &protocol.CodeActionParams{
+	return c.Server.CodeAction(c.ctx, &protocol.CodeActionParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: uri,
 		},
@@ -333,7 +321,7 @@ func fileLanguage(filename string) string {
 }
 
 func (c *Client) DidOpen(filename string, body []byte) error {
-	return c.server.DidOpen(c.ctx, &protocol.DidOpenTextDocumentParams{
+	return c.Server.DidOpen(c.ctx, &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
 			URI:        text.ToURI(filename),
 			LanguageID: fileLanguage(filename),
@@ -344,7 +332,7 @@ func (c *Client) DidOpen(filename string, body []byte) error {
 }
 
 func (c *Client) DidClose(filename string) error {
-	return c.server.DidClose(c.ctx, &protocol.DidCloseTextDocumentParams{
+	return c.Server.DidClose(c.ctx, &protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: text.ToURI(filename),
 		},
@@ -352,7 +340,7 @@ func (c *Client) DidClose(filename string) error {
 }
 
 func (c *Client) DidSave(filename string) error {
-	return c.server.DidSave(c.ctx, &protocol.DidSaveTextDocumentParams{
+	return c.Server.DidSave(c.ctx, &protocol.DidSaveTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
@@ -363,7 +351,7 @@ func (c *Client) DidSave(filename string) error {
 }
 
 func (c *Client) DidChange(filename string, body []byte) error {
-	return c.server.DidChange(c.ctx, &protocol.DidChangeTextDocumentParams{
+	return c.Server.DidChange(c.ctx, &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
@@ -386,7 +374,7 @@ func (c *Client) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) erro
 	if err != nil {
 		return err
 	}
-	return c.server.DidChangeWorkspaceFolders(c.ctx, &protocol.DidChangeWorkspaceFoldersParams{
+	return c.Server.DidChangeWorkspaceFolders(c.ctx, &protocol.DidChangeWorkspaceFoldersParams{
 		Event: protocol.WorkspaceFoldersChangeEvent{
 			Added:   added,
 			Removed: removed,
