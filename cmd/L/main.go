@@ -153,7 +153,8 @@ func run(args []string) error {
 	case "hov":
 		return sendMsg(nil, "hover")
 	case "refs":
-		return sendMsg(nil, "references")
+		rc := acmelsp.NewRemoteCmd(server, winid)
+		return rc.References(ctx, os.Stdout)
 	case "rn":
 		if len(args) < 2 {
 			usage()

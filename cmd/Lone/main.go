@@ -139,7 +139,8 @@ func main() {
 	case "hov":
 		err = cmd.Hover()
 	case "refs":
-		err = cmd.References()
+		panic("TODO: fix after refactor")
+		//err = cmd.References()
 	case "rn":
 		if flag.NArg() < 2 {
 			usage()

@@ -50,8 +50,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 		return cmd.Hover()
 	case "implementation":
 		return cmd.Implementation()
-	case "references":
-		return cmd.References()
 	case "rename":
 		return cmd.Rename(msg.Attr["newname"])
 	case "signature":
@@ -87,15 +85,31 @@ func (s *proxyServer) RemoveWorkspaceDirectories(ctx context.Context, dirs []str
 }
 
 func (s *proxyServer) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
-	filename := text.ToPath(params.TextDocumentPositionParams.TextDocument.URI)
-	srv, found, err := s.ss.StartForFile(filename)
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.Definition(ctx, params)
+}
+
+func (s *proxyServer) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.References(ctx, params)
+}
+
+func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, error) {
+	filename := text.ToPath(uri)
+	srv, found, err := ss.StartForFile(filename)
 	if !found {
 		return nil, fmt.Errorf("unknown language server for file %v", filename)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cound not start language server")
 	}
-	return srv.Client.Definition(ctx, params)
+	return srv, nil
 }
 
 func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {

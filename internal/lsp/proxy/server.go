@@ -15,6 +15,7 @@ type Server interface {
 	AddWorkspaceDirectories(context.Context, []string) error
 	RemoveWorkspaceDirectories(context.Context, []string) error
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
+	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -83,6 +84,18 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
+	case "textDocument/references": // req
+		var params protocol.ReferenceParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.References(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	default:
 		return false
 	}
@@ -115,6 +128,14 @@ func (s *serverDispatcher) RemoveWorkspaceDirectories(ctx context.Context, param
 func (s *serverDispatcher) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
 	var result []protocol.Location
 	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *serverDispatcher) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
+	var result []protocol.Location
+	if err := s.Conn.Call(ctx, "textDocument/references", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
