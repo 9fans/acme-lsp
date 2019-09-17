@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -177,6 +178,40 @@ func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) er
 		return err
 	}
 	fmt.Fprintf(w, "%v\n", hov.Contents.Value)
+	return nil
+}
+
+func (c *Client) References1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+	loc, err := c.server.References(c.ctx, &protocol.ReferenceParams{
+		TextDocumentPositionParams: *pos,
+		Context: protocol.ReferenceContext{
+			IncludeDeclaration: true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if len(loc) == 0 {
+		fmt.Fprintf(w, "No references found.\n")
+		return nil
+	}
+	sort.Slice(loc, func(i, j int) bool {
+		a := loc[i]
+		b := loc[j]
+		n := strings.Compare(string(a.URI), string(b.URI))
+		if n == 0 {
+			m := a.Range.Start.Line - b.Range.Start.Line
+			if m == 0 {
+				return a.Range.Start.Character < b.Range.Start.Character
+			}
+			return m < 0
+		}
+		return n < 0
+	})
+	fmt.Fprintf(w, "References:\n")
+	for _, l := range loc {
+		fmt.Fprintf(w, " %v\n", LocationLink(&l))
+	}
 	return nil
 }
 

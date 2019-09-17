@@ -135,6 +135,10 @@ func (c *Cmd) Hover() error {
 	return c.Client.Hover(c.pos, os.Stdout)
 }
 
+func (c *Cmd) References() error {
+	return c.Client.References1(c.pos, os.Stdout)
+}
+
 func (c *Cmd) Rename(newname string) error {
 	return Rename(c.Client, c.pos, newname)
 }
