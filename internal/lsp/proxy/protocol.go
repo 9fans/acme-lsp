@@ -11,6 +11,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/trace"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 type DocumentUri = string
@@ -39,18 +40,29 @@ func (canceller) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID
 }
 
 func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client) (context.Context, *jsonrpc2.Conn, Server) {
-	ctx = WithClient(ctx, client)
-	conn := jsonrpc2.NewConn(stream)
+	c := &lspClientDispatcher{
+		Client: client,
+	}
+	ctx, conn, server := protocol.NewClient(ctx, stream, c)
 	conn.AddHandler(&clientHandler{client: client})
-	return ctx, conn, &serverDispatcher{Conn: conn}
+	s := &serverDispatcher{
+		Conn:   conn,
+		Server: server,
+	}
+	return ctx, conn, s
 }
 
 func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server) (context.Context, *jsonrpc2.Conn, Client) {
-	conn := jsonrpc2.NewConn(stream)
-	client := &clientDispatcher{Conn: conn}
-	ctx = WithClient(ctx, client)
+	s := &lspServerDispatcher{
+		Server: server,
+	}
+	ctx, conn, client := protocol.NewServer(ctx, stream, s)
 	conn.AddHandler(&serverHandler{server: server})
-	return ctx, conn, client
+	c := &clientDispatcher{
+		Conn:   conn,
+		Client: client,
+	}
+	return ctx, conn, c
 }
 
 func sendParseError(ctx context.Context, req *jsonrpc2.Request, err error) {
