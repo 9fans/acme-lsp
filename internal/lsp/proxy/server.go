@@ -73,30 +73,6 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
-	case "textDocument/definition": // req
-		var params protocol.DefinitionParams
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		resp, err := h.server.Definition(ctx, &params)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
-
-	case "textDocument/references": // req
-		var params protocol.ReferenceParams
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		resp, err := h.server.References(ctx, &params)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
-
 	default:
 		return false
 	}
@@ -264,14 +240,6 @@ func (s *lspServerDispatcher) Hover(context.Context, *protocol.HoverParams) (*pr
 }
 
 func (s *lspServerDispatcher) SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
