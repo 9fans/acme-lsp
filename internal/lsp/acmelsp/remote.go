@@ -19,12 +19,16 @@ import (
 type RemoteCmd struct {
 	server proxy.Server
 	winid  int
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
 	return &RemoteCmd{
 		server: server,
 		winid:  winid,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 }
 
@@ -85,7 +89,7 @@ func (rc *RemoteCmd) Definition(ctx context.Context) error {
 	return PlumbLocations(locations)
 }
 
-func (rc *RemoteCmd) Hover(ctx context.Context, w io.Writer) error {
+func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -96,11 +100,11 @@ func (rc *RemoteCmd) Hover(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(w, "%v\n", hov.Contents.Value)
+	fmt.Fprintf(rc.Stdout, "%v\n", hov.Contents.Value)
 	return nil
 }
 
-func (rc *RemoteCmd) References(ctx context.Context, w io.Writer) error {
+func (rc *RemoteCmd) References(ctx context.Context) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -115,7 +119,7 @@ func (rc *RemoteCmd) References(ctx context.Context, w io.Writer) error {
 		return err
 	}
 	if len(loc) == 0 {
-		fmt.Fprintf(w, "No references found.\n")
+		fmt.Fprintf(rc.Stderr, "No references found.\n")
 		return nil
 	}
 	sort.Slice(loc, func(i, j int) bool {
@@ -131,9 +135,8 @@ func (rc *RemoteCmd) References(ctx context.Context, w io.Writer) error {
 		}
 		return n < 0
 	})
-	fmt.Fprintf(w, "References:\n")
 	for _, l := range loc {
-		fmt.Fprintf(w, " %v\n", lsp.LocationLink(&l))
+		fmt.Fprintf(rc.Stdout, "%v\n", lsp.LocationLink(&l))
 	}
 	return nil
 }
@@ -154,7 +157,7 @@ func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
 	return editWorkspace(we)
 }
 
-func (rc *RemoteCmd) SignatureHelp(ctx context.Context, w io.Writer) error {
+func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -166,13 +169,13 @@ func (rc *RemoteCmd) SignatureHelp(ctx context.Context, w io.Writer) error {
 		return err
 	}
 	for _, sig := range sh.Signatures {
-		fmt.Fprintf(w, "%v\n", sig.Label)
-		fmt.Fprintf(w, "%v\n", sig.Documentation)
+		fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
+		fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
 	}
 	return nil
 }
 
-func (rc *RemoteCmd) DocumentSymbol(ctx context.Context, w io.Writer) error {
+func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 	win, err := acmeutil.OpenWin(rc.winid)
 	if err != nil {
 		return err
@@ -200,18 +203,17 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context, w io.Writer) error {
 		return err
 	}
 	if len(syms) == 0 {
-		fmt.Fprintf(w, "No symbols found.\n")
+		fmt.Fprintf(rc.Stderr, "No symbols found.\n")
 		return nil
 	}
-	fmt.Fprintf(w, "Symbols:\n")
 	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
 		loc := &protocol.Location{
 			URI:   uri,
 			Range: s.SelectionRange,
 		}
 		indent := strings.Repeat(" ", depth)
-		fmt.Fprintf(w, "%v %v %v %v\n", indent, s.Kind, s.Name, s.Detail)
-		fmt.Fprintf(w, "%v  %v\n", indent, lsp.LocationLink(loc))
+		fmt.Fprintf(rc.Stdout, "%v%v %v %v\n", indent, s.Kind, s.Name, s.Detail)
+		fmt.Fprintf(rc.Stdout, "%v %v\n", indent, lsp.LocationLink(loc))
 	})
 	return nil
 }

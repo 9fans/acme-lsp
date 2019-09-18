@@ -181,9 +181,9 @@ func run(args []string) error {
 	case "fmt":
 		return sendMsg(nil, "format")
 	case "hov":
-		return rc.Hover(ctx, os.Stdout)
+		return rc.Hover(ctx)
 	case "refs":
-		return rc.References(ctx, os.Stdout)
+		return rc.References(ctx)
 	case "rn":
 		args = args[1:]
 		if len(args) < 1 {
@@ -191,9 +191,9 @@ func run(args []string) error {
 		}
 		return rc.Rename(ctx, args[0])
 	case "sig":
-		return rc.SignatureHelp(ctx, os.Stdout)
+		return rc.SignatureHelp(ctx)
 	case "syms":
-		return rc.DocumentSymbol(ctx, os.Stdout)
+		return rc.DocumentSymbol(ctx)
 	case "type":
 		return sendMsg(nil, "type-definition")
 	case "win", "assist": // "win" is deprecated
