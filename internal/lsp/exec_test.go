@@ -53,7 +53,11 @@ func TestServerSetWorkspaces(t *testing.T) {
 		t.Errorf("default workspaces are %v; want empty slice", got)
 	}
 
-	want := []string{"/path/to/mod1", "/path/to/mod2"}
+	want, err := DirsToWorkspaceFolders([]string{"/path/to/mod1", "/path/to/mod2"})
+	if err != nil {
+		t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
+	}
+
 	err = ss.InitWorkspaces(want)
 	if err != nil {
 		t.Fatalf("ServerSet.InitWorkspaces: %v", err)
@@ -63,9 +67,12 @@ func TestServerSetWorkspaces(t *testing.T) {
 		t.Errorf("initial workspaces are %v; want %v", got, want)
 	}
 
-	added := "/path/to/mod3"
-	want = append(want, added)
-	err = ss.AddWorkspaces([]string{added})
+	added, err := DirsToWorkspaceFolders([]string{"/path/to/mod3"})
+	if err != nil {
+		t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
+	}
+	want = append(want, added...)
+	err = ss.DidChangeWorkspaceFolders(added, nil)
 	if err != nil {
 		t.Fatalf("ServerSet.AddWorkspaces: %v", err)
 	}
@@ -74,9 +81,9 @@ func TestServerSetWorkspaces(t *testing.T) {
 		t.Errorf("after adding %v, workspaces are %v; want %v", added, got, want)
 	}
 
-	removed := want[0]
+	removed := want[:1]
 	want = want[1:]
-	err = ss.RemoveWorkspaces([]string{removed})
+	err = ss.DidChangeWorkspaceFolders(nil, removed)
 	if err != nil {
 		t.Fatalf("ServerSet.RemoveWorkspaces: %v", err)
 	}

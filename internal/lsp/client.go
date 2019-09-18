@@ -93,9 +93,9 @@ func (h *clientHandler) ApplyEdit(context.Context, *protocol.ApplyWorkspaceEditP
 
 // Config contains LSP client configuration values.
 type Config struct {
-	DiagWriter DiagnosticsWriter // notification handler writes diagnostics here
-	RootDir    string            // directory for RootURI
-	Workspaces []string          // initial workspaces
+	DiagWriter DiagnosticsWriter          // notification handler writes diagnostics here
+	RootDir    string                     // directory for RootURI
+	Workspaces []protocol.WorkspaceFolder // initial workspace folders
 }
 
 // Client represents a LSP client connection.
@@ -131,10 +131,8 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 	params.Capabilities.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = true
-	params.WorkspaceFolders, err = dirsToWorkspaceFolders(cfg.Workspaces)
-	if err != nil {
-		return nil, err
-	}
+	params.WorkspaceFolders = cfg.Workspaces
+
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, errors.Wrap(err, "initialize failed")
@@ -365,15 +363,7 @@ func (c *Client) DidChange(filename string, body []byte) error {
 	})
 }
 
-func (c *Client) DidChangeWorkspaceFolders(addedDirs, removedDirs []string) error {
-	added, err := dirsToWorkspaceFolders(addedDirs)
-	if err != nil {
-		return err
-	}
-	removed, err := dirsToWorkspaceFolders(removedDirs)
-	if err != nil {
-		return err
-	}
+func (c *Client) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
 	return c.Server.DidChangeWorkspaceFolders(c.ctx, &protocol.DidChangeWorkspaceFoldersParams{
 		Event: protocol.WorkspaceFoldersChangeEvent{
 			Added:   added,
@@ -401,7 +391,7 @@ func (c *Client) ProvidesCodeAction(kind protocol.CodeActionKind) bool {
 	return false
 }
 
-func dirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {
+func DirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {
 	var workspaces []protocol.WorkspaceFolder
 	for _, d := range dirs {
 		d, err := filepath.Abs(d)

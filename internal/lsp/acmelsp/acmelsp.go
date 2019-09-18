@@ -298,7 +298,11 @@ func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *lsp.ServerSet)
 		serverSet = lsp.NewServerSet(DefaultConfig())
 	}
 	if len(*workspaces) > 0 {
-		serverSet.InitWorkspaces(strings.Split(*workspaces, ":"))
+		folders, err := lsp.DirsToWorkspaceFolders(strings.Split(*workspaces, ":"))
+		if err != nil {
+			return nil, *debug, err
+		}
+		serverSet.InitWorkspaces(folders)
 	}
 	for _, sa := range userServers {
 		serverSet.Register(sa.pattern, strings.Fields(sa.args))

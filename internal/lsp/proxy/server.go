@@ -12,9 +12,8 @@ import (
 
 type Server interface {
 	SendMessage(context.Context, *Message) error
-	WorkspaceDirectories(context.Context) ([]string, error)
-	AddWorkspaceDirectories(context.Context, []string) error
-	RemoveWorkspaceDirectories(context.Context, []string) error
+	WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error)
+	DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
 	Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
@@ -45,31 +44,9 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
-	case "acme-lsp/workspaceDirectories": // req
-		resp, err := h.server.WorkspaceDirectories(ctx)
+	case "acme-lsp/workspaceFolders": // req
+		resp, err := h.server.WorkspaceFolders(ctx)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
-
-	case "acme-lsp/addWorkspaceDirectories": // notif
-		var params []string
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		if err := h.server.AddWorkspaceDirectories(ctx, params); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
-
-	case "acme-lsp/removeWorkspaceDirectories": // notif
-		var params []string
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		if err := h.server.RemoveWorkspaceDirectories(ctx, params); err != nil {
 			log.Error(ctx, "", err)
 		}
 		return true
@@ -88,9 +65,9 @@ func (s *serverDispatcher) SendMessage(ctx context.Context, params *Message) err
 	return s.Conn.Notify(ctx, "acme-lsp/sendMessage", params)
 }
 
-func (s *serverDispatcher) WorkspaceDirectories(ctx context.Context) ([]string, error) {
-	var result []string
-	if err := s.Conn.Call(ctx, "acme-lsp/workspaceDirectories", nil, &result); err != nil {
+func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.WorkspaceFolder, error) {
+	var result []protocol.WorkspaceFolder
+	if err := s.Conn.Call(ctx, "acme-lsp/workspaceFolders", nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -134,10 +111,6 @@ type Message struct {
 
 type lspServerDispatcher struct {
 	Server
-}
-
-func (s *lspServerDispatcher) DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error {
-	return fmt.Errorf("not implemented")
 }
 
 func (s *lspServerDispatcher) Initialized(context.Context, *protocol.InitializedParams) error {

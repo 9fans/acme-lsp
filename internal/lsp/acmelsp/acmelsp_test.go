@@ -115,7 +115,12 @@ func TestParseFlagSet(t *testing.T) {
 		if debug != tc.debug {
 			t.Errorf("-debug flag didn't turn on debugging")
 		}
-		if got, want := ss.Workspaces(), tc.workspaces; !cmp.Equal(got, want) {
+		got := ss.Workspaces()
+		want, err := lsp.DirsToWorkspaceFolders(tc.workspaces)
+		if err != nil {
+			t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
+		}
+		if !cmp.Equal(got, want) {
 			t.Errorf("workspaces are %v; want %v", got, want)
 		}
 		if len(tc.serverInfo) > 0 {

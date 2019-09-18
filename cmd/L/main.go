@@ -17,6 +17,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
 )
@@ -129,6 +130,38 @@ func run(args []string) error {
 	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
 	go rpc.Run(ctx)
 
+	switch args[0] {
+	case "ws":
+		folders, err := server.WorkspaceFolders(ctx)
+		if err != nil {
+			return err
+		}
+		for _, d := range folders {
+			fmt.Printf("%v\n", d.Name)
+		}
+		return nil
+	case "ws+":
+		dirs, err := dirsOrCurrentDir(args[1:])
+		if err != nil {
+			return err
+		}
+		return server.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
+			Event: protocol.WorkspaceFoldersChangeEvent{
+				Added: dirs,
+			},
+		})
+	case "ws-":
+		dirs, err := dirsOrCurrentDir(args[1:])
+		if err != nil {
+			return err
+		}
+		return server.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
+			Event: protocol.WorkspaceFoldersChangeEvent{
+				Removed: dirs,
+			},
+		})
+	}
+
 	sendMsg := func(attr map[string]string, args ...string) error {
 		return sendMessageWithWinID(ctx, server, attr, args...)
 	}
@@ -183,27 +216,6 @@ func run(args []string) error {
 			return sendMsg(nil, "watch-auto")
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
-	case "ws":
-		dirs, err := server.WorkspaceDirectories(ctx)
-		if err != nil {
-			return err
-		}
-		for _, d := range dirs {
-			fmt.Printf("%v\n", d)
-		}
-		return nil
-	case "ws+":
-		dirs, err := dirsOrCurrentDir(args[1:])
-		if err != nil {
-			return err
-		}
-		return server.AddWorkspaceDirectories(ctx, dirs)
-	case "ws-":
-		dirs, err := dirsOrCurrentDir(args[1:])
-		if err != nil {
-			return err
-		}
-		return server.RemoveWorkspaceDirectories(ctx, dirs)
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }
@@ -240,7 +252,7 @@ func sendMessage(ctx context.Context, server proxy.Server, attr map[string]strin
 	return server.SendMessage(ctx, m)
 }
 
-func dirsOrCurrentDir(dirs []string) ([]string, error) {
+func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {
 	if len(dirs) == 0 {
 		d, err := os.Getwd()
 		if err != nil {
@@ -248,7 +260,7 @@ func dirsOrCurrentDir(dirs []string) ([]string, error) {
 		}
 		dirs = []string{d}
 	}
-	return lsp.AbsDirs(dirs)
+	return lsp.DirsToWorkspaceFolders(dirs)
 }
 
 func getFocusedWinID(addr string) (string, error) {

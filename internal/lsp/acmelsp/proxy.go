@@ -68,16 +68,12 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	return fmt.Errorf("unknown command %v", args[0])
 }
 
-func (s *proxyServer) WorkspaceDirectories(context.Context) ([]string, error) {
+func (s *proxyServer) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	return s.ss.Workspaces(), nil
 }
 
-func (s *proxyServer) AddWorkspaceDirectories(ctx context.Context, dirs []string) error {
-	return s.ss.AddWorkspaces(dirs)
-}
-
-func (s *proxyServer) RemoveWorkspaceDirectories(ctx context.Context, dirs []string) error {
-	return s.ss.RemoveWorkspaces(dirs)
+func (s *proxyServer) DidChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
+	return s.ss.DidChangeWorkspaceFolders(params.Event.Added, params.Event.Removed)
 }
 
 func (s *proxyServer) Completion(ctx context.Context, params *protocol.CompletionParams) (*protocol.CompletionList, error) {

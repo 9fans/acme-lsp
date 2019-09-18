@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/pkg/errors"
 )
 
@@ -107,14 +108,14 @@ func (info *ServerInfo) start(cfg *Config) (*Server, error) {
 // which are created on-demand.
 type ServerSet struct {
 	Data       []*ServerInfo
-	workspaces map[string]struct{} // set of absolute paths to workspace directories
+	workspaces map[protocol.DocumentURI]*protocol.WorkspaceFolder // set of workspace folders
 	cfg        Config
 }
 
 func NewServerSet(cfg *Config) *ServerSet {
 	return &ServerSet{
 		Data:       nil,
-		workspaces: make(map[string]struct{}),
+		workspaces: make(map[protocol.DocumentURI]*protocol.WorkspaceFolder),
 		cfg:        *cfg,
 	}
 }
@@ -197,66 +198,46 @@ func (ss *ServerSet) forEach(f func(*Client) error) error {
 }
 
 // Workspaces returns a sorted list of current workspace directories.
-func (ss *ServerSet) Workspaces() []string {
-	var dirs []string
-	for d := range ss.workspaces {
-		dirs = append(dirs, d)
+func (ss *ServerSet) Workspaces() []protocol.WorkspaceFolder {
+	var folders []protocol.WorkspaceFolder
+	for i := range ss.workspaces {
+		folders = append(folders, *ss.workspaces[i])
 	}
-	sort.Strings(dirs)
-	return dirs
+	sort.Slice(folders, func(i, j int) bool {
+		return folders[i].URI < folders[j].URI
+	})
+	return folders
 }
 
 // InitWorkspaces initializes workspace directories.
-func (ss *ServerSet) InitWorkspaces(dirs []string) error {
-	dirs, err := AbsDirs(dirs)
-	if err != nil {
-		return err
-	}
-	ss.workspaces = make(map[string]struct{})
-	for _, d := range dirs {
-		ss.workspaces[d] = struct{}{}
+func (ss *ServerSet) InitWorkspaces(folders []protocol.WorkspaceFolder) error {
+	ss.workspaces = make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
+	for i := range folders {
+		d := &folders[i]
+		ss.workspaces[d.URI] = d
 	}
 	// Update initial workspaces for servers not yet started.
-	ss.cfg.Workspaces = dirs
+	ss.cfg.Workspaces = folders
 	return nil
 }
 
-// AddWorkspaces adds given workspace directories.
-func (ss *ServerSet) AddWorkspaces(dirs []string) error {
-	dirs, err := AbsDirs(dirs)
-	if err != nil {
-		return err
-	}
-	err = ss.forEach(func(c *Client) error {
-		return c.DidChangeWorkspaceFolders(dirs, nil)
+// DidChangeWorkspaceFolders adds and removes given workspace folders.
+func (ss *ServerSet) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
+	err := ss.forEach(func(c *Client) error {
+		return c.DidChangeWorkspaceFolders(added, removed)
 	})
 	if err != nil {
 		return err
 	}
-	for _, d := range dirs {
-		ss.workspaces[d] = struct{}{}
+	for i := range added {
+		d := &added[i]
+		ss.workspaces[d.URI] = d
+	}
+	for _, d := range removed {
+		delete(ss.workspaces, d.URI)
 	}
 	// Update initial workspaces for servers not yet started.
-	ss.cfg.Workspaces = ss.Workspaces()
-	return nil
-}
-
-// RemoveWorkspaces removes given workspace directories.
-func (ss *ServerSet) RemoveWorkspaces(dirs []string) error {
-	dirs, err := AbsDirs(dirs)
-	if err != nil {
-		return err
-	}
-	err = ss.forEach(func(c *Client) error {
-		return c.DidChangeWorkspaceFolders(nil, dirs)
-	})
-	if err != nil {
-		return err
-	}
-	for _, d := range dirs {
-		delete(ss.workspaces, d)
-	}
-	// Update initial workspaces for servers not yet started.
+	// TODO(fhs): do we need a lock here?
 	ss.cfg.Workspaces = ss.Workspaces()
 	return nil
 }
