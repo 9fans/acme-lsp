@@ -191,7 +191,7 @@ func run(args []string) error {
 		}
 		return rc.Rename(ctx, args[0])
 	case "sig":
-		return sendMsg(nil, "signature")
+		return rc.SignatureHelp(ctx, os.Stdout)
 	case "syms":
 		return sendMsg(nil, "symbols")
 	case "type":

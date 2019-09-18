@@ -153,3 +153,21 @@ func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
 	}
 	return editWorkspace(we)
 }
+
+func (rc *RemoteCmd) SignatureHelp(ctx context.Context, w io.Writer) error {
+	pos, _, err := rc.getPosition()
+	if err != nil {
+		return err
+	}
+	sh, err := rc.server.SignatureHelp(ctx, &protocol.SignatureHelpParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
+		return err
+	}
+	for _, sig := range sh.Signatures {
+		fmt.Fprintf(w, "%v\n", sig.Label)
+		fmt.Fprintf(w, "%v\n", sig.Documentation)
+	}
+	return nil
+}

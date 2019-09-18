@@ -260,7 +260,7 @@ func (c *Client) Completion1(pos *protocol.TextDocumentPositionParams) ([]protoc
 	return cl.Items, nil
 }
 
-func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+func (c *Client) SignatureHelp1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
 	sh, err := c.Server.SignatureHelp(c.ctx, &protocol.SignatureHelpParams{
 		TextDocumentPositionParams: *pos,
 	})

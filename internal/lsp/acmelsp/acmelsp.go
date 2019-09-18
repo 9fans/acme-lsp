@@ -153,7 +153,7 @@ func (c *Cmd) Rename(newname string) error {
 }
 
 func (c *Cmd) SignatureHelp() error {
-	return c.Client.SignatureHelp(c.pos, os.Stdout)
+	return c.Client.SignatureHelp1(c.pos, os.Stdout)
 }
 
 func (c *Cmd) Symbols() error {

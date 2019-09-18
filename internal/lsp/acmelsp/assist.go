@@ -226,7 +226,7 @@ func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 		printCompletionItems(w.body, items)
 
 	case "sig":
-		err = c.SignatureHelp(pos, w.body)
+		err = c.SignatureHelp1(pos, w.body)
 		if err != nil {
 			dprintf("SignatureHelp failed: %v\n", err)
 		}

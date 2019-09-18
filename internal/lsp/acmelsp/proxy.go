@@ -44,8 +44,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 		return cmd.Format()
 	case "implementation":
 		return cmd.Implementation()
-	case "signature":
-		return cmd.SignatureHelp()
 	case "symbols":
 		return cmd.Symbols()
 	case "watch-completion":
@@ -110,6 +108,14 @@ func (s *proxyServer) Rename(ctx context.Context, params *protocol.RenameParams)
 		return nil, err
 	}
 	return srv.Client.Rename(ctx, params)
+}
+
+func (s *proxyServer) SignatureHelp(ctx context.Context, params *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error) {
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.SignatureHelp(ctx, params)
 }
 
 func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, error) {
