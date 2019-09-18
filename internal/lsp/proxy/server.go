@@ -73,30 +73,6 @@ func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.Wor
 	return result, nil
 }
 
-func (s *serverDispatcher) AddWorkspaceDirectories(ctx context.Context, params []string) error {
-	return s.Conn.Notify(ctx, "acme-lsp/addWorkspaceDirectories", &params)
-}
-
-func (s *serverDispatcher) RemoveWorkspaceDirectories(ctx context.Context, params []string) error {
-	return s.Conn.Notify(ctx, "acme-lsp/removeWorkspaceDirectories", &params)
-}
-
-func (s *serverDispatcher) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
-	var result []protocol.Location
-	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (s *serverDispatcher) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
-	var result []protocol.Location
-	if err := s.Conn.Call(ctx, "textDocument/references", params, &result); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
 type CancelParams struct {
 	/**
 	 * The request id to cancel.
