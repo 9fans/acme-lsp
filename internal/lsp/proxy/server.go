@@ -18,6 +18,7 @@ type Server interface {
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
 	Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error)
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
+	Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error)
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -219,10 +220,6 @@ func (s *lspServerDispatcher) RangeFormatting(context.Context, *protocol.Documen
 }
 
 func (s *lspServerDispatcher) OnTypeFormatting(context.Context, *protocol.DocumentOnTypeFormattingParams) ([]protocol.TextEdit, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

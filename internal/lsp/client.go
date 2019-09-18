@@ -274,14 +274,6 @@ func (c *Client) SignatureHelp(pos *protocol.TextDocumentPositionParams, w io.Wr
 	return nil
 }
 
-func (c *Client) Rename(pos *protocol.TextDocumentPositionParams, newname string) (*protocol.WorkspaceEdit, error) {
-	return c.Server.Rename(c.ctx, &protocol.RenameParams{
-		TextDocument: pos.TextDocument,
-		Position:     pos.Position,
-		NewName:      newname,
-	})
-}
-
 func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
 	return c.Server.Formatting(c.ctx, &protocol.DocumentFormattingParams{
 		TextDocument: protocol.TextDocumentIdentifier{

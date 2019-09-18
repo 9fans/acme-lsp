@@ -139,8 +139,17 @@ func (c *Cmd) References() error {
 	return c.Client.References1(c.pos, os.Stdout)
 }
 
+// Rename renames the identifier at cursor position to newname.
 func (c *Cmd) Rename(newname string) error {
-	return Rename(c.Client, c.pos, newname)
+	we, err := c.Client.Rename(context.Background(), &protocol.RenameParams{
+		TextDocument: c.pos.TextDocument,
+		Position:     c.pos.Position,
+		NewName:      newname,
+	})
+	if err != nil {
+		return err
+	}
+	return editWorkspace(we)
 }
 
 func (c *Cmd) SignatureHelp() error {
@@ -224,15 +233,6 @@ func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
 		return errors.Wrapf(err, "failed to apply edits")
 	}
 	return nil
-}
-
-// Rename renames the identifier at position pos to newname.
-func Rename(c *lsp.Client, pos *protocol.TextDocumentPositionParams, newname string) error {
-	we, err := c.Rename(pos, newname)
-	if err != nil {
-		return err
-	}
-	return editWorkspace(we)
 }
 
 func editWorkspace(we *protocol.WorkspaceEdit) error {

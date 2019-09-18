@@ -137,3 +137,19 @@ func (rc *RemoteCmd) References(ctx context.Context, w io.Writer) error {
 	}
 	return nil
 }
+
+func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
+	pos, _, err := rc.getPosition()
+	if err != nil {
+		return err
+	}
+	we, err := rc.server.Rename(ctx, &protocol.RenameParams{
+		TextDocument: pos.TextDocument,
+		Position:     pos.Position,
+		NewName:      newname,
+	})
+	if err != nil {
+		return err
+	}
+	return editWorkspace(we)
+}

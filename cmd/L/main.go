@@ -185,13 +185,11 @@ func run(args []string) error {
 	case "refs":
 		return rc.References(ctx, os.Stdout)
 	case "rn":
-		if len(args) < 2 {
+		args = args[1:]
+		if len(args) < 1 {
 			usage()
 		}
-		attr := map[string]string{
-			"newname": args[1],
-		}
-		return sendMsg(attr, "rename")
+		return rc.Rename(ctx, args[0])
 	case "sig":
 		return sendMsg(nil, "signature")
 	case "syms":

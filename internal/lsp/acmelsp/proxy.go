@@ -44,8 +44,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 		return cmd.Format()
 	case "implementation":
 		return cmd.Implementation()
-	case "rename":
-		return cmd.Rename(msg.Attr["newname"])
 	case "signature":
 		return cmd.SignatureHelp()
 	case "symbols":
@@ -104,6 +102,14 @@ func (s *proxyServer) References(ctx context.Context, params *protocol.Reference
 		return nil, err
 	}
 	return srv.Client.References(ctx, params)
+}
+
+func (s *proxyServer) Rename(ctx context.Context, params *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.Rename(ctx, params)
 }
 
 func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, error) {
