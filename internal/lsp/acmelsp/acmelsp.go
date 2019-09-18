@@ -132,7 +132,7 @@ func (c *Cmd) Format() error {
 }
 
 func (c *Cmd) Hover() error {
-	return c.Client.Hover(c.pos, os.Stdout)
+	return c.Client.Hover1(c.pos, os.Stdout)
 }
 
 func (c *Cmd) References() error {

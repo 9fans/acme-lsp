@@ -164,7 +164,7 @@ func (c *Client) Implementation(pos *protocol.TextDocumentPositionParams) ([]pro
 	})
 }
 
-func (c *Client) Hover(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
+func (c *Client) Hover1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
 	hov, err := c.Server.Hover(c.ctx, &protocol.HoverParams{
 		TextDocumentPositionParams: *pos,
 	})

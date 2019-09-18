@@ -16,6 +16,7 @@ type Server interface {
 	DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
 	Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
+	Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error)
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
 }
 
@@ -178,10 +179,6 @@ func (s *lspServerDispatcher) WillSaveWaitUntil(context.Context, *protocol.WillS
 }
 
 func (s *lspServerDispatcher) Resolve(context.Context, *protocol.CompletionItem) (*protocol.CompletionItem, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

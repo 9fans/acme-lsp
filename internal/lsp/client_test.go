@@ -127,7 +127,7 @@ func TestGoHover(t *testing.T) {
 				},
 			}
 			var b bytes.Buffer
-			if err := c.Hover(pos, &b); err != nil {
+			if err := c.Hover1(pos, &b); err != nil {
 				t.Fatalf("Hover failed: %v", err)
 			}
 			got := b.String()
@@ -370,7 +370,7 @@ func TestPythonHover(t *testing.T) {
 			},
 		}
 		var b bytes.Buffer
-		if err := c.Hover(pos, &b); err != nil {
+		if err := c.Hover1(pos, &b); err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
 		got := b.String()

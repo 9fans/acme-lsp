@@ -85,6 +85,21 @@ func (rc *RemoteCmd) Definition(ctx context.Context) error {
 	return PlumbLocations(locations)
 }
 
+func (rc *RemoteCmd) Hover(ctx context.Context, w io.Writer) error {
+	pos, _, err := rc.getPosition()
+	if err != nil {
+		return err
+	}
+	hov, err := rc.server.Hover(ctx, &protocol.HoverParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "%v\n", hov.Contents.Value)
+	return nil
+}
+
 func (rc *RemoteCmd) References(ctx context.Context, w io.Writer) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {

@@ -170,21 +170,19 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	rc := acmelsp.NewRemoteCmd(server, winid)
 
 	switch args[0] {
 	case "comp":
-		rc := acmelsp.NewRemoteCmd(server, winid)
 		args = args[1:]
 		return rc.Completion(ctx, len(args) > 0 && args[0] == "-e")
 	case "def":
-		rc := acmelsp.NewRemoteCmd(server, winid)
 		return rc.Definition(ctx)
 	case "fmt":
 		return sendMsg(nil, "format")
 	case "hov":
-		return sendMsg(nil, "hover")
+		return rc.Hover(ctx, os.Stdout)
 	case "refs":
-		rc := acmelsp.NewRemoteCmd(server, winid)
 		return rc.References(ctx, os.Stdout)
 	case "rn":
 		if len(args) < 2 {

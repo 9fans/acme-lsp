@@ -42,8 +42,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 		return cmd.TypeDefinition()
 	case "format":
 		return cmd.Format()
-	case "hover":
-		return cmd.Hover()
 	case "implementation":
 		return cmd.Implementation()
 	case "rename":
@@ -90,6 +88,14 @@ func (s *proxyServer) Definition(ctx context.Context, params *protocol.Definitio
 		return nil, err
 	}
 	return srv.Client.Definition(ctx, params)
+}
+
+func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.Hover(ctx, params)
 }
 
 func (s *proxyServer) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {

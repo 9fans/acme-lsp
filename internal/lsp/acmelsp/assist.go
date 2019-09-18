@@ -231,7 +231,7 @@ func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 			dprintf("SignatureHelp failed: %v\n", err)
 		}
 	case "hov":
-		err = c.Hover(pos, w.body)
+		err = c.Hover1(pos, w.body)
 		if err != nil {
 			dprintf("Hover failed: %v\n", err)
 		}
