@@ -20,6 +20,7 @@ type Server interface {
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
 	Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error)
 	SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
+	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error)
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -185,10 +186,6 @@ func (s *lspServerDispatcher) Resolve(context.Context, *protocol.CompletionItem)
 }
 
 func (s *lspServerDispatcher) DocumentHighlight(context.Context, *protocol.DocumentHighlightParams) ([]protocol.DocumentHighlight, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

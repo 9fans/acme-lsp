@@ -44,8 +44,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 		return cmd.Format()
 	case "implementation":
 		return cmd.Implementation()
-	case "symbols":
-		return cmd.Symbols()
 	case "watch-completion":
 		go Assist(s.ss, s.fm, "comp")
 		return nil
@@ -116,6 +114,14 @@ func (s *proxyServer) SignatureHelp(ctx context.Context, params *protocol.Signat
 		return nil, err
 	}
 	return srv.Client.SignatureHelp(ctx, params)
+}
+
+func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error) {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.DocumentSymbol(ctx, params)
 }
 
 func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, error) {

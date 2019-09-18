@@ -233,10 +233,10 @@ func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
 		return err
 	}
 	if len(syms) == 0 {
-		fmt.Printf("No symbols found.\n")
+		fmt.Fprintf(w, "No symbols found.\n")
 		return nil
 	}
-	fmt.Printf("Symbols:\n")
+	fmt.Fprintf(w, "Symbols:\n")
 	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
 		loc := &protocol.Location{
 			URI:   uri,

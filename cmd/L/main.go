@@ -193,7 +193,7 @@ func run(args []string) error {
 	case "sig":
 		return rc.SignatureHelp(ctx, os.Stdout)
 	case "syms":
-		return sendMsg(nil, "symbols")
+		return rc.DocumentSymbol(ctx, os.Stdout)
 	case "type":
 		return sendMsg(nil, "type-definition")
 	case "win", "assist": // "win" is deprecated

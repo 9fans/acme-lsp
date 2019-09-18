@@ -171,3 +171,54 @@ func (rc *RemoteCmd) SignatureHelp(ctx context.Context, w io.Writer) error {
 	}
 	return nil
 }
+
+func (rc *RemoteCmd) DocumentSymbol(ctx context.Context, w io.Writer) error {
+	win, err := acmeutil.OpenWin(rc.winid)
+	if err != nil {
+		return err
+	}
+	defer win.CloseFiles()
+
+	uri, _, err := text.DocumentURI(win)
+	if err != nil {
+		return err
+	}
+
+	// TODO(fhs): DocumentSymbol request can return either a
+	// []DocumentSymbol (hierarchical) or []SymbolInformation (flat).
+	// We only handle the hierarchical type below.
+
+	// TODO(fhs): Make use of DocumentSymbol.Range to optionally filter out
+	// symbols that aren't within current cursor position?
+
+	syms, err := rc.server.DocumentSymbol(ctx, &protocol.DocumentSymbolParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: uri,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if len(syms) == 0 {
+		fmt.Fprintf(w, "No symbols found.\n")
+		return nil
+	}
+	fmt.Fprintf(w, "Symbols:\n")
+	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
+		loc := &protocol.Location{
+			URI:   uri,
+			Range: s.SelectionRange,
+		}
+		indent := strings.Repeat(" ", depth)
+		fmt.Fprintf(w, "%v %v %v %v\n", indent, s.Kind, s.Name, s.Detail)
+		fmt.Fprintf(w, "%v  %v\n", indent, lsp.LocationLink(loc))
+	})
+	return nil
+}
+
+func walkDocumentSymbols(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
+	for _, s := range syms {
+		f(&s, depth)
+		walkDocumentSymbols(s.Children, depth+1, f)
+	}
+}
