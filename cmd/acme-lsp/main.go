@@ -58,7 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create file manager: %v\n", err)
 	}
-	go acmelsp.ManageFiles(ss, fm)
+	go fm.Run()
 
 	err = acmelsp.ListenAndServeProxy(context.Background(), ss, fm)
 	if err != nil {

@@ -12,9 +12,41 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ManageFiles watches for files opened, closed, saved, or refreshed in acme
+// FileManager keeps track of open files in acme.
+// It is used to synchronize text with LSP server.
+//
+// Note that we can't cache the *acmeutil.Win for the windows
+// because having the ctl file open prevents del event from
+// being delivered to acme/log file.
+type FileManager struct {
+	ss   *lsp.ServerSet
+	wins map[string]struct{} // set of open files
+	mu   sync.Mutex
+}
+
+// NewFileManager creates a new file manager, initialized with files currently open in acme.
+func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
+	fm := &FileManager{
+		ss:   ss,
+		wins: make(map[string]struct{}),
+	}
+
+	wins, err := acme.Windows()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read list of acme index")
+	}
+	for _, info := range wins {
+		err := fm.didOpen(info.ID, info.Name)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return fm, nil
+}
+
+// Run watches for files opened, closed, saved, or refreshed in acme
 // and tells LSP server about it. It also formats files when it's saved.
-func ManageFiles(serverSet *lsp.ServerSet, fm *FileManager) {
+func (fm *FileManager) Run() {
 	alog, err := acme.Log()
 	if err != nil {
 		panic(err)
@@ -48,38 +80,6 @@ func ManageFiles(serverSet *lsp.ServerSet, fm *FileManager) {
 			}
 		}
 	}
-}
-
-// FileManager keeps track of open files in acme.
-// It is used to synchronize text with LSP server.
-//
-// Note that we can't cache the *acmeutil.Win for the windows
-// because having the ctl file open prevents del event from
-// being delivered to acme/log file.
-type FileManager struct {
-	ss   *lsp.ServerSet
-	wins map[string]struct{} // set of open files
-	mu   sync.Mutex
-}
-
-// NewFileManager creates a new file manager, initialized with files currently open in acme.
-func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
-	fm := &FileManager{
-		ss:   ss,
-		wins: make(map[string]struct{}),
-	}
-
-	wins, err := acme.Windows()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read list of acme index")
-	}
-	for _, info := range wins {
-		err := fm.didOpen(info.ID, info.Name)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return fm, nil
 }
 
 func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Client, *acmeutil.Win) error) error {

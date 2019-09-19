@@ -115,7 +115,7 @@ func main() {
 		return
 
 	case "monitor":
-		acmelsp.ManageFiles(serverSet, fm)
+		fm.Run()
 		return
 
 	case "servers":
