@@ -61,15 +61,15 @@ func (s *proxyServer) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFol
 func (s *proxyServer) InitializeResult(ctx context.Context, params *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
 	srv, err := serverForURI(s.ss, params.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("InitializeResult: %v", err)
 	}
-	return srv.Client.InitializeResult, nil
+	return srv.Client.InitializeResult(ctx, params)
 }
 
 func (s *proxyServer) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
-		return err
+		return fmt.Errorf("DidChange: %v", err)
 	}
 	return srv.Client.DidChange(ctx, params)
 }
@@ -81,7 +81,7 @@ func (s *proxyServer) DidChangeWorkspaceFolders(ctx context.Context, params *pro
 func (s *proxyServer) Completion(ctx context.Context, params *protocol.CompletionParams) (*protocol.CompletionList, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Completion: %v", err)
 	}
 	return srv.Client.Completion(ctx, params)
 }
@@ -89,7 +89,7 @@ func (s *proxyServer) Completion(ctx context.Context, params *protocol.Completio
 func (s *proxyServer) Definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Definition: %v", err)
 	}
 	return srv.Client.Definition(ctx, params)
 }
@@ -97,7 +97,7 @@ func (s *proxyServer) Definition(ctx context.Context, params *protocol.Definitio
 func (s *proxyServer) Formatting(ctx context.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Formatting: %v", err)
 	}
 	return srv.Client.Formatting(ctx, params)
 }
@@ -105,7 +105,7 @@ func (s *proxyServer) Formatting(ctx context.Context, params *protocol.DocumentF
 func (s *proxyServer) CodeAction(ctx context.Context, params *protocol.CodeActionParams) ([]protocol.CodeAction, error) {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("CodeAction: %v", err)
 	}
 	return srv.Client.CodeAction(ctx, params)
 }
@@ -113,7 +113,7 @@ func (s *proxyServer) CodeAction(ctx context.Context, params *protocol.CodeActio
 func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Hover: %v", err)
 	}
 	return srv.Client.Hover(ctx, params)
 }
@@ -121,7 +121,7 @@ func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (
 func (s *proxyServer) Implementation(ctx context.Context, params *protocol.ImplementationParams) ([]protocol.Location, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Implementation: %v", err)
 	}
 	return srv.Client.Implementation(ctx, params)
 }
@@ -129,7 +129,7 @@ func (s *proxyServer) Implementation(ctx context.Context, params *protocol.Imple
 func (s *proxyServer) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("References: %v", err)
 	}
 	return srv.Client.References(ctx, params)
 }
@@ -137,7 +137,7 @@ func (s *proxyServer) References(ctx context.Context, params *protocol.Reference
 func (s *proxyServer) Rename(ctx context.Context, params *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Rename: %v", err)
 	}
 	return srv.Client.Rename(ctx, params)
 }
@@ -145,7 +145,7 @@ func (s *proxyServer) Rename(ctx context.Context, params *protocol.RenameParams)
 func (s *proxyServer) SignatureHelp(ctx context.Context, params *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SignatureHelp: %v", err)
 	}
 	return srv.Client.SignatureHelp(ctx, params)
 }
@@ -153,7 +153,7 @@ func (s *proxyServer) SignatureHelp(ctx context.Context, params *protocol.Signat
 func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error) {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("DocumentSymbol: %v", err)
 	}
 	return srv.Client.DocumentSymbol(ctx, params)
 }
@@ -161,7 +161,7 @@ func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.Docum
 func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("TypeDefinition: %v", err)
 	}
 	return srv.Client.TypeDefinition(ctx, params)
 }
@@ -170,7 +170,7 @@ func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, err
 	filename := text.ToPath(uri)
 	srv, found, err := ss.StartForFile(filename)
 	if !found {
-		return nil, fmt.Errorf("unknown language server for file %v", filename)
+		return nil, fmt.Errorf("unknown language server for URI %q", uri)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cound not start language server")

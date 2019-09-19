@@ -102,7 +102,7 @@ type Config struct {
 type Client struct {
 	protocol.Server
 	ctx              context.Context
-	InitializeResult *protocol.InitializeResult
+	initializeResult *protocol.InitializeResult
 }
 
 func New(conn net.Conn, cfg *Config) (*Client, error) {
@@ -143,13 +143,17 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	return &Client{
 		Server:           server,
 		ctx:              ctx,
-		InitializeResult: &result,
+		initializeResult: &result,
 	}, nil
 }
 
 func (c *Client) Close() error {
 	// TODO(fhs): Cancel all outstanding requests?
 	return nil
+}
+
+func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
+	return c.initializeResult, nil
 }
 
 func (c *Client) TypeDefinition1(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
@@ -276,19 +280,6 @@ func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
 	})
 }
 
-func (c *Client) OrganizeImports(uri protocol.DocumentURI) ([]protocol.CodeAction, error) {
-	return c.Server.CodeAction(c.ctx, &protocol.CodeActionParams{
-		TextDocument: protocol.TextDocumentIdentifier{
-			URI: uri,
-		},
-		Range: protocol.Range{},
-		Context: protocol.CodeActionContext{
-			Diagnostics: nil,
-			Only:        []protocol.CodeActionKind{protocol.SourceOrganizeImports},
-		},
-	})
-}
-
 func fileLanguage(filename string) string {
 	lang := filepath.Ext(filename)
 	if len(lang) == 0 {
@@ -358,8 +349,8 @@ func (c *Client) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFo
 	})
 }
 
-func (c *Client) ProvidesCodeAction(kind protocol.CodeActionKind) bool {
-	switch ap := c.InitializeResult.Capabilities.CodeActionProvider.(type) {
+func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.CodeActionKind) bool {
+	switch ap := cap.CodeActionProvider.(type) {
 	case bool:
 		return ap
 	case map[string]interface{}:

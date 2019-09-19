@@ -74,6 +74,10 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 
 	case "acme-lsp/initializeResult": // req
 		var params protocol.TextDocumentIdentifier
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
 		resp, err := h.server.InitializeResult(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
 			log.Error(ctx, "", err)
@@ -104,7 +108,7 @@ func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.Wor
 
 func (s *serverDispatcher) InitializeResult(ctx context.Context, params *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
 	var result protocol.InitializeResult
-	if err := s.Conn.Call(ctx, "acme-lsp/workspaceFolders", params, &result); err != nil {
+	if err := s.Conn.Call(ctx, "acme-lsp/initializeResult", params, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

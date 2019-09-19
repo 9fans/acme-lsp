@@ -1,6 +1,7 @@
 package acmelsp
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -8,6 +9,7 @@ import (
 	"9fans.net/go/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
@@ -196,6 +198,9 @@ func (fm *FileManager) format(winid int, name string) error {
 		return nil // Unknown language server.
 	}
 	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
-		return FormatFile(c, text.ToURI(name), w)
+		doc := &protocol.TextDocumentIdentifier{
+			URI: text.ToURI(name),
+		}
+		return OrganizeImportsAndFormat(context.Background(), c, doc, w)
 	})
 }

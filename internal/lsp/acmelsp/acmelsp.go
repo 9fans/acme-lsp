@@ -120,7 +120,7 @@ func (c *Cmd) TypeDefinition() error {
 }
 
 func (c *Cmd) Format() error {
-	return FormatFile(c.Client, c.pos.TextDocument.URI, c.win)
+	return OrganizeImportsAndFormat(context.Background(), c.Client, &c.pos.TextDocument, c.win)
 }
 
 func (c *Cmd) Hover() error {
@@ -186,10 +186,29 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 	}
 }
 
-// FormatFile organizes import paths and then formats the file f.
-func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
-	if c.ProvidesCodeAction(protocol.SourceOrganizeImports) {
-		actions, err := c.OrganizeImports(uri)
+type FormatServer interface {
+	InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error)
+	DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
+	Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
+	CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
+}
+
+// OrganizeImportsAndFormat organizes import paths and then formats the file f.
+func OrganizeImportsAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File) error {
+	initres, err := server.InitializeResult(ctx, doc)
+	if err != nil {
+		return err
+	}
+
+	if lsp.ServerProvidesCodeAction(&initres.Capabilities, protocol.SourceOrganizeImports) {
+		actions, err := server.CodeAction(ctx, &protocol.CodeActionParams{
+			TextDocument: *doc,
+			Range:        protocol.Range{},
+			Context: protocol.CodeActionContext{
+				Diagnostics: nil,
+				Only:        []protocol.CodeActionKind{protocol.SourceOrganizeImports},
+			},
+		})
 		if err != nil {
 			return err
 		}
@@ -211,13 +230,24 @@ func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
 			if err != nil {
 				return err
 			}
-			err = c.DidChange1(text.ToPath(uri), b)
+			server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
+				TextDocument: protocol.VersionedTextDocumentIdentifier{
+					TextDocumentIdentifier: *doc,
+				},
+				ContentChanges: []protocol.TextDocumentContentChangeEvent{
+					{
+						Text: string(b),
+					},
+				},
+			})
 			if err != nil {
 				return err
 			}
 		}
 	}
-	edits, err := c.Format(uri)
+	edits, err := server.Formatting(ctx, &protocol.DocumentFormattingParams{
+		TextDocument: *doc,
+	})
 	if err != nil {
 		return err
 	}

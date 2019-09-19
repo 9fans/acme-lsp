@@ -550,13 +550,13 @@ func TestClientProvidesCodeAction(t *testing.T) {
 		},
 	} {
 		c := &Client{
-			InitializeResult: &protocol.InitializeResult{
+			initializeResult: &protocol.InitializeResult{
 				Capabilities: protocol.ServerCapabilities{
 					CodeActionProvider: tc.provider,
 				},
 			},
 		}
-		got := c.ProvidesCodeAction(tc.kind)
+		got := ServerProvidesCodeAction(&c.initializeResult.Capabilities, tc.kind)
 		want := tc.want
 		if got != want {
 			t.Errorf("got %v for provider %v and kind %v; want %v",

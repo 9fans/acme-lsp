@@ -186,7 +186,7 @@ func run(args []string) error {
 	case "def":
 		return rc.Definition(ctx)
 	case "fmt":
-		return rc.FormatAndOrganizeImports(ctx)
+		return rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
 		return rc.Hover(ctx)
 	case "refs":
