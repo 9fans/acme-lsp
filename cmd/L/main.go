@@ -170,6 +170,12 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
+	if err = server.DidChange(ctx, winid); err != nil {
+		return fmt.Errorf("DidChange failed: %v", err)
+	}
+
 	rc := acmelsp.NewRemoteCmd(server, winid)
 
 	switch args[0] {

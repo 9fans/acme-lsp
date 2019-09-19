@@ -10,9 +10,22 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
+// Server implements a subset of an LSP protocol server as defined by protocol.Server and
+// some custom acme-lsp specific methods.
 type Server interface {
+	// TODO: add Version method
+
 	SendMessage(context.Context, *Message) error
+
+	// DidChange notifies file manager that text buffer of window with ID winid
+	// should be synchronized with the LSP server.
+	DidChange(ctx context.Context, winid int) error
+
+	// WorkspaceFolders returns the workspace folders currently being managed by acme-lsp.
+	// In LSP, this method is implemented by the client, but in our case acme-lsp is managing
+	// the workspace folders, so this has to be implemented by the acme-lsp proxy server.
 	WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error)
+
 	DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
 	Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
@@ -50,6 +63,17 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
+	case "acme-lsp/didChange": // notif
+		var params int
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		if err := h.server.DidChange(ctx, params); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	case "acme-lsp/workspaceFolders": // req
 		resp, err := h.server.WorkspaceFolders(ctx)
 		if err := r.Reply(ctx, resp, err); err != nil {
@@ -69,6 +93,10 @@ type serverDispatcher struct {
 
 func (s *serverDispatcher) SendMessage(ctx context.Context, params *Message) error {
 	return s.Conn.Notify(ctx, "acme-lsp/sendMessage", params)
+}
+
+func (s *serverDispatcher) DidChange(ctx context.Context, winid int) error {
+	return s.Conn.Notify(ctx, "acme-lsp/didChange", &winid)
 }
 
 func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.WorkspaceFolder, error) {

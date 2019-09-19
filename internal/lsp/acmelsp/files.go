@@ -151,6 +151,21 @@ func (fm *FileManager) didChange(winid int, name string) error {
 	})
 }
 
+func (fm *FileManager) DidChange(winid int) error {
+	w, err := acmeutil.OpenWin(winid)
+	if err != nil {
+		return err
+	}
+	defer w.CloseFiles()
+
+	name, err := w.Filename()
+	if err != nil {
+		return fmt.Errorf("could not get filename for window %v: %v", winid, err)
+	}
+	// TODO(fhs): we are opening the window again in didChange.
+	return fm.didChange(winid, name)
+}
+
 func (fm *FileManager) didSave(winid int, name string) error {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()

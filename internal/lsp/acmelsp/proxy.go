@@ -56,6 +56,10 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	return fmt.Errorf("unknown command %v", args[0])
 }
 
+func (s *proxyServer) DidChange(ctx context.Context, winid int) error {
+	return s.fm.DidChange(winid)
+}
+
 func (s *proxyServer) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	return s.ss.Workspaces(), nil
 }
