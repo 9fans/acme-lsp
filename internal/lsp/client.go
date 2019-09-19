@@ -158,12 +158,6 @@ func (c *Client) TypeDefinition1(pos *protocol.TextDocumentPositionParams) ([]pr
 	})
 }
 
-func (c *Client) Implementation(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	return c.Server.Implementation(c.ctx, &protocol.ImplementationParams{
-		TextDocumentPositionParams: *pos,
-	})
-}
-
 func (c *Client) Hover1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
 	hov, err := c.Server.Hover(c.ctx, &protocol.HoverParams{
 		TextDocumentPositionParams: *pos,

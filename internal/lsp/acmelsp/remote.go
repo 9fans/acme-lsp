@@ -104,6 +104,20 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	return nil
 }
 
+func (rc *RemoteCmd) Implementation(ctx context.Context) error {
+	pos, _, err := rc.getPosition()
+	if err != nil {
+		return err
+	}
+	locations, err := rc.server.Implementation(ctx, &protocol.ImplementationParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
+		return err
+	}
+	return PlumbLocations(locations)
+}
+
 func (rc *RemoteCmd) References(ctx context.Context) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {

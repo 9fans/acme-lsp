@@ -40,8 +40,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	switch args[0] {
 	case "format":
 		return cmd.Format()
-	case "implementation":
-		return cmd.Implementation()
 	case "watch-completion":
 		go Assist(s.ss, s.fm, "comp")
 		return nil
@@ -88,6 +86,14 @@ func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (
 		return nil, err
 	}
 	return srv.Client.Hover(ctx, params)
+}
+
+func (s *proxyServer) Implementation(ctx context.Context, params *protocol.ImplementationParams) ([]protocol.Location, error) {
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.Implementation(ctx, params)
 }
 
 func (s *proxyServer) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {

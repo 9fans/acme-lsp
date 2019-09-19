@@ -119,14 +119,6 @@ func (c *Cmd) TypeDefinition() error {
 	return PlumbLocations(locations)
 }
 
-func (c *Cmd) Implementation() error {
-	locations, err := c.Client.Implementation(c.pos)
-	if err != nil {
-		return err
-	}
-	return PlumbLocations(locations)
-}
-
 func (c *Cmd) Format() error {
 	return FormatFile(c.Client, c.pos.TextDocument.URI, c.win)
 }
