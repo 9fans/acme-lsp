@@ -42,6 +42,36 @@ func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, fi
 	return text.Position(w)
 }
 
+func (rc *RemoteCmd) DidChange(ctx context.Context) error {
+	w, err := acmeutil.OpenWin(rc.winid)
+	if err != nil {
+		return errors.Wrapf(err, "failed to to open window %v", rc.winid)
+	}
+	defer w.CloseFiles()
+
+	uri, _, err := text.DocumentURI(w)
+	if err != nil {
+		return err
+	}
+	body, err := w.ReadAll("body")
+	if err != nil {
+		return err
+	}
+
+	return rc.server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
+		TextDocument: protocol.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
+				URI: uri,
+			},
+		},
+		ContentChanges: []protocol.TextDocumentContentChangeEvent{
+			{
+				Text: string(body),
+			},
+		},
+	})
+}
+
 func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 	w, err := acmeutil.OpenWin(rc.winid)
 	if err != nil {

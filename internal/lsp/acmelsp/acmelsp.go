@@ -211,7 +211,7 @@ func FormatFile(c *lsp.Client, uri protocol.DocumentURI, f text.File) error {
 			if err != nil {
 				return err
 			}
-			err = c.DidChange(text.ToPath(uri), b)
+			err = c.DidChange1(text.ToPath(uri), b)
 			if err != nil {
 				return err
 			}

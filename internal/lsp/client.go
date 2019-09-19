@@ -334,7 +334,7 @@ func (c *Client) DidSave(filename string) error {
 	})
 }
 
-func (c *Client) DidChange(filename string, body []byte) error {
+func (c *Client) DidChange1(filename string, body []byte) error {
 	return c.Server.DidChange(c.ctx, &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{

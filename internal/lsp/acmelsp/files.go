@@ -147,7 +147,7 @@ func (fm *FileManager) didChange(winid int, name string) error {
 		if err != nil {
 			return err
 		}
-		return c.DidChange(name, b)
+		return c.DidChange1(name, b)
 	})
 }
 
@@ -180,7 +180,7 @@ func (fm *FileManager) didSave(winid int, name string) error {
 		}
 
 		// TODO(fhs): Maybe DidChange is not needed with includeText option to DidSave?
-		err = c.DidChange(name, b)
+		err = c.DidChange1(name, b)
 		if err != nil {
 			return err
 		}

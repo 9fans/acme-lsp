@@ -171,12 +171,13 @@ func run(args []string) error {
 		return err
 	}
 
+	rc := acmelsp.NewRemoteCmd(server, winid)
+
 	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
-	if err = server.DidChange(ctx, winid); err != nil {
+	err = rc.DidChange(ctx)
+	if err != nil {
 		return fmt.Errorf("DidChange failed: %v", err)
 	}
-
-	rc := acmelsp.NewRemoteCmd(server, winid)
 
 	switch args[0] {
 	case "comp":

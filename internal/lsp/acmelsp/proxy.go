@@ -54,10 +54,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	return fmt.Errorf("unknown command %v", args[0])
 }
 
-func (s *proxyServer) DidChange(ctx context.Context, winid int) error {
-	return s.fm.DidChange(winid)
-}
-
 func (s *proxyServer) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	return s.ss.Workspaces(), nil
 }
@@ -68,6 +64,14 @@ func (s *proxyServer) InitializeResult(ctx context.Context, params *protocol.Tex
 		return nil, err
 	}
 	return srv.Client.InitializeResult, nil
+}
+
+func (s *proxyServer) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return err
+	}
+	return srv.Client.DidChange(ctx, params)
 }
 
 func (s *proxyServer) DidChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
