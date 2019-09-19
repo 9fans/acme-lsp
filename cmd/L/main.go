@@ -195,7 +195,7 @@ func run(args []string) error {
 	case "syms":
 		return rc.DocumentSymbol(ctx)
 	case "type":
-		return sendMsg(nil, "type-definition")
+		return rc.TypeDefinition(ctx)
 	case "win", "assist": // "win" is deprecated
 		args = args[1:]
 		if len(args) == 0 {

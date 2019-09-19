@@ -38,8 +38,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	defer cmd.Close()
 
 	switch args[0] {
-	case "type-definition":
-		return cmd.TypeDefinition()
 	case "format":
 		return cmd.Format()
 	case "implementation":
@@ -122,6 +120,14 @@ func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.Docum
 		return nil, err
 	}
 	return srv.Client.DocumentSymbol(ctx, params)
+}
+
+func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
+	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.TypeDefinition(ctx, params)
 }
 
 func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, error) {

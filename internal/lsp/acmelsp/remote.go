@@ -218,6 +218,20 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 	return nil
 }
 
+func (rc *RemoteCmd) TypeDefinition(ctx context.Context) error {
+	pos, _, err := rc.getPosition()
+	if err != nil {
+		return err
+	}
+	locations, err := rc.server.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
+		return err
+	}
+	return PlumbLocations(locations)
+}
+
 func walkDocumentSymbols(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
 	for _, s := range syms {
 		f(&s, depth)

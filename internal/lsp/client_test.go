@@ -221,7 +221,7 @@ func main() {
 					Character: 2,
 				},
 			}
-			got, err := c.TypeDefinition(pos)
+			got, err := c.TypeDefinition1(pos)
 			if err != nil {
 				t.Fatalf("TypeDefinition failed: %v", err)
 			}

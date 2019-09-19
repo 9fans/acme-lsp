@@ -112,7 +112,7 @@ func (c *Cmd) Definition() error {
 }
 
 func (c *Cmd) TypeDefinition() error {
-	locations, err := c.Client.TypeDefinition(c.pos)
+	locations, err := c.Client.TypeDefinition1(c.pos)
 	if err != nil {
 		return err
 	}
