@@ -89,6 +89,34 @@ func (rc *RemoteCmd) Definition(ctx context.Context) error {
 	return PlumbLocations(locations)
 }
 
+func (rc *RemoteCmd) FormatAndOrganizeImports(ctx context.Context) error {
+	win, err := acmeutil.OpenWin(rc.winid)
+	if err != nil {
+		return err
+	}
+	defer win.CloseFiles()
+
+	uri, _, err := text.DocumentURI(win)
+	if err != nil {
+		return err
+	}
+
+	// TODO: organize imports
+
+	edits, err := rc.server.Formatting(ctx, &protocol.DocumentFormattingParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: uri,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if err := text.Edit(win, edits); err != nil {
+		return errors.Wrapf(err, "failed to apply edits")
+	}
+	return nil
+}
+
 func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {

@@ -101,8 +101,8 @@ type Config struct {
 // Client represents a LSP client connection.
 type Client struct {
 	protocol.Server
-	ctx          context.Context
-	Capabilities *protocol.ServerCapabilities
+	ctx              context.Context
+	InitializeResult *protocol.InitializeResult
 }
 
 func New(conn net.Conn, cfg *Config) (*Client, error) {
@@ -141,9 +141,9 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 		return nil, errors.Wrap(err, "initialized failed")
 	}
 	return &Client{
-		Server:       server,
-		ctx:          ctx,
-		Capabilities: &result.Capabilities,
+		Server:           server,
+		ctx:              ctx,
+		InitializeResult: &result,
 	}, nil
 }
 
@@ -359,7 +359,7 @@ func (c *Client) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFo
 }
 
 func (c *Client) ProvidesCodeAction(kind protocol.CodeActionKind) bool {
-	switch ap := c.Capabilities.CodeActionProvider.(type) {
+	switch ap := c.InitializeResult.Capabilities.CodeActionProvider.(type) {
 	case bool:
 		return ap
 	case map[string]interface{}:

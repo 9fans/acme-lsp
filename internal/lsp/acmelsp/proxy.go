@@ -38,8 +38,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	defer cmd.Close()
 
 	switch args[0] {
-	case "format":
-		return cmd.Format()
 	case "watch-completion":
 		go Assist(s.ss, s.fm, "comp")
 		return nil
@@ -64,6 +62,14 @@ func (s *proxyServer) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFol
 	return s.ss.Workspaces(), nil
 }
 
+func (s *proxyServer) InitializeResult(ctx context.Context, params *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
+	srv, err := serverForURI(s.ss, params.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.InitializeResult, nil
+}
+
 func (s *proxyServer) DidChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
 	return s.ss.DidChangeWorkspaceFolders(params.Event.Added, params.Event.Removed)
 }
@@ -82,6 +88,22 @@ func (s *proxyServer) Definition(ctx context.Context, params *protocol.Definitio
 		return nil, err
 	}
 	return srv.Client.Definition(ctx, params)
+}
+
+func (s *proxyServer) Formatting(ctx context.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.Formatting(ctx, params)
+}
+
+func (s *proxyServer) CodeAction(ctx context.Context, params *protocol.CodeActionParams) ([]protocol.CodeAction, error) {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	return srv.Client.CodeAction(ctx, params)
 }
 
 func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {

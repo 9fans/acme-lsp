@@ -26,9 +26,14 @@ type Server interface {
 	// the workspace folders, so this has to be implemented by the acme-lsp proxy server.
 	WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error)
 
+	// InitializeResult returns the initialize response from the LSP server.
+	InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error)
+
 	DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
 	Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
 	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
+	Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
+	CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
 	Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error)
 	Implementation(context.Context, *protocol.ImplementationParams) ([]protocol.Location, error)
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
@@ -81,6 +86,14 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
+	case "acme-lsp/initializeResult": // req
+		var params protocol.TextDocumentIdentifier
+		resp, err := h.server.InitializeResult(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	default:
 		return false
 	}
@@ -105,6 +118,14 @@ func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.Wor
 		return nil, err
 	}
 	return result, nil
+}
+
+func (s *serverDispatcher) InitializeResult(ctx context.Context, params *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
+	var result protocol.InitializeResult
+	if err := s.Conn.Call(ctx, "acme-lsp/workspaceFolders", params, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 type CancelParams struct {
@@ -211,10 +232,6 @@ func (s *lspServerDispatcher) DocumentHighlight(context.Context, *protocol.Docum
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *lspServerDispatcher) CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
 func (s *lspServerDispatcher) Symbol(context.Context, *protocol.WorkspaceSymbolParams) ([]protocol.SymbolInformation, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -224,10 +241,6 @@ func (s *lspServerDispatcher) CodeLens(context.Context, *protocol.CodeLensParams
 }
 
 func (s *lspServerDispatcher) ResolveCodeLens(context.Context, *protocol.CodeLens) (*protocol.CodeLens, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
