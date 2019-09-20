@@ -351,6 +351,11 @@ func (c *Client) DidChangeWorkspaceFolders1(added, removed []protocol.WorkspaceF
 }
 
 // SendMessage exists only to implement proxy.Server.
+func (c *Client) Version(context.Context) (int, error) {
+	panic("intentionally not implemented")
+}
+
+// SendMessage exists only to implement proxy.Server.
 func (c *Client) SendMessage(context.Context, *proxy.Message) error {
 	panic("intentionally not implemented")
 }

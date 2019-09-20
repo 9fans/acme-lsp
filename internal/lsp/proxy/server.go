@@ -10,12 +10,14 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
+// Version is used to detect if acme-lsp and L are speaking the same protocol.
+const Version = 1
+
 // Server implements a subset of an LSP protocol server as defined by protocol.Server and
 // some custom acme-lsp specific methods.
 type Server interface {
-	// TODO: add Version method
-
-	SendMessage(context.Context, *Message) error
+	// Version returns the protocol version.
+	Version(context.Context) (int, error)
 
 	// WorkspaceFolders returns the workspace folders currently being managed by acme-lsp.
 	// In LSP, this method is implemented by the client, but in our case acme-lsp is managing
@@ -54,13 +56,9 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		r.Conn().Cancel(params.ID)
 		return true
 
-	case "acme-lsp/sendMessage": // notif
-		var params Message
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		if err := h.server.SendMessage(ctx, &params); err != nil {
+	case "acme-lsp/version": // req
+		resp, err := h.server.Version(ctx)
+		if err := r.Reply(ctx, resp, err); err != nil {
 			log.Error(ctx, "", err)
 		}
 		return true
@@ -94,8 +92,12 @@ type serverDispatcher struct {
 	protocol.Server
 }
 
-func (s *serverDispatcher) SendMessage(ctx context.Context, params *Message) error {
-	return s.Conn.Notify(ctx, "acme-lsp/sendMessage", params)
+func (s *serverDispatcher) Version(ctx context.Context) (int, error) {
+	var result int
+	if err := s.Conn.Call(ctx, "acme-lsp/version", nil, &result); err != nil {
+		return 0, err
+	}
+	return result, nil
 }
 
 func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.WorkspaceFolder, error) {

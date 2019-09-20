@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	p9client "9fans.net/go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
@@ -130,6 +129,14 @@ func run(args []string) error {
 	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
 	go rpc.Run(ctx)
 
+	ver, err := server.Version(ctx)
+	if err != nil {
+		return err
+	}
+	if ver != proxy.Version {
+		return fmt.Errorf("acme-lsp speaks protocol version %v but L speaks version %v (make sure they come from the same release)", ver, proxy.Version)
+	}
+
 	switch args[0] {
 	case "ws":
 		folders, err := server.WorkspaceFolders(ctx)
@@ -220,18 +227,6 @@ func run(args []string) error {
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
-func sendMessageWithWinID(ctx context.Context, server proxy.Server, attr map[string]string, args ...string) error {
-	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
-	if err != nil {
-		return errors.Wrap(err, "could not get focused window ID")
-	}
-	if attr == nil {
-		attr = make(map[string]string)
-	}
-	attr["winid"] = winid
-	return sendMessage(ctx, server, attr, args...)
-}
-
 func getWinID() (int, error) {
 	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
 	if err != nil {
@@ -242,14 +237,6 @@ func getWinID() (int, error) {
 		return 0, errors.Wrapf(err, "failed to parse $winid")
 	}
 	return n, nil
-}
-
-func sendMessage(ctx context.Context, server proxy.Server, attr map[string]string, args ...string) error {
-	m := &proxy.Message{
-		Data: strings.Join(args, " "),
-		Attr: attr,
-	}
-	return server.SendMessage(ctx, m)
 }
 
 func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {

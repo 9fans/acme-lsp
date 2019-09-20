@@ -6,8 +6,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"syscall"
 
 	p9client "9fans.net/go/plan9/client"
@@ -24,20 +22,8 @@ type proxyServer struct {
 	fm *FileManager
 }
 
-func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error {
-	args := strings.Fields(msg.Data)
-
-	winid, err := strconv.Atoi(msg.Attr["winid"])
-	if err != nil {
-		return errors.Wrap(err, "failed to parse $winid")
-	}
-	cmd, err := WindowCmd(s.ss, s.fm, winid)
-	if err != nil {
-		return err
-	}
-	defer cmd.Close()
-
-	return fmt.Errorf("unknown command %v", args[0])
+func (s *proxyServer) Version(ctx context.Context) (int, error) {
+	return proxy.Version, nil
 }
 
 func (s *proxyServer) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
