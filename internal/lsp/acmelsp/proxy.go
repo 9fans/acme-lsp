@@ -37,20 +37,6 @@ func (s *proxyServer) SendMessage(ctx context.Context, msg *proxy.Message) error
 	}
 	defer cmd.Close()
 
-	switch args[0] {
-	case "watch-completion":
-		go Assist(s.ss, s.fm, "comp")
-		return nil
-	case "watch-signature":
-		go Assist(s.ss, s.fm, "sig")
-		return nil
-	case "watch-hover":
-		go Assist(s.ss, s.fm, "hov")
-		return nil
-	case "watch-auto":
-		go Assist(s.ss, s.fm, "auto")
-		return nil
-	}
 	return fmt.Errorf("unknown command %v", args[0])
 }
 

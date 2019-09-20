@@ -14,6 +14,7 @@ import (
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
@@ -340,13 +341,23 @@ func (c *Client) DidChange1(filename string, body []byte) error {
 	})
 }
 
-func (c *Client) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
+func (c *Client) DidChangeWorkspaceFolders1(added, removed []protocol.WorkspaceFolder) error {
 	return c.Server.DidChangeWorkspaceFolders(c.ctx, &protocol.DidChangeWorkspaceFoldersParams{
 		Event: protocol.WorkspaceFoldersChangeEvent{
 			Added:   added,
 			Removed: removed,
 		},
 	})
+}
+
+// SendMessage exists only to implement proxy.Server.
+func (c *Client) SendMessage(context.Context, *proxy.Message) error {
+	panic("intentionally not implemented")
+}
+
+// SendMessage exists only to implement proxy.Server.
+func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
+	panic("intentionally not implemented")
 }
 
 func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.CodeActionKind) bool {

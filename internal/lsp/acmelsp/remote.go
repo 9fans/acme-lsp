@@ -101,7 +101,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 		}
 		return nil
 	}
-	printCompletionItems(os.Stdout, result.Items)
+	printCompletionItems(rc.Stdout, result.Items)
 	return nil
 }
 

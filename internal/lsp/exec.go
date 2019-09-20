@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
 )
 
@@ -167,6 +169,14 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	return srv, true, err
 }
 
+func (ss *ServerSet) ServerMatch(ctx context.Context, filename string) (proxy.Server, bool, error) {
+	srv, found, err := ss.StartForFile(filename)
+	if err != nil || !found {
+		return nil, found, err
+	}
+	return srv.Client, found, err
+}
+
 func (ss *ServerSet) CloseAll() {
 	for _, info := range ss.Data {
 		info.srv.Close()
@@ -224,7 +234,7 @@ func (ss *ServerSet) InitWorkspaces(folders []protocol.WorkspaceFolder) error {
 // DidChangeWorkspaceFolders adds and removes given workspace folders.
 func (ss *ServerSet) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
 	err := ss.forEach(func(c *Client) error {
-		return c.DidChangeWorkspaceFolders(added, removed)
+		return c.DidChangeWorkspaceFolders1(added, removed)
 	})
 	if err != nil {
 		return err

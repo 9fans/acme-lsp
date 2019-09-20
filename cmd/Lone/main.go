@@ -111,7 +111,9 @@ func main() {
 		if flag.NArg() >= 2 {
 			assist = flag.Arg(1)
 		}
-		acmelsp.Assist(serverSet, fm, assist)
+		if err := acmelsp.Assist(serverSet, assist); err != nil {
+			log.Fatalf("assist failed: %v", err)
+		}
 		return
 
 	case "monitor":

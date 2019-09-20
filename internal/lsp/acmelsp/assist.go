@@ -1,6 +1,7 @@
 package acmelsp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 
@@ -71,7 +73,7 @@ func (fw *focusWin) SetQ0() bool {
 	return true
 }
 
-func notifyPosChange(serverSet *lsp.ServerSet, ch chan<- *focusWin) {
+func notifyPosChange(sm ServerMatcher, ch chan<- *focusWin) {
 	fw := newFocusWin()
 	logch := make(chan *acme.LogEvent)
 	go watchLog(logch)
@@ -83,7 +85,8 @@ func notifyPosChange(serverSet *lsp.ServerSet, ch chan<- *focusWin) {
 	for {
 		select {
 		case ev := <-logch:
-			if serverSet.MatchFile(ev.Name) != nil && ev.Op == "focus" {
+			_, found, err := sm.ServerMatch(context.Background(), ev.Name)
+			if found && err == nil && ev.Op == "focus" {
 				// TODO(fhs): we should really make use of context
 				// and cancel outstanding rpc requests on previously focused window.
 				fw.id = ev.ID
@@ -109,10 +112,10 @@ type outputWin struct {
 	*acmeutil.Win
 	body  io.Writer
 	event <-chan *acme.Event
-	fm    *FileManager
+	sm    ServerMatcher
 }
 
-func newOutputWin(fm *FileManager, name string) (*outputWin, error) {
+func newOutputWin(sm ServerMatcher, name string) (*outputWin, error) {
 	w, err := acmeutil.NewWin()
 	if err != nil {
 		return nil, err
@@ -122,7 +125,7 @@ func newOutputWin(fm *FileManager, name string) (*outputWin, error) {
 		Win:   w,
 		body:  w.FileReadWriter("body"),
 		event: w.EventChan(),
-		fm:    fm,
+		sm:    sm,
 	}, nil
 }
 
@@ -190,7 +193,7 @@ func dprintf(format string, args ...interface{}) {
 }
 
 // Update writes result of cmd to output window.
-func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
+func (w *outputWin) Update(fw *focusWin, server proxy.Server, cmd string) {
 	if cmd == "auto" {
 		left, right, err := readLeftRight(fw.id, fw.q0)
 		if err != nil {
@@ -203,14 +206,13 @@ func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 		}
 	}
 
-	pos, _, err := winPosition(fw.id)
-	if err != nil {
-		dprintf("failed to get window position: %v\n", err)
-		return
-	}
+	rc := NewRemoteCmd(server, fw.id)
+	rc.Stdout = w.body
+	rc.Stderr = w.body
+	ctx := context.Background()
 
 	// Assume file is already opened by file management.
-	err = w.fm.didChange(fw.id, fw.name)
+	err := rc.DidChange(ctx)
 	if err != nil {
 		dprintf("DidChange failed: %v\n", err)
 		return
@@ -219,19 +221,18 @@ func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 	w.Clear()
 	switch cmd {
 	case "comp":
-		items, err := c.Completion1(pos)
+		err := rc.Completion(ctx, false)
 		if err != nil {
 			dprintf("Completion failed: %v\n", err)
 		}
-		printCompletionItems(w.body, items)
 
 	case "sig":
-		err = c.SignatureHelp1(pos, w.body)
+		err = rc.SignatureHelp(ctx)
 		if err != nil {
 			dprintf("SignatureHelp failed: %v\n", err)
 		}
 	case "hov":
-		err = c.Hover1(pos, w.body)
+		err = rc.Hover(ctx)
 		if err != nil {
 			dprintf("Hover failed: %v\n", err)
 		}
@@ -244,30 +245,30 @@ func (w *outputWin) Update(fw *focusWin, c *lsp.Client, cmd string) {
 // Assist creates an acme window where output of cmd is written after each
 // cursor position change in acme. Cmd is either "comp", "sig", "hov", or "auto"
 // for completion, signature help, hover, or auto-detection of the former three.
-func Assist(serverSet *lsp.ServerSet, fm *FileManager, cmd string) {
+func Assist(sm ServerMatcher, cmd string) error {
 	name := "/LSP/assist"
 	if cmd != "auto" {
 		name += "/" + cmd
 	}
-	w, err := newOutputWin(fm, name)
+	w, err := newOutputWin(sm, name)
 	if err != nil {
-		log.Fatalf("failed to create acme window: %v\n", err)
+		return fmt.Errorf("failed to create acme window: %v", err)
 	}
 	defer w.Close()
 
 	fch := make(chan *focusWin)
-	go notifyPosChange(serverSet, fch)
+	go notifyPosChange(sm, fch)
 
 loop:
 	for {
 		select {
 		case fw := <-fch:
-			s, found, err := serverSet.StartForFile(fw.name)
+			server, found, err := sm.ServerMatch(context.Background(), fw.name)
 			if err != nil {
 				log.Printf("failed to start language server: %v\n", err)
 			}
 			if found {
-				w.Update(fw, s.Client, cmd)
+				w.Update(fw, server, cmd)
 			}
 
 		case ev := <-w.event:
@@ -283,4 +284,26 @@ loop:
 			w.WriteEvent(ev)
 		}
 	}
+	return nil
+}
+
+// ServerMatcher represents a set of servers where it's possible to
+// find a matching server based on filename.
+type ServerMatcher interface {
+	ServerMatch(ctx context.Context, filename string) (proxy.Server, bool, error)
+}
+
+// UnitServerMatcher implements ServerMatcher using only one server.
+type UnitServerMatcher struct {
+	proxy.Server
+}
+
+func (sm *UnitServerMatcher) ServerMatch(ctx context.Context, filename string) (proxy.Server, bool, error) {
+	_, err := sm.Server.InitializeResult(ctx, &protocol.TextDocumentIdentifier{
+		URI: text.ToURI(filename),
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return sm.Server, true, nil
 }

@@ -160,10 +160,23 @@ func run(args []string) error {
 				Removed: dirs,
 			},
 		})
-	}
-
-	sendMsg := func(attr map[string]string, args ...string) error {
-		return sendMessageWithWinID(ctx, server, attr, args...)
+	case "win", "assist": // "win" is deprecated
+		args = args[1:]
+		sm := &acmelsp.UnitServerMatcher{Server: server}
+		if len(args) == 0 {
+			return acmelsp.Assist(sm, "auto")
+		}
+		switch args[0] {
+		case "comp":
+			return acmelsp.Assist(sm, "comp")
+		case "sig":
+			return acmelsp.Assist(sm, "sig")
+		case "hov":
+			return acmelsp.Assist(sm, "hov")
+		case "auto":
+			return acmelsp.Assist(sm, "auto")
+		}
+		return fmt.Errorf("unknown assist command %q", args[0])
 	}
 
 	winid, err := getWinID()
@@ -203,22 +216,6 @@ func run(args []string) error {
 		return rc.DocumentSymbol(ctx)
 	case "type":
 		return rc.TypeDefinition(ctx)
-	case "win", "assist": // "win" is deprecated
-		args = args[1:]
-		if len(args) == 0 {
-			return sendMsg(nil, "watch-auto")
-		}
-		switch args[0] {
-		case "comp":
-			return sendMsg(nil, "watch-completion")
-		case "sig":
-			return sendMsg(nil, "watch-signature")
-		case "hov":
-			return sendMsg(nil, "watch-hover")
-		case "auto":
-			return sendMsg(nil, "watch-auto")
-		}
-		return fmt.Errorf("unknown assist command %q", args[0])
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }
