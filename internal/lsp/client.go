@@ -4,12 +4,9 @@ package lsp
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"path/filepath"
-	"sort"
-	"strings"
 	"sync"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
@@ -155,130 +152,6 @@ func (c *Client) Close() error {
 
 func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
 	return c.initializeResult, nil
-}
-
-func (c *Client) TypeDefinition1(pos *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
-	return c.Server.TypeDefinition(c.ctx, &protocol.TypeDefinitionParams{
-		TextDocumentPositionParams: *pos,
-	})
-}
-
-func (c *Client) Hover1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	hov, err := c.Server.Hover(c.ctx, &protocol.HoverParams{
-		TextDocumentPositionParams: *pos,
-	})
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(w, "%v\n", hov.Contents.Value)
-	return nil
-}
-
-func (c *Client) References1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	loc, err := c.Server.References(c.ctx, &protocol.ReferenceParams{
-		TextDocumentPositionParams: *pos,
-		Context: protocol.ReferenceContext{
-			IncludeDeclaration: true,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	if len(loc) == 0 {
-		fmt.Fprintf(w, "No references found.\n")
-		return nil
-	}
-	sort.Slice(loc, func(i, j int) bool {
-		a := loc[i]
-		b := loc[j]
-		n := strings.Compare(string(a.URI), string(b.URI))
-		if n == 0 {
-			m := a.Range.Start.Line - b.Range.Start.Line
-			if m == 0 {
-				return a.Range.Start.Character < b.Range.Start.Character
-			}
-			return m < 0
-		}
-		return n < 0
-	})
-	fmt.Fprintf(w, "References:\n")
-	for _, l := range loc {
-		fmt.Fprintf(w, " %v\n", LocationLink(&l))
-	}
-	return nil
-}
-
-func walkDocumentSymbols(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
-	for _, s := range syms {
-		f(&s, depth)
-		walkDocumentSymbols(s.Children, depth+1, f)
-	}
-}
-
-func (c *Client) Symbols(uri protocol.DocumentURI, w io.Writer) error {
-	// TODO(fhs): DocumentSymbol request can return either a
-	// []DocumentSymbol (hierarchical) or []SymbolInformation (flat).
-	// We only handle the hierarchical type below.
-
-	// TODO(fhs): Make use of DocumentSymbol.Range to optionally filter out
-	// symbols that aren't within current cursor position?
-
-	syms, err := c.Server.DocumentSymbol(c.ctx, &protocol.DocumentSymbolParams{
-		TextDocument: protocol.TextDocumentIdentifier{
-			URI: uri,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	if len(syms) == 0 {
-		fmt.Fprintf(w, "No symbols found.\n")
-		return nil
-	}
-	fmt.Fprintf(w, "Symbols:\n")
-	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
-		loc := &protocol.Location{
-			URI:   uri,
-			Range: s.SelectionRange,
-		}
-		indent := strings.Repeat(" ", depth)
-		fmt.Fprintf(w, "%v %v %v %v\n", indent, s.Kind, s.Name, s.Detail)
-		fmt.Fprintf(w, "%v  %v\n", indent, LocationLink(loc))
-	})
-	return nil
-}
-
-func (c *Client) Completion1(pos *protocol.TextDocumentPositionParams) ([]protocol.CompletionItem, error) {
-	cl, err := c.Server.Completion(c.ctx, &protocol.CompletionParams{
-		TextDocumentPositionParams: *pos,
-		Context:                    &protocol.CompletionContext{},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return cl.Items, nil
-}
-
-func (c *Client) SignatureHelp1(pos *protocol.TextDocumentPositionParams, w io.Writer) error {
-	sh, err := c.Server.SignatureHelp(c.ctx, &protocol.SignatureHelpParams{
-		TextDocumentPositionParams: *pos,
-	})
-	if err != nil {
-		return err
-	}
-	for _, sig := range sh.Signatures {
-		fmt.Fprintf(w, "%v\n", sig.Label)
-		fmt.Fprintf(w, "%v\n", sig.Documentation)
-	}
-	return nil
-}
-
-func (c *Client) Format(uri protocol.DocumentURI) ([]protocol.TextEdit, error) {
-	return c.Server.Formatting(c.ctx, &protocol.DocumentFormattingParams{
-		TextDocument: protocol.TextDocumentIdentifier{
-			URI: uri,
-		},
-	})
 }
 
 func fileLanguage(filename string) string {

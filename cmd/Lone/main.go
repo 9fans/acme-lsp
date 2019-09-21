@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -125,32 +126,33 @@ func main() {
 		return
 	}
 
-	cmd, err := acmelsp.CurrentWindowCmd(serverSet, fm)
+	rc, err := acmelsp.CurrentWindowRemoteCmd(serverSet, fm)
 	if err != nil {
-		log.Fatalf("CurrentWindowCmd failed: %v\n", err)
+		log.Fatalf("CurrentWindowRemoteCmd failed: %v\n", err)
 	}
-	defer cmd.Close()
+
+	ctx := context.Background()
 
 	switch flag.Arg(0) {
 	case "comp":
-		err = cmd.Completion(false)
+		err = rc.Completion(ctx, false)
 	case "def":
-		err = cmd.Definition()
+		err = rc.Definition(ctx)
 	case "fmt":
-		err = cmd.Format()
+		err = rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
-		err = cmd.Hover()
+		err = rc.Hover(ctx)
 	case "refs":
-		err = cmd.References()
+		err = rc.References(ctx)
 	case "rn":
 		if flag.NArg() < 2 {
 			usage()
 		}
-		err = cmd.Rename(flag.Arg(1))
+		err = rc.Rename(ctx, flag.Arg(1))
 	case "sig":
-		err = cmd.SignatureHelp()
+		err = rc.SignatureHelp(ctx)
 	case "syms":
-		err = cmd.Symbols()
+		err = rc.DocumentSymbol(ctx)
 	default:
 		log.Printf("unknown command %q\n", flag.Arg(0))
 		os.Exit(1)

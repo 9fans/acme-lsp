@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// RemoteCmd executes LSP commands in an acme window using the proxy server.
 type RemoteCmd struct {
 	server proxy.Server
 	winid  int
@@ -101,7 +102,12 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 		}
 		return nil
 	}
-	printCompletionItems(rc.Stdout, result.Items)
+	if len(result.Items) == 0 {
+		fmt.Fprintf(rc.Stderr, "no completion\n")
+	}
+	for _, item := range result.Items {
+		fmt.Fprintf(rc.Stdout, "%v %v\n", item.Label, item.Detail)
+	}
 	return nil
 }
 
@@ -203,6 +209,7 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 	return nil
 }
 
+// Rename renames the identifier at cursor position to newname.
 func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {

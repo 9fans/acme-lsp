@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -21,28 +20,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Cmd contains the states required to execute an LSP command in an acme window.
-type Cmd struct {
-	Client   *lsp.Client
-	win      *acmeutil.Win
-	pos      *protocol.TextDocumentPositionParams
-	filename string
-}
-
-func CurrentWindowCmd(ss *lsp.ServerSet, fm *FileManager) (*Cmd, error) {
+func CurrentWindowRemoteCmd(ss *lsp.ServerSet, fm *FileManager) (*RemoteCmd, error) {
 	id, err := strconv.Atoi(os.Getenv("winid"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse $winid")
 	}
-	return WindowCmd(ss, fm, id)
+	return WindowRemoteCmd(ss, fm, id)
 }
 
-func WindowCmd(ss *lsp.ServerSet, fm *FileManager, winid int) (*Cmd, error) {
+func WindowRemoteCmd(ss *lsp.ServerSet, fm *FileManager, winid int) (*RemoteCmd, error) {
 	w, err := acmeutil.OpenWin(winid)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to to open window %v", winid)
 	}
-	pos, fname, err := text.Position(w)
+	defer w.CloseFiles()
+
+	_, fname, err := text.DocumentURI(w)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get text position")
 	}
@@ -60,96 +53,7 @@ func WindowCmd(ss *lsp.ServerSet, fm *FileManager, winid int) (*Cmd, error) {
 		return nil, errors.Wrap(err, "DidChange failed")
 	}
 
-	return &Cmd{
-		Client:   srv.Client,
-		win:      w,
-		pos:      pos,
-		filename: fname,
-	}, nil
-}
-
-func (c *Cmd) Close() {
-	c.win.CloseFiles()
-}
-
-func (c *Cmd) Completion(edit bool) error {
-	items, err := c.Client.Completion1(c.pos)
-	if err != nil {
-		return err
-	}
-	if edit && len(items) == 1 {
-		textEdit := items[0].TextEdit
-		if textEdit == nil {
-			// TODO(fhs): Use insertText or label instead.
-			return fmt.Errorf("nil TextEdit in completion item")
-		}
-		if err := text.Edit(c.win, []protocol.TextEdit{*textEdit}); err != nil {
-			return errors.Wrapf(err, "failed to apply completion edit")
-		}
-		return nil
-	}
-	printCompletionItems(os.Stdout, items)
-	return nil
-}
-
-func printCompletionItems(w io.Writer, items []protocol.CompletionItem) {
-	if len(items) == 0 {
-		fmt.Fprintf(w, "no completion\n")
-	}
-	for _, item := range items {
-		fmt.Fprintf(w, "%v %v\n", item.Label, item.Detail)
-	}
-}
-
-func (c *Cmd) Definition() error {
-	locations, err := c.Client.Definition(context.Background(), &protocol.DefinitionParams{
-		TextDocumentPositionParams: *c.pos,
-	})
-	if err != nil {
-		return err
-	}
-	return PlumbLocations(locations)
-}
-
-func (c *Cmd) TypeDefinition() error {
-	locations, err := c.Client.TypeDefinition1(c.pos)
-	if err != nil {
-		return err
-	}
-	return PlumbLocations(locations)
-}
-
-func (c *Cmd) Format() error {
-	return OrganizeImportsAndFormat(context.Background(), c.Client, &c.pos.TextDocument, c.win)
-}
-
-func (c *Cmd) Hover() error {
-	return c.Client.Hover1(c.pos, os.Stdout)
-}
-
-func (c *Cmd) References() error {
-	return c.Client.References1(c.pos, os.Stdout)
-}
-
-// Rename renames the identifier at cursor position to newname.
-func (c *Cmd) Rename(newname string) error {
-	we, err := c.Client.Rename(context.Background(), &protocol.RenameParams{
-		TextDocument: c.pos.TextDocument,
-		Position:     c.pos.Position,
-		NewName:      newname,
-	})
-	if err != nil {
-		return err
-	}
-	return editWorkspace(we)
-}
-
-func (c *Cmd) SignatureHelp() error {
-	return c.Client.SignatureHelp1(c.pos, os.Stdout)
-}
-
-func (c *Cmd) Symbols() error {
-	return c.Client.Symbols(c.pos.TextDocument.URI, os.Stdout)
+	return NewRemoteCmd(srv.Client, winid), nil
 }
 
 // PlumbLocations sends the locations to the plumber.

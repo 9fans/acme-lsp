@@ -87,12 +87,18 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 }
 
 func TestGoFormat(t *testing.T) {
+	ctx := context.Background()
+
 	for _, server := range []string{
 		"gopls",
 		"go-langserver",
 	} {
 		testGoModule(t, server, goSourceUnfmt, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
-			edits, err := c.Format(uri)
+			edits, err := c.Formatting(ctx, &protocol.DocumentFormattingParams{
+				TextDocument: protocol.TextDocumentIdentifier{
+					URI: uri,
+				},
+			})
 			if err != nil {
 				t.Fatalf("Format failed: %v", err)
 			}
@@ -109,12 +115,14 @@ func TestGoFormat(t *testing.T) {
 }
 
 func TestGoHover(t *testing.T) {
+	ctx := context.Background()
+
 	for _, srv := range []struct {
 		name string
 		want string
 	}{
-		{"gopls", "func fmt.Println(a ...interface{}) (n int, err error)\n"},
-		{"go-langserver", "func Println(a ...interface{}) (n int, err error)\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered. \n\n\n"},
+		{"gopls", "func fmt.Println(a ...interface{}) (n int, err error)"},
+		{"go-langserver", "func Println(a ...interface{}) (n int, err error)\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered. \n\n"},
 	} {
 		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			pos := &protocol.TextDocumentPositionParams{
@@ -126,11 +134,13 @@ func TestGoHover(t *testing.T) {
 					Character: 10,
 				},
 			}
-			var b bytes.Buffer
-			if err := c.Hover1(pos, &b); err != nil {
+			hov, err := c.Hover(ctx, &protocol.HoverParams{
+				TextDocumentPositionParams: *pos,
+			})
+			if err != nil {
 				t.Fatalf("Hover failed: %v", err)
 			}
-			got := b.String()
+			got := hov.Contents.Value
 			// Instead of doing an exact match, we ignore extra markups
 			// from markdown (if there are any).
 			if !strings.Contains(got, srv.want) {
@@ -195,6 +205,7 @@ func main() {
 }
 
 func TestGoTypeDefinition(t *testing.T) {
+	ctx := context.Background()
 	src := `package main // import "example.com/test"
 
 import "fmt"
@@ -221,7 +232,9 @@ func main() {
 					Character: 2,
 				},
 			}
-			got, err := c.TypeDefinition1(pos)
+			got, err := c.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
+				TextDocumentPositionParams: *pos,
+			})
 			if err != nil {
 				t.Fatalf("TypeDefinition failed: %v", err)
 			}
@@ -359,6 +372,8 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 }
 
 func TestPythonHover(t *testing.T) {
+	ctx := context.Background()
+
 	testPython(t, pySource, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 		pos := &protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
@@ -369,12 +384,14 @@ func TestPythonHover(t *testing.T) {
 				Character: 16,
 			},
 		}
-		var b bytes.Buffer
-		if err := c.Hover1(pos, &b); err != nil {
+		hov, err := c.Hover(ctx, &protocol.HoverParams{
+			TextDocumentPositionParams: *pos,
+		})
+		if err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
-		got := b.String()
-		want := "Return the square root of x.\n"
+		got := hov.Contents.Value
+		want := "Return the square root of x."
 		// May not be an exact match.
 		// Perhaps depending on if it's Python 2 or 3?
 		if !strings.Contains(got, want) {
@@ -384,8 +401,14 @@ func TestPythonHover(t *testing.T) {
 }
 
 func TestPythonFormat(t *testing.T) {
+	ctx := context.Background()
+
 	testPython(t, pySourceUnfmt, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
-		edits, err := c.Format(uri)
+		edits, err := c.Formatting(ctx, &protocol.DocumentFormattingParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: uri,
+			},
+		})
 		if err != nil {
 			t.Fatalf("Format failed: %v", err)
 		}
