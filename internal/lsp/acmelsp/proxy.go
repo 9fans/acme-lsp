@@ -47,7 +47,7 @@ func (s *proxyServer) DidChange(ctx context.Context, params *protocol.DidChangeT
 }
 
 func (s *proxyServer) DidChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
-	return s.ss.DidChangeWorkspaceFolders(params.Event.Added, params.Event.Removed)
+	return s.ss.DidChangeWorkspaceFolders(ctx, params.Event.Added, params.Event.Removed)
 }
 
 func (s *proxyServer) Completion(ctx context.Context, params *protocol.CompletionParams) (*protocol.CompletionList, error) {

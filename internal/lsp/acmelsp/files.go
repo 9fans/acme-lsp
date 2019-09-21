@@ -119,7 +119,7 @@ func (fm *FileManager) didOpen(winid int, name string) error {
 		if err != nil {
 			return err
 		}
-		return c.DidOpen(name, b)
+		return lsp.DidOpen(context.Background(), c, name, b)
 	})
 }
 
@@ -133,7 +133,7 @@ func (fm *FileManager) didClose(name string) error {
 	delete(fm.wins, name)
 
 	return fm.withClient(-1, name, func(c *lsp.Client, _ *acmeutil.Win) error {
-		return c.DidClose(name)
+		return lsp.DidClose(context.Background(), c, name)
 	})
 }
 
@@ -149,7 +149,7 @@ func (fm *FileManager) didChange(winid int, name string) error {
 		if err != nil {
 			return err
 		}
-		return c.DidChange1(name, b)
+		return lsp.DidChange(context.Background(), c, name, b)
 	})
 }
 
@@ -182,11 +182,11 @@ func (fm *FileManager) didSave(winid int, name string) error {
 		}
 
 		// TODO(fhs): Maybe DidChange is not needed with includeText option to DidSave?
-		err = c.DidChange1(name, b)
+		err = lsp.DidChange(context.Background(), c, name, b)
 		if err != nil {
 			return err
 		}
-		return c.DidSave(name)
+		return lsp.DidSave(context.Background(), c, name)
 	})
 }
 

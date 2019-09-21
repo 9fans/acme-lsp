@@ -70,12 +70,13 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	}
 	defer srv.Close()
 
-	err = srv.Client.DidOpen(gofile, []byte(src))
+	ctx := context.Background()
+	err = DidOpen(ctx, srv.Client, gofile, []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
 	defer func() {
-		err := srv.Client.DidClose(gofile)
+		err := DidClose(ctx, srv.Client, gofile)
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
@@ -293,7 +294,8 @@ func main() {
 	}
 	defer srv.Close()
 
-	err = srv.Client.DidOpen(gofile, []byte(src))
+	ctx := context.Background()
+	err = DidOpen(ctx, srv.Client, gofile, []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
@@ -304,7 +306,7 @@ func main() {
 		t.Errorf("diagnostics message is %q, want %q", diag.Message, want)
 	}
 
-	err = srv.Client.DidClose(gofile)
+	err = DidClose(ctx, srv.Client, gofile)
 	if err != nil {
 		t.Fatalf("DidClose failed: %v", err)
 	}
@@ -357,12 +359,13 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 	}
 	defer srv.Close()
 
-	err = srv.Client.DidOpen(pyfile, []byte(src))
+	ctx := context.Background()
+	err = DidOpen(ctx, srv.Client, pyfile, []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
 	defer func() {
-		err := srv.Client.DidClose(pyfile)
+		err := DidClose(ctx, srv.Client, pyfile)
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}

@@ -99,7 +99,6 @@ type Config struct {
 // Client represents a LSP client connection.
 type Client struct {
 	protocol.Server
-	ctx              context.Context
 	initializeResult *protocol.InitializeResult
 }
 
@@ -140,14 +139,8 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 	}
 	return &Client{
 		Server:           server,
-		ctx:              ctx,
 		initializeResult: &result,
 	}, nil
-}
-
-func (c *Client) Close() error {
-	// TODO(fhs): Cancel all outstanding requests?
-	return nil
 }
 
 func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
@@ -169,8 +162,8 @@ func fileLanguage(filename string) string {
 	return lang
 }
 
-func (c *Client) DidOpen(filename string, body []byte) error {
-	return c.Server.DidOpen(c.ctx, &protocol.DidOpenTextDocumentParams{
+func DidOpen(ctx context.Context, server protocol.Server, filename string, body []byte) error {
+	return server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
 			URI:        text.ToURI(filename),
 			LanguageID: fileLanguage(filename),
@@ -180,16 +173,16 @@ func (c *Client) DidOpen(filename string, body []byte) error {
 	})
 }
 
-func (c *Client) DidClose(filename string) error {
-	return c.Server.DidClose(c.ctx, &protocol.DidCloseTextDocumentParams{
+func DidClose(ctx context.Context, server protocol.Server, filename string) error {
+	return server.DidClose(ctx, &protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{
 			URI: text.ToURI(filename),
 		},
 	})
 }
 
-func (c *Client) DidSave(filename string) error {
-	return c.Server.DidSave(c.ctx, &protocol.DidSaveTextDocumentParams{
+func DidSave(ctx context.Context, server protocol.Server, filename string) error {
+	return server.DidSave(ctx, &protocol.DidSaveTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
@@ -199,8 +192,8 @@ func (c *Client) DidSave(filename string) error {
 	})
 }
 
-func (c *Client) DidChange1(filename string, body []byte) error {
-	return c.Server.DidChange(c.ctx, &protocol.DidChangeTextDocumentParams{
+func DidChange(ctx context.Context, server protocol.Server, filename string, body []byte) error {
+	return server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: text.ToURI(filename),
@@ -210,15 +203,6 @@ func (c *Client) DidChange1(filename string, body []byte) error {
 			{
 				Text: string(body),
 			},
-		},
-	})
-}
-
-func (c *Client) DidChangeWorkspaceFolders1(added, removed []protocol.WorkspaceFolder) error {
-	return c.Server.DidChangeWorkspaceFolders(c.ctx, &protocol.DidChangeWorkspaceFoldersParams{
-		Event: protocol.WorkspaceFoldersChangeEvent{
-			Added:   added,
-			Removed: removed,
 		},
 	})
 }

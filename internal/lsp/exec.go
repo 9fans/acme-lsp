@@ -26,7 +26,6 @@ type Server struct {
 
 func (s *Server) Close() {
 	if s != nil {
-		s.Client.Close()
 		s.protocol.Close()
 	}
 }
@@ -232,9 +231,14 @@ func (ss *ServerSet) InitWorkspaces(folders []protocol.WorkspaceFolder) error {
 }
 
 // DidChangeWorkspaceFolders adds and removes given workspace folders.
-func (ss *ServerSet) DidChangeWorkspaceFolders(added, removed []protocol.WorkspaceFolder) error {
+func (ss *ServerSet) DidChangeWorkspaceFolders(ctx context.Context, added, removed []protocol.WorkspaceFolder) error {
 	err := ss.forEach(func(c *Client) error {
-		return c.DidChangeWorkspaceFolders1(added, removed)
+		return c.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
+			Event: protocol.WorkspaceFoldersChangeEvent{
+				Added:   added,
+				Removed: removed,
+			},
+		})
 	})
 	if err != nil {
 		return err

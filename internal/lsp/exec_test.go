@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -72,7 +73,7 @@ func TestServerSetWorkspaces(t *testing.T) {
 		t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
 	}
 	want = append(want, added...)
-	err = ss.DidChangeWorkspaceFolders(added, nil)
+	err = ss.DidChangeWorkspaceFolders(context.Background(), added, nil)
 	if err != nil {
 		t.Fatalf("ServerSet.AddWorkspaces: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestServerSetWorkspaces(t *testing.T) {
 
 	removed := want[:1]
 	want = want[1:]
-	err = ss.DidChangeWorkspaceFolders(nil, removed)
+	err = ss.DidChangeWorkspaceFolders(context.Background(), nil, removed)
 	if err != nil {
 		t.Fatalf("ServerSet.RemoveWorkspaces: %v", err)
 	}
