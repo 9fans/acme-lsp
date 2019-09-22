@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
 	"syscall"
 
-	p9client "9fans.net/go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -150,8 +149,8 @@ func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, err
 	return srv, nil
 }
 
-func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager) error {
-	ln, err := Listen("unix", ProxyAddr())
+func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *lsp.ServerSet, fm *FileManager) error {
+	ln, err := Listen(cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return err
 	}
@@ -167,10 +166,6 @@ func ListenAndServeProxy(ctx context.Context, ss *lsp.ServerSet, fm *FileManager
 		})
 		go rpc.Run(ctx)
 	}
-}
-
-func ProxyAddr() string {
-	return filepath.Join(p9client.Namespace(), "acme-lsp.rpc")
 }
 
 // Listen is like net.Listen but it removes dead unix sockets.

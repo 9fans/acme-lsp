@@ -88,8 +88,7 @@ func main() {
 
 	serverSet := lsp.NewServerSet(acmelsp.DefaultConfig())
 
-	// golang.org/x/tools/cmd/gopls is not ready. It hasn't implmented
-	// references, and rename yet.
+	// Use go-langserver insead of gopls for backward compatibility.
 	//serverSet.Register(`\.go$`, []string{"gopls"})
 	serverSet.Register(`\.go$`, []string{"go-langserver", "-gocodecompletion"})
 	serverSet.Register(`\.py$`, []string{"pyls"})

@@ -8,13 +8,13 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 
 	"9fans.net/go/acme"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
@@ -192,73 +192,47 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 	return nil
 }
 
-// ParseFlags adds some standard flags, parses all flags, and returns the server set and debug.
-func ParseFlags(serverSet *lsp.ServerSet) (*lsp.ServerSet, bool) {
-	serverSet, debug, err := ParseFlagSet(flag.CommandLine, os.Args[1:], serverSet)
+// ParseFlags adds some standard flags, parses all flags, and returns the server set and config.
+func ParseFlags(serverSet *lsp.ServerSet) (*lsp.ServerSet, *config.Config) {
+	serverSet, cfg, err := parseFlags(flag.CommandLine, os.Args[1:], serverSet)
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
 		panic(err)
 	}
-	return serverSet, debug
+	return serverSet, cfg
 }
 
-func ParseFlagSet(f *flag.FlagSet, arguments []string, serverSet *lsp.ServerSet) (*lsp.ServerSet, bool, error) {
-	var (
-		userServers serverFlag
-		dialServers serverFlag
-	)
-
-	debug := f.Bool("debug", false, "turn on debugging prints")
-	workspaces := f.String("workspaces", "", "colon-separated list of initial workspace directories")
-	f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
-	f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
-	if err := f.Parse(arguments); err != nil {
-		return nil, false, err
+func parseFlags(f *flag.FlagSet, arguments []string, serverSet *lsp.ServerSet) (*lsp.ServerSet, *config.Config, error) {
+	cfg, err := config.ParseFlags(true, f, arguments)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if *debug {
+	if cfg.Verbose {
 		lsp.Debug = true
 	}
 
 	if serverSet == nil {
 		serverSet = lsp.NewServerSet(DefaultConfig())
 	}
-	if len(*workspaces) > 0 {
-		folders, err := lsp.DirsToWorkspaceFolders(strings.Split(*workspaces, ":"))
+	if len(cfg.WorkspaceDirectories) > 0 {
+		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
 		if err != nil {
-			return nil, *debug, err
+			return nil, cfg, err
 		}
 		serverSet.InitWorkspaces(folders)
 	}
-	for _, sa := range userServers {
-		serverSet.Register(sa.pattern, strings.Fields(sa.args))
+	for _, ls := range cfg.LegacyLanguageServers {
+		switch {
+		case len(ls.Command) > 0:
+			serverSet.Register(ls.Pattern, ls.Command)
+		case len(ls.DialAddress) > 0:
+			serverSet.RegisterDial(ls.Pattern, ls.DialAddress)
+		default:
+			return nil, cfg, fmt.Errorf("invalid legacy server flag value")
+		}
 	}
-	for _, sa := range dialServers {
-		serverSet.RegisterDial(sa.pattern, sa.args)
-	}
-	return serverSet, *debug, nil
-}
-
-type serverArgs struct {
-	pattern, args string
-}
-
-type serverFlag []serverArgs
-
-func (sf *serverFlag) String() string {
-	return fmt.Sprintf("%v", []serverArgs(*sf))
-}
-
-func (sf *serverFlag) Set(val string) error {
-	f := strings.SplitN(val, ":", 2)
-	if len(f) != 2 {
-		return errors.New("flag value must contain a colon")
-	}
-	*sf = append(*sf, serverArgs{
-		pattern: f[0],
-		args:    f[1],
-	})
-	return nil
+	return serverSet, cfg, nil
 }
 
 func DefaultConfig() *lsp.Config {

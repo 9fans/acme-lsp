@@ -44,14 +44,16 @@ func TestPlumbLocation(t *testing.T) {
 
 func TestParseFlagSet(t *testing.T) {
 	tt := []struct {
+		name       string
 		args       []string
 		debug      bool
 		serverInfo []*lsp.ServerInfo
 		workspaces []string
 		err        string
 	}{
-		{[]string{"-debug"}, true, nil, nil, ""},
+		{"Debug", []string{"-debug"}, true, nil, nil, ""},
 		{
+			"OneWorkspace",
 			[]string{"-workspaces", "/path/to/mod1"},
 			false,
 			nil,
@@ -59,6 +61,7 @@ func TestParseFlagSet(t *testing.T) {
 			"",
 		},
 		{
+			"TwoWorkspaces",
 			[]string{"-workspaces", "/go/mod1:/go/mod2"},
 			false,
 			nil,
@@ -66,6 +69,7 @@ func TestParseFlagSet(t *testing.T) {
 			"",
 		},
 		{
+			"ServerFlag",
 			[]string{"-server", `\.go$:gopls -rpc.trace`},
 			false,
 			[]*lsp.ServerInfo{
@@ -78,6 +82,7 @@ func TestParseFlagSet(t *testing.T) {
 			"",
 		},
 		{
+			"DialFlag",
 			[]string{"-dial", `\.go$:localhost:4389`},
 			false,
 			[]*lsp.ServerInfo{
@@ -90,6 +95,7 @@ func TestParseFlagSet(t *testing.T) {
 			"",
 		},
 		{
+			"BadServerFlag",
 			[]string{"-server", `gopls -rpc.trace`},
 			false,
 			nil,
@@ -99,45 +105,47 @@ func TestParseFlagSet(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		f := flag.NewFlagSet("acme-lsp", flag.ContinueOnError)
-		f.SetOutput(ioutil.Discard)
+		t.Run(tc.name, func(t *testing.T) {
+			f := flag.NewFlagSet("acme-lsp", flag.ContinueOnError)
+			f.SetOutput(ioutil.Discard)
 
-		ss, debug, err := ParseFlagSet(f, tc.args, nil)
-		if len(tc.err) > 0 {
-			if !strings.Contains(err.Error(), tc.err) {
-				t.Fatalf("for %q, error %q does not contain %q", tc.args, err, tc.err)
+			ss, cfg, err := parseFlags(f, tc.args, nil)
+			if len(tc.err) > 0 {
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("for %q, error %q does not contain %q", tc.args, err, tc.err)
+				}
+				return
 			}
-			continue
-		}
-		if err != nil {
-			t.Fatalf("ParseFlagSet failed: %v", err)
-		}
-		if debug != tc.debug {
-			t.Errorf("-debug flag didn't turn on debugging")
-		}
-		got := ss.Workspaces()
-		want, err := lsp.DirsToWorkspaceFolders(tc.workspaces)
-		if err != nil {
-			t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
-		}
-		if !cmp.Equal(got, want) {
-			t.Errorf("workspaces are %v; want %v", got, want)
-		}
-		if len(tc.serverInfo) > 0 {
-			if got, want := len(ss.Data), len(tc.serverInfo); got != want {
-				t.Fatalf("%v servers registered for %v; want %v", got, tc.args, want)
+			if err != nil {
+				t.Fatalf("ParseFlagSet failed: %v", err)
 			}
-			got := tc.serverInfo[0]
-			want := ss.Data[0]
-			if got, want := got.Re.String(), want.Re.String(); got != want {
-				t.Errorf("filename pattern for %v is %v; want %v", got, tc.args, want)
+			if cfg.Verbose != tc.debug {
+				t.Errorf("-debug flag didn't turn on debugging")
 			}
-			if got, want := got.Args, want.Args; !cmp.Equal(got, want) {
-				t.Errorf("lsp server args for %v is %v; want %v", tc.args, got, want)
+			got := ss.Workspaces()
+			want, err := lsp.DirsToWorkspaceFolders(tc.workspaces)
+			if err != nil {
+				t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
 			}
-			if got, want := got.Addr, want.Addr; !cmp.Equal(got, want) {
-				t.Errorf("lsp server dial address for %v is %v; want %v", tc.args, got, want)
+			if !cmp.Equal(got, want) {
+				t.Errorf("workspaces are %v; want %v", got, want)
 			}
-		}
+			if len(tc.serverInfo) > 0 {
+				if got, want := len(ss.Data), len(tc.serverInfo); got != want {
+					t.Fatalf("%v servers registered for %v; want %v", got, tc.args, want)
+				}
+				got := tc.serverInfo[0]
+				want := ss.Data[0]
+				if got, want := got.Re.String(), want.Re.String(); got != want {
+					t.Errorf("filename pattern for %v is %v; want %v", got, tc.args, want)
+				}
+				if got, want := got.Args, want.Args; !cmp.Equal(got, want) {
+					t.Errorf("lsp server args for %v is %v; want %v", tc.args, got, want)
+				}
+				if got, want := got.Addr, want.Addr; !cmp.Equal(got, want) {
+					t.Errorf("lsp server dial address for %v is %v; want %v", tc.args, got, want)
+				}
+			}
+		})
 	}
 }

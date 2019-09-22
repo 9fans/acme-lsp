@@ -48,7 +48,7 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	ss, _ := acmelsp.ParseFlags(nil)
+	ss, cfg := acmelsp.ParseFlags(nil)
 
 	if len(ss.Data) == 0 {
 		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")
@@ -60,7 +60,7 @@ func main() {
 	}
 	go fm.Run()
 
-	err = acmelsp.ListenAndServeProxy(context.Background(), ss, fm)
+	err = acmelsp.ListenAndServeProxy(context.Background(), cfg, ss, fm)
 	if err != nil {
 		log.Fatalf("proxy failed: %v\n", err)
 	}

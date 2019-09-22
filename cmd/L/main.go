@@ -16,6 +16,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
@@ -104,22 +105,26 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	flag.Parse()
 
-	err := run(flag.Args())
+	cfg, err := config.ParseFlags(false, flag.CommandLine, os.Args[1:])
+	if err != nil {
+		log.Fatalf("%v\n", err)
+	}
+
+	err = run(cfg, flag.Args())
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
 }
 
-func run(args []string) error {
+func run(cfg *config.Config, args []string) error {
 	ctx := context.Background()
 
 	if len(args) == 0 {
 		usage()
 	}
 
-	conn, err := net.Dial("unix", acmelsp.ProxyAddr())
+	conn, err := net.Dial(cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return fmt.Errorf("dial failed: %v", err)
 	}
@@ -174,14 +179,8 @@ func run(args []string) error {
 			return acmelsp.Assist(sm, "auto")
 		}
 		switch args[0] {
-		case "comp":
-			return acmelsp.Assist(sm, "comp")
-		case "sig":
-			return acmelsp.Assist(sm, "sig")
-		case "hov":
-			return acmelsp.Assist(sm, "hov")
-		case "auto":
-			return acmelsp.Assist(sm, "auto")
+		case "comp", "sig", "hov", "auto":
+			return acmelsp.Assist(sm, args[0])
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
 	}
