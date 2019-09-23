@@ -10,6 +10,7 @@ import (
 
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
@@ -109,13 +110,18 @@ func TestParseFlagSet(t *testing.T) {
 			f := flag.NewFlagSet("acme-lsp", flag.ContinueOnError)
 			f.SetOutput(ioutil.Discard)
 
-			ss, cfg, err := parseFlags(f, tc.args, nil)
+			cfg := config.Default()
+			err := config.ParseFlags(cfg, true, f, tc.args)
 			if len(tc.err) > 0 {
 				if !strings.Contains(err.Error(), tc.err) {
 					t.Fatalf("for %q, error %q does not contain %q", tc.args, err, tc.err)
 				}
 				return
 			}
+			if err != nil {
+				t.Fatalf("failed to parse flags: %v", err)
+			}
+			ss, err := NewServerSet(cfg)
 			if err != nil {
 				t.Fatalf("ParseFlagSet failed: %v", err)
 			}

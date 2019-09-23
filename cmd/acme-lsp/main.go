@@ -7,7 +7,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -48,7 +50,22 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	ss, cfg := acmelsp.ParseFlags(nil)
+
+	cfg := config.Default()
+	err := config.ParseFlags(cfg, true, flag.CommandLine, os.Args[1:])
+	if err != nil {
+		// Unreached since flag.CommandLine uses flag.ExitOnError.
+		log.Fatalf("failed to parse flags: %v\n", err)
+	}
+	err = acmeutil.Mount(cfg.AcmeNetwork, cfg.AcmeAddress)
+	if err != nil {
+		log.Fatalf("failed to mount acme: %v\n", err)
+	}
+
+	ss, err := acmelsp.NewServerSet(cfg)
+	if err != nil {
+		log.Fatalf("failed to create server set: %v\n", err)
+	}
 
 	if len(ss.Data) == 0 {
 		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")

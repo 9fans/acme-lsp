@@ -3,7 +3,6 @@ package acmelsp
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -192,33 +191,18 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 	return nil
 }
 
-// ParseFlags adds some standard flags, parses all flags, and returns the server set and config.
-func ParseFlags(serverSet *lsp.ServerSet) (*lsp.ServerSet, *config.Config) {
-	serverSet, cfg, err := parseFlags(flag.CommandLine, os.Args[1:], serverSet)
-	if err != nil {
-		// Unreached since flag.CommandLine uses flag.ExitOnError.
-		panic(err)
-	}
-	return serverSet, cfg
-}
-
-func parseFlags(f *flag.FlagSet, arguments []string, serverSet *lsp.ServerSet) (*lsp.ServerSet, *config.Config, error) {
-	cfg, err := config.ParseFlags(true, f, arguments)
-	if err != nil {
-		return nil, nil, err
-	}
-
+// NewServerSet creates a new server set from config.
+func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 	if cfg.Verbose {
 		lsp.Debug = true
 	}
 
-	if serverSet == nil {
-		serverSet = lsp.NewServerSet(DefaultConfig())
-	}
+	serverSet := lsp.NewServerSet(DefaultConfig())
+
 	if len(cfg.WorkspaceDirectories) > 0 {
 		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
 		if err != nil {
-			return nil, cfg, err
+			return nil, err
 		}
 		serverSet.InitWorkspaces(folders)
 	}
@@ -229,10 +213,10 @@ func parseFlags(f *flag.FlagSet, arguments []string, serverSet *lsp.ServerSet) (
 		case len(ls.DialAddress) > 0:
 			serverSet.RegisterDial(ls.Pattern, ls.DialAddress)
 		default:
-			return nil, cfg, fmt.Errorf("invalid legacy server flag value")
+			return nil, fmt.Errorf("invalid legacy server flag value")
 		}
 	}
-	return serverSet, cfg, nil
+	return serverSet, nil
 }
 
 func DefaultConfig() *lsp.Config {

@@ -76,6 +76,17 @@ type LegacyLanguageServer struct {
 	DialAddress string
 }
 
+func Default() *Config {
+	return &Config{
+		File: File{
+			ProxyNetwork: "unix",
+			ProxyAddress: filepath.Join(client.Namespace(), "acme-lsp.rpc"),
+			AcmeNetwork:  "unix",
+			AcmeAddress:  filepath.Join(client.Namespace(), "acme"),
+		},
+	}
+}
+
 func Load() (*Config, error) {
 	dir, err := os.UserConfigDir()
 	if err != nil {
@@ -93,16 +104,12 @@ func Load() (*Config, error) {
 	return &Config{File: f}, nil
 }
 
-func ParseFlags(extra bool, f *flag.FlagSet, arguments []string) (*Config, error) {
+func ParseFlags(cfg *Config, extra bool, f *flag.FlagSet, arguments []string) error {
 	var (
-		cfg         Config
 		workspaces  string
 		userServers serverFlag
 		dialServers serverFlag
 	)
-
-	cfg.ProxyNetwork = "unix"
-	cfg.ProxyAddress = filepath.Join(client.Namespace(), "acme-lsp.rpc")
 
 	f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,
 		"network used for communication between acme-lsp and L")
@@ -116,7 +123,7 @@ func ParseFlags(extra bool, f *flag.FlagSet, arguments []string) (*Config, error
 		f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
 	}
 	if err := f.Parse(arguments); err != nil {
-		return nil, err
+		return err
 	}
 	if extra {
 		if len(workspaces) > 0 {
@@ -135,7 +142,7 @@ func ParseFlags(extra bool, f *flag.FlagSet, arguments []string) (*Config, error
 			})
 		}
 	}
-	return &cfg, nil
+	return nil
 }
 
 type serverArgs struct {

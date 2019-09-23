@@ -7,25 +7,90 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
+	"sync"
 
 	"9fans.net/go/acme"
+	"9fans.net/go/plan9"
+	"9fans.net/go/plan9/client"
 	"github.com/pkg/errors"
 )
+
+var (
+	pkgFsys    *client.Fsys
+	pkgFsysErr = errors.New("not mounted")
+	pkgFsysMu  sync.Mutex
+)
+
+// Mount mounts acme file system. It should be called before using this
+// package. This setup step is needed to support custom network address
+// (e.g. in Windows), and since 9fans.net/go/plan9/client doesn't provide
+// a way to unmount the file system, we want to reuse one connection in
+// order to avoid file descriptor leaks.
+func Mount(network, addr string) error {
+	pkgFsysMu.Lock()
+	defer pkgFsysMu.Unlock()
+
+	if pkgFsysErr == nil {
+		return errors.New("already mounted")
+	}
+	pkgFsys, pkgFsysErr = client.Mount(network, addr)
+	return pkgFsysErr
+}
+
+func getPkgFsys() (*client.Fsys, error) {
+	pkgFsysMu.Lock()
+	defer pkgFsysMu.Unlock()
+
+	return pkgFsys, pkgFsysErr
+}
 
 type Win struct {
 	*acme.Win
 }
 
 func NewWin() (*Win, error) {
-	w, err := acme.New()
+	fsys, err := getPkgFsys()
 	if err != nil {
 		return nil, err
 	}
-	return &Win{w}, err
+	fid, err := fsys.Open("new/ctl", plan9.ORDWR)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, 100)
+	n, err := fid.Read(buf)
+	if err != nil {
+		fid.Close()
+		return nil, err
+	}
+	a := strings.Fields(string(buf[0:n]))
+	if len(a) == 0 {
+		fid.Close()
+		return nil, errors.New("short read from acme/new/ctl")
+	}
+	id, err := strconv.Atoi(a[0])
+	if err != nil {
+		fid.Close()
+		return nil, errors.New("invalid window id in acme/new/ctl: " + a[0])
+	}
+	w, err := acme.Open(id, fid)
+	if err != nil {
+		return nil, err
+	}
+	return &Win{w}, nil
 }
 
 func OpenWin(id int) (*Win, error) {
-	w, err := acme.Open(id, nil)
+	fsys, err := getPkgFsys()
+	if err != nil {
+		return nil, err
+	}
+	ctl, err := fsys.Open(fmt.Sprintf("%d/ctl", id), plan9.ORDWR)
+	if err != nil {
+		return nil, err
+	}
+	w, err := acme.Open(id, ctl)
 	if err != nil {
 		return nil, err
 	}

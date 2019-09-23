@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	p9client "9fans.net/go/plan9/client"
+	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
@@ -106,9 +107,15 @@ func usage() {
 func main() {
 	flag.Usage = usage
 
-	cfg, err := config.ParseFlags(false, flag.CommandLine, os.Args[1:])
+	cfg := config.Default()
+	err := config.ParseFlags(cfg, false, flag.CommandLine, os.Args[1:])
 	if err != nil {
 		log.Fatalf("%v\n", err)
+	}
+
+	err = acmeutil.Mount(cfg.AcmeNetwork, cfg.AcmeAddress)
+	if err != nil {
+		log.Fatalf("failed to mount acme: %v\n", err)
 	}
 
 	err = run(cfg, flag.Args())

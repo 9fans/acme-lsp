@@ -7,8 +7,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -86,15 +87,38 @@ func usage() {
 func main() {
 	flag.Usage = usage
 
-	serverSet := lsp.NewServerSet(acmelsp.DefaultConfig())
+	cfg := config.Default()
+	cfgServers := []config.LegacyLanguageServer{
+		// Use go-langserver insead of gopls for backward compatibility.
+		{
+			Pattern: `\.go$`,
+			Command: []string{"go-langserver", "-gocodecompletion"},
+		},
+		{
+			Pattern: `\.py$`,
+			Command: []string{"pyls"},
+		},
+		//{
+		//	Pattern: `\.c$`,
+		//	Command: []string{"cquery"},
+		//},
+	}
+	cfg.LegacyLanguageServers = append(cfg.LegacyLanguageServers, cfgServers...)
 
-	// Use go-langserver insead of gopls for backward compatibility.
-	//serverSet.Register(`\.go$`, []string{"gopls"})
-	serverSet.Register(`\.go$`, []string{"go-langserver", "-gocodecompletion"})
-	serverSet.Register(`\.py$`, []string{"pyls"})
-	//serverSet.Register(`\.c$`, []string{"cquery"})
+	err := config.ParseFlags(cfg, true, flag.CommandLine, os.Args[1:])
+	if err != nil {
+		// Unreached since flag.CommandLine uses flag.ExitOnError.
+		log.Fatalf("failed to parse flags: %v\n", err)
+	}
+	err = acmeutil.Mount(cfg.AcmeNetwork, cfg.AcmeAddress)
+	if err != nil {
+		log.Fatalf("failed to mount acme: %v\n", err)
+	}
 
-	serverSet, _ = acmelsp.ParseFlags(serverSet)
+	serverSet, err := acmelsp.NewServerSet(cfg)
+	if err != nil {
+		log.Fatalf("failed to create server set: %v\n", err)
+	}
 	defer serverSet.CloseAll()
 
 	if flag.NArg() < 1 {
