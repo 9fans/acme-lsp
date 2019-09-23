@@ -115,6 +115,10 @@ func ParseFlags(cfg *Config, extra bool, f *flag.FlagSet, arguments []string) er
 		"network used for communication between acme-lsp and L")
 	f.StringVar(&cfg.ProxyAddress, "proxy.addr", cfg.ProxyAddress,
 		"address used for communication between acme-lsp and L")
+	f.StringVar(&cfg.AcmeNetwork, "acme.net", cfg.AcmeNetwork,
+		"network where acme is serving 9P file system")
+	f.StringVar(&cfg.AcmeAddress, "acme.addr", cfg.AcmeAddress,
+		"address where acme is serving 9P file system")
 
 	if extra {
 		f.BoolVar(&cfg.Verbose, "debug", false, "turn on debugging prints")

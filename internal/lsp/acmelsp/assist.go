@@ -18,7 +18,7 @@ import (
 )
 
 func watchLog(ch chan<- *acme.LogEvent) {
-	alog, err := acme.Log()
+	alog, err := acmeutil.Log()
 	if err != nil {
 		panic(err)
 	}

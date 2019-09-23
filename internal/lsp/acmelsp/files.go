@@ -49,7 +49,7 @@ func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
 // Run watches for files opened, closed, saved, or refreshed in acme
 // and tells LSP server about it. It also formats files when it's saved.
 func (fm *FileManager) Run() {
-	alog, err := acme.Log()
+	alog, err := acmeutil.Log()
 	if err != nil {
 		panic(err)
 	}
