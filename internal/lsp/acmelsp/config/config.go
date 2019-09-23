@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -95,7 +94,7 @@ func Default() *Config {
 }
 
 func Load() (*Config, error) {
-	dir, err := os.UserConfigDir()
+	dir, err := UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
