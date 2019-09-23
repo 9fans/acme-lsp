@@ -14,6 +14,13 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
+type Flags uint
+
+const (
+	LangServerFlags Flags = 1 << iota
+	ProxyFlags
+)
+
 // File represents user configuration file for acme-lsp and L.
 type File struct {
 	// Network and address used for communication between acme-lsp and L
@@ -104,23 +111,25 @@ func Load() (*Config, error) {
 	return &Config{File: f}, nil
 }
 
-func ParseFlags(cfg *Config, extra bool, f *flag.FlagSet, arguments []string) error {
+func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) error {
 	var (
 		workspaces  string
 		userServers serverFlag
 		dialServers serverFlag
 	)
 
-	f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,
-		"network used for communication between acme-lsp and L")
-	f.StringVar(&cfg.ProxyAddress, "proxy.addr", cfg.ProxyAddress,
-		"address used for communication between acme-lsp and L")
 	f.StringVar(&cfg.AcmeNetwork, "acme.net", cfg.AcmeNetwork,
 		"network where acme is serving 9P file system")
 	f.StringVar(&cfg.AcmeAddress, "acme.addr", cfg.AcmeAddress,
 		"address where acme is serving 9P file system")
 
-	if extra {
+	if flags&ProxyFlags != 0 {
+		f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,
+			"network used for communication between acme-lsp and L")
+		f.StringVar(&cfg.ProxyAddress, "proxy.addr", cfg.ProxyAddress,
+			"address used for communication between acme-lsp and L")
+	}
+	if flags&LangServerFlags != 0 {
 		f.BoolVar(&cfg.Verbose, "debug", false, "turn on debugging prints")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
@@ -129,7 +138,8 @@ func ParseFlags(cfg *Config, extra bool, f *flag.FlagSet, arguments []string) er
 	if err := f.Parse(arguments); err != nil {
 		return err
 	}
-	if extra {
+
+	if flags&LangServerFlags != 0 {
 		if len(workspaces) > 0 {
 			cfg.WorkspaceDirectories = strings.Split(workspaces, ":")
 		}

@@ -52,7 +52,8 @@ func main() {
 	flag.Usage = usage
 
 	cfg := config.Default()
-	err := config.ParseFlags(cfg, true, flag.CommandLine, os.Args[1:])
+	err := config.ParseFlags(cfg, config.LangServerFlags|config.ProxyFlags,
+		flag.CommandLine, os.Args[1:])
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
 		log.Fatalf("failed to parse flags: %v\n", err)

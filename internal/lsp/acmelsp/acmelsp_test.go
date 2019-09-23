@@ -111,7 +111,7 @@ func TestParseFlagSet(t *testing.T) {
 			f.SetOutput(ioutil.Discard)
 
 			cfg := config.Default()
-			err := config.ParseFlags(cfg, true, f, tc.args)
+			err := config.ParseFlags(cfg, config.LangServerFlags, f, tc.args)
 			if len(tc.err) > 0 {
 				if !strings.Contains(err.Error(), tc.err) {
 					t.Fatalf("for %q, error %q does not contain %q", tc.args, err, tc.err)

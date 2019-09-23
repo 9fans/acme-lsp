@@ -105,7 +105,7 @@ func main() {
 	}
 	cfg.LegacyLanguageServers = append(cfg.LegacyLanguageServers, cfgServers...)
 
-	err := config.ParseFlags(cfg, true, flag.CommandLine, os.Args[1:])
+	err := config.ParseFlags(cfg, config.LangServerFlags, flag.CommandLine, os.Args[1:])
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
 		log.Fatalf("failed to parse flags: %v\n", err)
