@@ -4,7 +4,9 @@ set -ex
 
 DIR=golang_org_x_tools
 REPO=https://go.googlesource.com/tools
-COMMIT=gopls/v0.1.5
+
+# golang.org/x/tools version that gopls/v0.1.7 depends on
+COMMIT=5a1a30219888
 
 rm -rf $DIR
 git clone $REPO
@@ -16,6 +18,7 @@ git clone $REPO
 mkdir $DIR
 mv tools/LICENSE $DIR/LICENSE
 mv tools/internal/jsonrpc2 $DIR/jsonrpc2
+mv tools/internal/span $DIR/span
 mv tools/internal/telemetry $DIR/telemetry
 mv tools/internal/xcontext $DIR/xcontext
 
