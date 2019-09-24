@@ -3,8 +3,8 @@ package text
 
 import (
 	"io"
-	"strings"
 
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/span"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/pkg/errors"
 )
@@ -104,10 +104,10 @@ func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, file
 
 // ToURI converts filename to URI.
 func ToURI(filename string) protocol.DocumentURI {
-	return protocol.DocumentURI("file://" + filename)
+	return protocol.DocumentURI(span.NewURI(filename))
 }
 
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
-	return strings.TrimPrefix(string(uri), "file://")
+	return span.NewURI(uri).Filename()
 }
