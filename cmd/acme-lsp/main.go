@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/fhs/acme-lsp/internal/acmeutil"
+	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 )
@@ -58,10 +58,10 @@ func main() {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
 		log.Fatalf("failed to parse flags: %v\n", err)
 	}
-	err = acmeutil.Mount(cfg.AcmeNetwork, cfg.AcmeAddress)
-	if err != nil {
-		log.Fatalf("failed to mount acme: %v\n", err)
-	}
+
+	// Setup custom acme package
+	acme.Network = cfg.AcmeNetwork
+	acme.Address = cfg.AcmeAddress
 
 	ss, err := acmelsp.NewServerSet(cfg)
 	if err != nil {

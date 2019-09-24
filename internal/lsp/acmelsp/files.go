@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"9fans.net/go/acme"
+	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
@@ -49,7 +49,7 @@ func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
 // Run watches for files opened, closed, saved, or refreshed in acme
 // and tells LSP server about it. It also formats files when it's saved.
 func (fm *FileManager) Run() {
-	alog, err := acmeutil.Log()
+	alog, err := acme.Log()
 	if err != nil {
 		panic(err)
 	}

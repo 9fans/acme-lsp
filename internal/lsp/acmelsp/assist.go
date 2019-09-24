@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	"9fans.net/go/acme"
+	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
@@ -18,7 +18,7 @@ import (
 )
 
 func watchLog(ch chan<- *acme.LogEvent) {
-	alog, err := acmeutil.Log()
+	alog, err := acme.Log()
 	if err != nil {
 		panic(err)
 	}

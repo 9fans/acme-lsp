@@ -8,9 +8,9 @@ import (
 	"os"
 	"strconv"
 
-	"9fans.net/go/acme"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
+	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
