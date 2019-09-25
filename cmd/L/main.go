@@ -107,8 +107,11 @@ func usage() {
 func main() {
 	flag.Usage = usage
 
-	cfg := config.Default()
-	err := config.ParseFlags(cfg, config.ProxyFlags, flag.CommandLine, os.Args[1:])
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load config file: %v", err)
+	}
+	err = config.ParseFlags(cfg, config.ProxyFlags, flag.CommandLine, os.Args[1:])
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}

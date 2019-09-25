@@ -87,7 +87,10 @@ func usage() {
 func main() {
 	flag.Usage = usage
 
-	cfg := config.Default()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load config file: %v", err)
+	}
 	cfgServers := []config.LegacyLanguageServer{
 		// Use go-langserver insead of gopls for backward compatibility.
 		{
@@ -105,7 +108,7 @@ func main() {
 	}
 	cfg.LegacyLanguageServers = append(cfg.LegacyLanguageServers, cfgServers...)
 
-	err := config.ParseFlags(cfg, config.LangServerFlags, flag.CommandLine, os.Args[1:])
+	err = config.ParseFlags(cfg, config.LangServerFlags, flag.CommandLine, os.Args[1:])
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
 		log.Fatalf("failed to parse flags: %v\n", err)
