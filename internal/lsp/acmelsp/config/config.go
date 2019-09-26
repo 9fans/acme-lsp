@@ -40,14 +40,14 @@ type File struct {
 	// Root directory used for LSP initialization
 	RootDirectory string
 
-	// Write log to to this file instead of stderr
-	//LogFile string
-
 	// Format file when Put is executed in a window
-	//FormatOnSave bool
+	FormatOnPut bool
 
 	// LSP code actions to run when Put is executed in a window.
 	//CodeActionsOnSave []protocol.CodeActionKind
+
+	// Write log to to this file instead of stderr
+	//LogFile string
 
 	// LSP servers keyed by a user provided name
 	//LanguageServers map[string]LanguageServer
@@ -106,7 +106,10 @@ func Default() *Config {
 			Verbose:              false,
 			WorkspaceDirectories: nil,
 			RootDirectory:        rootDir,
-			//FormatOnSave: true,
+			FormatOnPut:          true,
+			//CodeActionsOnSave: []protocol.CodeActionKind{
+			//	protocol.SourceOrganizeImports,
+			//},
 			//LanguageServers: map[string]LanguageServer{
 			//	"gopls": LanguageServer{
 			//		Command: []string{"gopls", "serve"},

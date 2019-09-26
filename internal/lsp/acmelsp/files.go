@@ -9,6 +9,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
@@ -24,13 +25,16 @@ type FileManager struct {
 	ss   *lsp.ServerSet
 	wins map[string]struct{} // set of open files
 	mu   sync.Mutex
+
+	cfg *config.Config
 }
 
 // NewFileManager creates a new file manager, initialized with files currently open in acme.
-func NewFileManager(ss *lsp.ServerSet) (*FileManager, error) {
+func NewFileManager(ss *lsp.ServerSet, cfg *config.Config) (*FileManager, error) {
 	fm := &FileManager{
 		ss:   ss,
 		wins: make(map[string]struct{}),
+		cfg:  cfg,
 	}
 
 	wins, err := acme.Windows()
@@ -77,8 +81,10 @@ func (fm *FileManager) Run() {
 			if err := fm.didSave(ev.ID, ev.Name); err != nil {
 				log.Printf("didSave failed in file manager: %v", err)
 			}
-			if err := fm.format(ev.ID, ev.Name); err != nil {
-				log.Printf("Format failed in file manager: %v", err)
+			if fm.cfg.FormatOnPut {
+				if err := fm.format(ev.ID, ev.Name); err != nil {
+					log.Printf("Format failed in file manager: %v", err)
+				}
 			}
 		}
 	}

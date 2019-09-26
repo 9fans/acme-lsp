@@ -128,7 +128,7 @@ func main() {
 		usage()
 	}
 
-	fm, err := acmelsp.NewFileManager(serverSet)
+	fm, err := acmelsp.NewFileManager(serverSet, cfg)
 	if err != nil {
 		log.Fatalf("failed to create file manager: %v\n", err)
 	}

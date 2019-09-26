@@ -80,7 +80,7 @@ func main() {
 		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")
 	}
 
-	fm, err := acmelsp.NewFileManager(ss)
+	fm, err := acmelsp.NewFileManager(ss, cfg)
 	if err != nil {
 		log.Fatalf("failed to create file manager: %v\n", err)
 	}
