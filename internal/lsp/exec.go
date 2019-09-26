@@ -19,13 +19,13 @@ import (
 )
 
 type Server struct {
-	protocol net.Conn
-	Client   *Client
+	conn   net.Conn
+	Client *Client
 }
 
 func (s *Server) Close() {
 	if s != nil {
-		s.protocol.Close()
+		s.conn.Close()
 	}
 }
 
@@ -49,7 +49,7 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	srv := &Server{
-		protocol: p1,
+		conn: p1,
 	}
 
 	// Restart server if it dies.
@@ -59,14 +59,14 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 			log.Printf("language server %v exited: %v; restarting...", args[0], err)
 
 			// TODO(fhs): cancel using context?
-			srv.protocol.Close()
+			srv.conn.Close()
 
 			cmd, p1, err = startCommand()
 			if err != nil {
 				log.Printf("%v", err)
 				return
 			}
-			srv.protocol = p1
+			srv.conn = p1
 
 			go func() {
 				// Reinitialize existing client instead of creating a new one
@@ -74,13 +74,13 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 				if err := srv.Client.init(p1, cfg); err != nil {
 					log.Printf("initialize after server restart failed: %v", err)
 					cmd.Process.Kill()
-					srv.protocol.Close()
+					srv.conn.Close()
 				}
 			}()
 		}
 	}()
 
-	srv.Client, err = New(p1, cfg)
+	srv.Client, err = NewClient(p1, cfg)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -93,13 +93,13 @@ func DialServer(addr string, cfg *Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	lsp, err := New(conn, cfg)
+	c, err := NewClient(conn, cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
 	}
 	return &Server{
-		protocol: conn,
-		Client:   lsp,
+		conn:   conn,
+		Client: c,
 	}, nil
 }
 

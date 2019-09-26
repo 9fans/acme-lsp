@@ -102,7 +102,7 @@ type Client struct {
 	initializeResult *protocol.InitializeResult
 }
 
-func New(conn net.Conn, cfg *Config) (*Client, error) {
+func NewClient(conn net.Conn, cfg *Config) (*Client, error) {
 	c := &Client{}
 	if err := c.init(conn, cfg); err != nil {
 		return nil, err
