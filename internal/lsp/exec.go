@@ -19,7 +19,6 @@ import (
 )
 
 type Server struct {
-	cmd      *exec.Cmd
 	protocol net.Conn
 	Client   *Client
 }
@@ -31,33 +30,62 @@ func (s *Server) Close() {
 }
 
 func StartServer(args []string, cfg *Config) (*Server, error) {
-	p0, p1 := net.Pipe()
-	// TODO(fhs): use CommandContext?
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdin = p0
-	cmd.Stdout = p0
-	if Debug {
-		cmd.Stderr = os.Stderr
+	startCommand := func() (*exec.Cmd, net.Conn, error) {
+		p0, p1 := net.Pipe()
+		// TODO(fhs): use CommandContext?
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Stdin = p0
+		cmd.Stdout = p0
+		if Debug {
+			cmd.Stderr = os.Stderr
+		}
+		if err := cmd.Start(); err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to execute language server")
+		}
+		return cmd, p1, nil
 	}
-	if err := cmd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute language server")
+	cmd, p1, err := startCommand()
+	if err != nil {
+		return nil, err
 	}
+	srv := &Server{
+		protocol: p1,
+	}
+
+	// Restart server if it dies.
 	go func() {
-		// TODO(fhs): can we expose Wait and ask user to call it instead?
-		if err := cmd.Wait(); err != nil {
-			log.Printf("wait failed: %v\n", err)
+		for {
+			err := cmd.Wait()
+			log.Printf("language server %v exited: %v; restarting...", args[0], err)
+
+			// TODO(fhs): cancel using context?
+			srv.protocol.Close()
+
+			cmd, p1, err = startCommand()
+			if err != nil {
+				log.Printf("%v", err)
+				return
+			}
+			srv.protocol = p1
+
+			go func() {
+				// Reinitialize existing client instead of creating a new one
+				// because it's still being used.
+				if err := srv.Client.init(p1, cfg); err != nil {
+					log.Printf("initialize after server restart failed: %v", err)
+					cmd.Process.Kill()
+					srv.protocol.Close()
+				}
+			}()
 		}
 	}()
-	lsp, err := New(p1, cfg)
+
+	srv.Client, err = New(p1, cfg)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
 	}
-	return &Server{
-		cmd:      cmd,
-		protocol: p1,
-		Client:   lsp,
-	}, nil
+	return srv, nil
 }
 
 func DialServer(addr string, cfg *Config) (*Server, error) {
@@ -70,7 +98,6 @@ func DialServer(addr string, cfg *Config) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
 	}
 	return &Server{
-		cmd:      nil,
 		protocol: conn,
 		Client:   lsp,
 	}, nil

@@ -103,6 +103,14 @@ type Client struct {
 }
 
 func New(conn net.Conn, cfg *Config) (*Client, error) {
+	c := &Client{}
+	if err := c.init(conn, cfg); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *Client) init(conn net.Conn, cfg *Config) error {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
@@ -118,7 +126,7 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 
 	d, err := filepath.Abs(cfg.RootDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	params := &protocol.InitializeParams{
 		RootURI: text.ToURI(d),
@@ -132,15 +140,14 @@ func New(conn net.Conn, cfg *Config) (*Client, error) {
 
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
-		return nil, errors.Wrap(err, "initialize failed")
+		return errors.Wrap(err, "initialize failed")
 	}
 	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
-		return nil, errors.Wrap(err, "initialized failed")
+		return errors.Wrap(err, "initialized failed")
 	}
-	return &Client{
-		Server:           server,
-		initializeResult: &result,
-	}, nil
+	c.Server = server
+	c.initializeResult = &result
+	return nil
 }
 
 func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
