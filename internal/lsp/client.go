@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -91,8 +92,8 @@ func (h *clientHandler) ApplyEdit(context.Context, *protocol.ApplyWorkspaceEditP
 
 // Config contains LSP client configuration values.
 type Config struct {
+	*config.Config
 	DiagWriter DiagnosticsWriter          // notification handler writes diagnostics here
-	RootDir    string                     // directory for RootURI
 	Workspaces []protocol.WorkspaceFolder // initial workspace folders
 }
 
@@ -124,7 +125,7 @@ func (c *Client) init(conn net.Conn, cfg *Config) error {
 		}
 	}()
 
-	d, err := filepath.Abs(cfg.RootDir)
+	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {
 		return err
 	}

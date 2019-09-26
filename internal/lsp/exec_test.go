@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
@@ -39,8 +40,12 @@ func TestAbsDirs(t *testing.T) {
 
 func TestServerSetWorkspaces(t *testing.T) {
 	ss := NewServerSet(&Config{
+		Config: &config.Config{
+			File: config.File{
+				RootDirectory: "/",
+			},
+		},
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		RootDir:    "/",
 		Workspaces: nil,
 	})
 	err := ss.Register(`\.go$`, []string{"gopls"})

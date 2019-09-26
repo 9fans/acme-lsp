@@ -197,7 +197,7 @@ func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 		lsp.Debug = true
 	}
 
-	serverSet := lsp.NewServerSet(DefaultConfig())
+	serverSet := lsp.NewServerSet(DefaultConfig(cfg))
 
 	if len(cfg.WorkspaceDirectories) > 0 {
 		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
@@ -219,10 +219,10 @@ func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 	return serverSet, nil
 }
 
-func DefaultConfig() *lsp.Config {
+func DefaultConfig(cfg *config.Config) *lsp.Config {
 	return &lsp.Config{
+		Config:     cfg,
 		DiagWriter: NewDiagnosticsWriter(),
-		RootDir:    "/",
 		Workspaces: nil,
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"9fans.net/go/plan9/client"
@@ -36,11 +37,11 @@ type File struct {
 	// Initial set of workspace directories
 	WorkspaceDirectories []string
 
+	// Root directory used for LSP initialization
+	RootDirectory string
+
 	// Write log to to this file instead of stderr
 	//LogFile string
-
-	// Root directory used for LSP initialization
-	//RootDirectory string
 
 	// Format file when Put is executed in a window
 	//FormatOnSave bool
@@ -91,6 +92,11 @@ type LegacyLanguageServer struct {
 }
 
 func Default() *Config {
+	rootDir := "/"
+	switch runtime.GOOS {
+	case "windows":
+		rootDir = `C:\`
+	}
 	return &Config{
 		File: File{
 			ProxyNetwork:         "unix",
@@ -99,6 +105,7 @@ func Default() *Config {
 			AcmeAddress:          filepath.Join(client.Namespace(), "acme"),
 			Verbose:              false,
 			WorkspaceDirectories: nil,
+			RootDirectory:        rootDir,
 			//FormatOnSave: true,
 			//LanguageServers: map[string]LanguageServer{
 			//	"gopls": LanguageServer{
@@ -156,6 +163,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.File.AcmeAddress == "" {
 		cfg.File.AcmeAddress = def.File.AcmeAddress
+	}
+	if cfg.File.RootDirectory == "" {
+		cfg.File.RootDirectory = def.File.RootDirectory
 	}
 	return cfg, nil
 }

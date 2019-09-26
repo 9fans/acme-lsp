@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
@@ -61,8 +62,12 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 		t.Fatalf("unknown server %q", server)
 	}
 	srv, err := StartServer(args, &Config{
+		Config: &config.Config{
+			File: config.File{
+				RootDirectory: dir,
+			},
+		},
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		RootDir:    dir,
 		Workspaces: nil,
 	})
 	if err != nil {
@@ -285,8 +290,12 @@ func main() {
 
 	ch := make(chan *protocol.Diagnostic)
 	srv, err := StartServer([]string{"gopls"}, &Config{
+		Config: &config.Config{
+			File: config.File{
+				RootDirectory: dir,
+			},
+		},
 		DiagWriter: &chanDiagosticsWriter{ch},
-		RootDir:    dir,
 		Workspaces: nil,
 	})
 	if err != nil {
@@ -350,8 +359,12 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 
 	// Start the server
 	srv, err := StartServer([]string{"pyls"}, &Config{
+		Config: &config.Config{
+			File: config.File{
+				RootDirectory: dir,
+			},
+		},
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		RootDir:    dir,
 		Workspaces: nil,
 	})
 	if err != nil {
