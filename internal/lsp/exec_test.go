@@ -48,7 +48,9 @@ func TestServerSetWorkspaces(t *testing.T) {
 		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
 		Workspaces: nil,
 	})
-	err := ss.Register(`\.go$`, []string{"gopls"})
+	err := ss.Register(`\.go$`, &config.Server{
+		Command: []string{"gopls"},
+	})
 	if err != nil {
 		t.Fatalf("ServerSet.Register: %v", err)
 	}

@@ -75,8 +75,10 @@ func TestParseFlagSet(t *testing.T) {
 			false,
 			[]*lsp.ServerInfo{
 				{
-					Re:   regexp.MustCompile(`\.go$`),
-					Args: []string{"gopls", "-rpc.trace"},
+					Server: &config.Server{
+						Command: []string{"gopls", "-rpc.trace"},
+					},
+					Re: regexp.MustCompile(`\.go$`),
 				},
 			},
 			nil,
@@ -88,8 +90,10 @@ func TestParseFlagSet(t *testing.T) {
 			false,
 			[]*lsp.ServerInfo{
 				{
-					Re:   regexp.MustCompile(`\.go$`),
-					Addr: "localhost:4389",
+					Server: &config.Server{
+						Address: "localhost:4389",
+					},
+					Re: regexp.MustCompile(`\.go$`),
 				},
 			},
 			nil,
@@ -145,10 +149,10 @@ func TestParseFlagSet(t *testing.T) {
 				if got, want := got.Re.String(), want.Re.String(); got != want {
 					t.Errorf("filename pattern for %v is %v; want %v", got, tc.args, want)
 				}
-				if got, want := got.Args, want.Args; !cmp.Equal(got, want) {
+				if got, want := got.Command, want.Command; !cmp.Equal(got, want) {
 					t.Errorf("lsp server args for %v is %v; want %v", tc.args, got, want)
 				}
-				if got, want := got.Addr, want.Addr; !cmp.Equal(got, want) {
+				if got, want := got.Address, want.Address; !cmp.Equal(got, want) {
 					t.Errorf("lsp server dial address for %v is %v; want %v", tc.args, got, want)
 				}
 			}

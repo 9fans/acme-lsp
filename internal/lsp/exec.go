@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
@@ -105,10 +106,10 @@ func DialServer(addr string, cfg *Config) (*Server, error) {
 
 // ServerInfo holds information about a LSP server and optionally a connection to it.
 type ServerInfo struct {
-	Re   *regexp.Regexp // filename regular expression
-	Args []string       // LSP server command
-	Addr string         // network address of LSP server
-	srv  *Server        // running server instance
+	*config.Server
+
+	Re  *regexp.Regexp // filename regular expression
+	srv *Server        // running server instance
 }
 
 func (info *ServerInfo) start(cfg *Config) (*Server, error) {
@@ -116,14 +117,14 @@ func (info *ServerInfo) start(cfg *Config) (*Server, error) {
 		return info.srv, nil
 	}
 
-	if len(info.Addr) > 0 {
-		srv, err := DialServer(info.Addr, cfg)
+	if len(info.Address) > 0 {
+		srv, err := DialServer(info.Address, cfg)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := StartServer(info.Args, cfg)
+		srv, err := StartServer(info.Command, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -148,27 +149,14 @@ func NewServerSet(cfg *Config) *ServerSet {
 	}
 }
 
-func (ss *ServerSet) Register(pattern string, args []string) error {
+func (ss *ServerSet) Register(pattern string, cs *config.Server) error {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return err
 	}
 	info := &ServerInfo{
-		Re:   re,
-		Args: args,
-	}
-	ss.Data = append(ss.Data, info)
-	return nil
-}
-
-func (ss *ServerSet) RegisterDial(pattern string, addr string) error {
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return err
-	}
-	info := &ServerInfo{
-		Re:   re,
-		Addr: addr,
+		Server: cs,
+		Re:     re,
 	}
 	ss.Data = append(ss.Data, info)
 	return nil
@@ -211,10 +199,10 @@ func (ss *ServerSet) CloseAll() {
 
 func (ss *ServerSet) PrintTo(w io.Writer) {
 	for _, info := range ss.Data {
-		if len(info.Addr) > 0 {
-			fmt.Fprintf(w, "%v %v\n", info.Re, info.Addr)
+		if len(info.Address) > 0 {
+			fmt.Fprintf(w, "%v %v\n", info.Re, info.Address)
 		} else {
-			fmt.Fprintf(w, "%v %v\n", info.Re, strings.Join(info.Args, " "))
+			fmt.Fprintf(w, "%v %v\n", info.Re, strings.Join(info.Command, " "))
 		}
 	}
 }

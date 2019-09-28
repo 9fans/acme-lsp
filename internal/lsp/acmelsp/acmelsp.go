@@ -211,13 +211,12 @@ func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 		if !ok {
 			return nil, fmt.Errorf("server not found for key %q", h.ServerKey)
 		}
-		switch {
-		case len(cs.Command) > 0:
-			serverSet.Register(h.Pattern, cs.Command)
-		case len(cs.Address) > 0:
-			serverSet.RegisterDial(h.Pattern, cs.Address)
-		default:
+		if len(cs.Command) == 0 && len(cs.Address) == 0 {
 			return nil, fmt.Errorf("invalid server for key %q", h.ServerKey)
+		}
+		err := serverSet.Register(h.Pattern, &cs)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return serverSet, nil
