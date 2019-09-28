@@ -39,16 +39,17 @@ func TestAbsDirs(t *testing.T) {
 }
 
 func TestServerSetWorkspaces(t *testing.T) {
-	ss := NewServerSet(&Config{
-		Config: &config.Config{
-			File: config.File{
-				RootDirectory: "/",
-			},
+	cfg := &config.Config{
+		File: config.File{
+			RootDirectory:        "/",
+			WorkspaceDirectories: []string{"/path/to/mod1", "/path/to/mod2"},
 		},
-		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		Workspaces: nil,
-	})
-	err := ss.Register(`\.go$`, &config.Server{
+	}
+	ss, err := NewServerSet(cfg, &mockDiagosticsWriter{ioutil.Discard})
+	if err != nil {
+		t.Fatalf("failed to create server set: %v", err)
+	}
+	err = ss.Register(`\.go$`, &config.Server{
 		Command: []string{"gopls"},
 	})
 	if err != nil {
@@ -56,21 +57,11 @@ func TestServerSetWorkspaces(t *testing.T) {
 	}
 	defer ss.CloseAll()
 
-	got := ss.Workspaces()
-	if len(got) > 0 {
-		t.Errorf("default workspaces are %v; want empty slice", got)
-	}
-
-	want, err := DirsToWorkspaceFolders([]string{"/path/to/mod1", "/path/to/mod2"})
+	want, err := DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
 	if err != nil {
 		t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
 	}
-
-	err = ss.InitWorkspaces(want)
-	if err != nil {
-		t.Fatalf("ServerSet.InitWorkspaces: %v", err)
-	}
-	got = ss.Workspaces()
+	got := ss.Workspaces()
 	if !cmp.Equal(got, want) {
 		t.Errorf("initial workspaces are %v; want %v", got, want)
 	}

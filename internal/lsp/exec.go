@@ -139,16 +139,29 @@ func (info *ServerInfo) start(cfg *Config) (*Server, error) {
 // which are created on-demand.
 type ServerSet struct {
 	Data       []*ServerInfo
+	diagWriter DiagnosticsWriter
 	workspaces map[protocol.DocumentURI]*protocol.WorkspaceFolder // set of workspace folders
-	cfg        Config
+	cfg        *config.Config
 }
 
-func NewServerSet(cfg *Config) *ServerSet {
+func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet, error) {
+	workspaces := make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
+	if len(cfg.WorkspaceDirectories) > 0 {
+		folders, err := DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
+		if err != nil {
+			return nil, err
+		}
+		for i := range folders {
+			d := &folders[i]
+			workspaces[d.URI] = d
+		}
+	}
 	return &ServerSet{
 		Data:       nil,
-		workspaces: make(map[protocol.DocumentURI]*protocol.WorkspaceFolder),
-		cfg:        *cfg,
-	}
+		diagWriter: diagWriter,
+		workspaces: workspaces,
+		cfg:        cfg,
+	}, nil
 }
 
 func (ss *ServerSet) Register(pattern string, cs *config.Server) error {
@@ -173,12 +186,20 @@ func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	return nil
 }
 
+func (ss *ServerSet) ClientConfig() *Config {
+	return &Config{
+		Config:     ss.cfg,
+		DiagWriter: ss.diagWriter,
+		Workspaces: ss.Workspaces(),
+	}
+}
+
 func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	info := ss.MatchFile(filename)
 	if info == nil {
 		return nil, false, nil // unknown language server
 	}
-	srv, err := info.start(&ss.cfg)
+	srv, err := info.start(ss.ClientConfig())
 	if err != nil {
 		return nil, false, err
 	}
@@ -211,7 +232,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 
 func (ss *ServerSet) forEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
-		srv, err := info.start(&ss.cfg)
+		srv, err := info.start(ss.ClientConfig())
 		if err != nil {
 			return err
 		}
@@ -235,18 +256,6 @@ func (ss *ServerSet) Workspaces() []protocol.WorkspaceFolder {
 	return folders
 }
 
-// InitWorkspaces initializes workspace directories.
-func (ss *ServerSet) InitWorkspaces(folders []protocol.WorkspaceFolder) error {
-	ss.workspaces = make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
-	for i := range folders {
-		d := &folders[i]
-		ss.workspaces[d.URI] = d
-	}
-	// Update initial workspaces for servers not yet started.
-	ss.cfg.Workspaces = folders
-	return nil
-}
-
 // DidChangeWorkspaceFolders adds and removes given workspace folders.
 func (ss *ServerSet) DidChangeWorkspaceFolders(ctx context.Context, added, removed []protocol.WorkspaceFolder) error {
 	err := ss.forEach(func(c *Client) error {
@@ -267,9 +276,6 @@ func (ss *ServerSet) DidChangeWorkspaceFolders(ctx context.Context, added, remov
 	for _, d := range removed {
 		delete(ss.workspaces, d.URI)
 	}
-	// Update initial workspaces for servers not yet started.
-	// TODO(fhs): do we need a lock here?
-	ss.cfg.Workspaces = ss.Workspaces()
 	return nil
 }
 

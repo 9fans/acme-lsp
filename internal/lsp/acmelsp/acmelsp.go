@@ -197,15 +197,11 @@ func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 		lsp.Debug = true
 	}
 
-	serverSet := lsp.NewServerSet(DefaultConfig(cfg))
-
-	if len(cfg.WorkspaceDirectories) > 0 {
-		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
-		if err != nil {
-			return nil, err
-		}
-		serverSet.InitWorkspaces(folders)
+	serverSet, err := lsp.NewServerSet(cfg, NewDiagnosticsWriter())
+	if err != nil {
+		return nil, err
 	}
+
 	for _, h := range cfg.FilenameHandlers {
 		cs, ok := cfg.Servers[h.ServerKey]
 		if !ok {
@@ -220,12 +216,4 @@ func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 		}
 	}
 	return serverSet, nil
-}
-
-func DefaultConfig(cfg *config.Config) *lsp.Config {
-	return &lsp.Config{
-		Config:     cfg,
-		DiagWriter: NewDiagnosticsWriter(),
-		Workspaces: nil,
-	}
 }
