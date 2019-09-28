@@ -64,14 +64,11 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	cs := &config.Server{
 		Command: args,
 	}
-	srv, err := StartServer(cs, &Config{
-		Config: &config.Config{
-			File: config.File{
-				RootDirectory: dir,
-			},
-		},
-		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		Workspaces: nil,
+	srv, err := execServer(cs, &ClientConfig{
+		Server:        &config.Server{},
+		RootDirectory: dir,
+		DiagWriter:    &mockDiagosticsWriter{ioutil.Discard},
+		Workspaces:    nil,
 	})
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
@@ -295,14 +292,11 @@ func main() {
 	cs := &config.Server{
 		Command: []string{"gopls"},
 	}
-	srv, err := StartServer(cs, &Config{
-		Config: &config.Config{
-			File: config.File{
-				RootDirectory: dir,
-			},
-		},
-		DiagWriter: &chanDiagosticsWriter{ch},
-		Workspaces: nil,
+	srv, err := execServer(cs, &ClientConfig{
+		Server:        &config.Server{},
+		RootDirectory: dir,
+		DiagWriter:    &chanDiagosticsWriter{ch},
+		Workspaces:    nil,
 	})
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
@@ -367,14 +361,11 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 	cs := &config.Server{
 		Command: []string{"pyls"},
 	}
-	srv, err := StartServer(cs, &Config{
-		Config: &config.Config{
-			File: config.File{
-				RootDirectory: dir,
-			},
-		},
-		DiagWriter: &mockDiagosticsWriter{ioutil.Discard},
-		Workspaces: nil,
+	srv, err := execServer(cs, &ClientConfig{
+		Server:        &config.Server{},
+		RootDirectory: dir,
+		DiagWriter:    &mockDiagosticsWriter{ioutil.Discard},
+		Workspaces:    nil,
 	})
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)

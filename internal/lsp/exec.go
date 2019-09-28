@@ -30,7 +30,7 @@ func (s *Server) Close() {
 	}
 }
 
-func StartServer(cs *config.Server, cfg *Config) (*Server, error) {
+func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	args := cs.Command
 
 	startCommand := func() (*exec.Cmd, net.Conn, error) {
@@ -74,7 +74,7 @@ func StartServer(cs *config.Server, cfg *Config) (*Server, error) {
 			go func() {
 				// Reinitialize existing client instead of creating a new one
 				// because it's still being used.
-				if err := srv.Client.init(p1, cfg, cs.Options); err != nil {
+				if err := srv.Client.init(p1, cfg); err != nil {
 					log.Printf("initialize after server restart failed: %v", err)
 					cmd.Process.Kill()
 					srv.conn.Close()
@@ -83,7 +83,7 @@ func StartServer(cs *config.Server, cfg *Config) (*Server, error) {
 		}
 	}()
 
-	srv.Client, err = NewClient(p1, cfg, cs.Options)
+	srv.Client, err = NewClient(p1, cfg)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -91,12 +91,12 @@ func StartServer(cs *config.Server, cfg *Config) (*Server, error) {
 	return srv, nil
 }
 
-func DialServer(cs *config.Server, cfg *Config) (*Server, error) {
+func dialServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	conn, err := net.Dial("tcp", cs.Address)
 	if err != nil {
 		return nil, err
 	}
-	c, err := NewClient(conn, cfg, cs.Options)
+	c, err := NewClient(conn, cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to language server at %v", cs.Address)
 	}
@@ -114,19 +114,19 @@ type ServerInfo struct {
 	srv *Server        // running server instance
 }
 
-func (info *ServerInfo) start(cfg *Config) (*Server, error) {
+func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
 	if info.srv != nil {
 		return info.srv, nil
 	}
 
 	if len(info.Address) > 0 {
-		srv, err := DialServer(info.Server, cfg)
+		srv, err := dialServer(info.Server, cfg)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := StartServer(info.Server, cfg)
+		srv, err := execServer(info.Server, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -197,11 +197,12 @@ func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	return nil
 }
 
-func (ss *ServerSet) ClientConfig() *Config {
-	return &Config{
-		Config:     ss.cfg,
-		DiagWriter: ss.diagWriter,
-		Workspaces: ss.Workspaces(),
+func (ss *ServerSet) ClientConfig(cs *config.Server) *ClientConfig {
+	return &ClientConfig{
+		Server:        cs,
+		RootDirectory: ss.cfg.RootDirectory,
+		DiagWriter:    ss.diagWriter,
+		Workspaces:    ss.Workspaces(),
 	}
 }
 
@@ -210,7 +211,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if info == nil {
 		return nil, false, nil // unknown language server
 	}
-	srv, err := info.start(ss.ClientConfig())
+	srv, err := info.start(ss.ClientConfig(info.Server))
 	if err != nil {
 		return nil, false, err
 	}
@@ -243,7 +244,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 
 func (ss *ServerSet) forEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
-		srv, err := info.start(ss.ClientConfig())
+		srv, err := info.start(ss.ClientConfig(info.Server))
 		if err != nil {
 			return err
 		}

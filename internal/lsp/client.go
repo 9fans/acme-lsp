@@ -90,11 +90,12 @@ func (h *clientHandler) ApplyEdit(context.Context, *protocol.ApplyWorkspaceEditP
 	return &protocol.ApplyWorkspaceEditResponse{Applied: false, FailureReason: "not implemented"}, nil
 }
 
-// Config contains LSP client configuration values.
-type Config struct {
-	*config.Config
-	DiagWriter DiagnosticsWriter          // notification handler writes diagnostics here
-	Workspaces []protocol.WorkspaceFolder // initial workspace folders
+// ClientConfig contains LSP client configuration values.
+type ClientConfig struct {
+	*config.Server
+	RootDirectory string                     // used to compute RootURI in initialization
+	DiagWriter    DiagnosticsWriter          // notification handler writes diagnostics here
+	Workspaces    []protocol.WorkspaceFolder // initial workspace folders
 }
 
 // Client represents a LSP client connection.
@@ -103,15 +104,15 @@ type Client struct {
 	initializeResult *protocol.InitializeResult
 }
 
-func NewClient(conn net.Conn, cfg *Config, options interface{}) (*Client, error) {
+func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
 	c := &Client{}
-	if err := c.init(conn, cfg, options); err != nil {
+	if err := c.init(conn, cfg); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
-func (c *Client) init(conn net.Conn, cfg *Config, options interface{}) error {
+func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
@@ -138,7 +139,7 @@ func (c *Client) init(conn net.Conn, cfg *Config, options interface{}) error {
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 	params.Capabilities.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = true
 	params.WorkspaceFolders = cfg.Workspaces
-	params.InitializationOptions = options
+	params.InitializationOptions = cfg.Options
 
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
