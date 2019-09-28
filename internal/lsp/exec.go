@@ -157,7 +157,7 @@ func (ss *ServerSet) Register(pattern string, args []string) error {
 		Re:   re,
 		Args: args,
 	}
-	ss.Data = append([]*ServerInfo{info}, ss.Data...)
+	ss.Data = append(ss.Data, info)
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (ss *ServerSet) RegisterDial(pattern string, addr string) error {
 		Re:   re,
 		Addr: addr,
 	}
-	ss.Data = append([]*ServerInfo{info}, ss.Data...)
+	ss.Data = append(ss.Data, info)
 	return nil
 }
 

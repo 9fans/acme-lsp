@@ -77,7 +77,7 @@ func main() {
 	}
 
 	if len(ss.Data) == 0 {
-		log.Fatalf("No servers specified. Specify either -server or -dial flag. Run with -help for usage help.\n")
+		log.Fatalf("No servers found in the configuration file or command line flags")
 	}
 
 	fm, err := acmelsp.NewFileManager(ss, cfg)

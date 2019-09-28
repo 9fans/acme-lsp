@@ -50,10 +50,15 @@ type File struct {
 	//LogFile string
 
 	// LSP servers keyed by a user provided name
-	//LanguageServers map[string]LanguageServer
+	Servers map[string]Server
 
-	// Maping from LSP language ID to server in LanguageServers
-	//LanguageHandlers map[string]string
+	// Maping from LSP language ID to server key
+	LanguageHandlers map[string]string
+
+	// Servers determined by regular expression match on filename,
+	// as supplied by -server and -dial flags.
+	// This is deprecated in favor of LanguageHandlers.
+	FilenameHandlers []FilenameHandler
 }
 
 // Config configures acme-lsp and L.
@@ -62,15 +67,15 @@ type Config struct {
 
 	// Show current configuration and exit
 	ShowConfig bool
-
-	// Language servers supplied by -server or -dial flag
-	LegacyLanguageServers []LegacyLanguageServer
 }
 
 // Language servers describes a LSP server.
-type LanguageServer struct {
+type Server struct {
 	// Command that runs the LSP server on stdin/stdout
 	Command []string
+
+	// Dial address for server
+	Address string
 
 	// Write LSP server stderr to this file
 	LogFile string
@@ -79,16 +84,14 @@ type LanguageServer struct {
 	Options interface{}
 }
 
-// LegacyLanguageServer describes a LSP server matching a filename.
-type LegacyLanguageServer struct {
+// FilenameHandler contains a regular expression pattern that matches a filename
+// and the associated server key.
+type FilenameHandler struct {
 	// Regular expression pattern for filename
 	Pattern string
 
-	// Command that runs the LSP server on stdin/stdout
-	Command []string
-
-	// Network address of LSP server
-	DialAddress string
+	// Server key
+	ServerKey string
 }
 
 func Default() *Config {
@@ -110,22 +113,9 @@ func Default() *Config {
 			//CodeActionsOnSave: []protocol.CodeActionKind{
 			//	protocol.SourceOrganizeImports,
 			//},
-			//LanguageServers: map[string]LanguageServer{
-			//	"gopls": LanguageServer{
-			//		Command: []string{"gopls", "serve"},
-			//	},
-			//	"gopls-debug": LanguageServer{
-			//		Command: []string{"gopls", "serve", "-debug=localhost:6060"},
-			//	},
-			//	"pyls": LanguageServer{
-			//		Command: []string{"pyls"},
-			//	},
-			//},
-			//LanguageHandlers: map[string]string{
-			//	"go":     "gopls",
-			//	"go.mod": "gopls",
-			//	"py":     "pyls",
-			//},
+			Servers:          nil,
+			LanguageHandlers: nil,
+			FilenameHandlers: nil,
 		},
 	}
 }
@@ -169,6 +159,11 @@ func Load() (*Config, error) {
 	}
 	if cfg.File.RootDirectory == "" {
 		cfg.File.RootDirectory = def.File.RootDirectory
+	}
+	for key := range cfg.Servers {
+		if len(key) > 0 && key[0] == '_' {
+			return nil, fmt.Errorf("server key %q begins with underscore", key)
+		}
 	}
 	return cfg, nil
 }
@@ -231,18 +226,32 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 		if len(workspaces) > 0 {
 			cfg.WorkspaceDirectories = strings.Split(workspaces, ":")
 		}
-		for _, sa := range userServers {
-			cfg.LegacyLanguageServers = append(cfg.LegacyLanguageServers, LegacyLanguageServer{
-				Pattern: sa.pattern,
+		if cfg.Servers == nil {
+			cfg.Servers = make(map[string]Server)
+		}
+		handlers := make([]FilenameHandler, 0)
+		for i, sa := range userServers {
+			key := fmt.Sprintf("_userCmdServer%v", i)
+			cfg.Servers[key] = Server{
 				Command: strings.Fields(sa.args),
+			}
+			handlers = append(handlers, FilenameHandler{
+				Pattern:   sa.pattern,
+				ServerKey: key,
 			})
 		}
-		for _, sa := range dialServers {
-			cfg.LegacyLanguageServers = append(cfg.LegacyLanguageServers, LegacyLanguageServer{
-				Pattern:     sa.pattern,
-				DialAddress: sa.args,
+		for i, sa := range dialServers {
+			key := fmt.Sprintf("_userDialServer%v", i)
+			cfg.Servers[key] = Server{
+				Address: sa.args,
+			}
+			handlers = append(handlers, FilenameHandler{
+				Pattern:   sa.pattern,
+				ServerKey: key,
 			})
 		}
+		// Prepend to give higher priority to command line flags.
+		cfg.FilenameHandlers = append(handlers, cfg.FilenameHandlers...)
 	}
 	return nil
 }

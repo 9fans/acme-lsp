@@ -91,23 +91,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}
-	cfgServers := []config.LegacyLanguageServer{
-		// Use go-langserver insead of gopls for backward compatibility.
-		{
-			Pattern: `\.go$`,
-			Command: []string{"go-langserver", "-gocodecompletion"},
-		},
-		{
-			Pattern: `\.py$`,
-			Command: []string{"pyls"},
-		},
-		//{
-		//	Pattern: `\.c$`,
-		//	Command: []string{"cquery"},
-		//},
-	}
-	cfg.LegacyLanguageServers = append(cfg.LegacyLanguageServers, cfgServers...)
-
 	err = config.ParseFlags(cfg, config.LangServerFlags, flag.CommandLine, os.Args[1:])
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
@@ -123,6 +106,10 @@ func main() {
 		log.Fatalf("failed to create server set: %v\n", err)
 	}
 	defer serverSet.CloseAll()
+
+	if len(serverSet.Data) == 0 {
+		log.Fatalf("No servers found in the configuration file or command line flags")
+	}
 
 	if flag.NArg() < 1 {
 		usage()

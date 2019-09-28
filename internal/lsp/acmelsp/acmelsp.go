@@ -206,14 +206,18 @@ func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
 		}
 		serverSet.InitWorkspaces(folders)
 	}
-	for _, ls := range cfg.LegacyLanguageServers {
+	for _, h := range cfg.FilenameHandlers {
+		cs, ok := cfg.Servers[h.ServerKey]
+		if !ok {
+			return nil, fmt.Errorf("server not found for key %q", h.ServerKey)
+		}
 		switch {
-		case len(ls.Command) > 0:
-			serverSet.Register(ls.Pattern, ls.Command)
-		case len(ls.DialAddress) > 0:
-			serverSet.RegisterDial(ls.Pattern, ls.DialAddress)
+		case len(cs.Command) > 0:
+			serverSet.Register(h.Pattern, cs.Command)
+		case len(cs.Address) > 0:
+			serverSet.RegisterDial(h.Pattern, cs.Address)
 		default:
-			return nil, fmt.Errorf("invalid legacy server flag value")
+			return nil, fmt.Errorf("invalid server for key %q", h.ServerKey)
 		}
 	}
 	return serverSet, nil
