@@ -61,7 +61,10 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	if !ok {
 		t.Fatalf("unknown server %q", server)
 	}
-	srv, err := StartServer(args, &Config{
+	cs := &config.Server{
+		Command: args,
+	}
+	srv, err := StartServer(cs, &Config{
 		Config: &config.Config{
 			File: config.File{
 				RootDirectory: dir,
@@ -289,7 +292,10 @@ func main() {
 	}
 
 	ch := make(chan *protocol.Diagnostic)
-	srv, err := StartServer([]string{"gopls"}, &Config{
+	cs := &config.Server{
+		Command: []string{"gopls"},
+	}
+	srv, err := StartServer(cs, &Config{
 		Config: &config.Config{
 			File: config.File{
 				RootDirectory: dir,
@@ -358,7 +364,10 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 	}
 
 	// Start the server
-	srv, err := StartServer([]string{"pyls"}, &Config{
+	cs := &config.Server{
+		Command: []string{"pyls"},
+	}
+	srv, err := StartServer(cs, &Config{
 		Config: &config.Config{
 			File: config.File{
 				RootDirectory: dir,

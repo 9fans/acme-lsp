@@ -30,7 +30,9 @@ func (s *Server) Close() {
 	}
 }
 
-func StartServer(args []string, cfg *Config) (*Server, error) {
+func StartServer(cs *config.Server, cfg *Config) (*Server, error) {
+	args := cs.Command
+
 	startCommand := func() (*exec.Cmd, net.Conn, error) {
 		p0, p1 := net.Pipe()
 		// TODO(fhs): use CommandContext?
@@ -72,7 +74,7 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 			go func() {
 				// Reinitialize existing client instead of creating a new one
 				// because it's still being used.
-				if err := srv.Client.init(p1, cfg); err != nil {
+				if err := srv.Client.init(p1, cfg, cs.Options); err != nil {
 					log.Printf("initialize after server restart failed: %v", err)
 					cmd.Process.Kill()
 					srv.conn.Close()
@@ -81,7 +83,7 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 		}
 	}()
 
-	srv.Client, err = NewClient(p1, cfg)
+	srv.Client, err = NewClient(p1, cfg, cs.Options)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
@@ -89,14 +91,14 @@ func StartServer(args []string, cfg *Config) (*Server, error) {
 	return srv, nil
 }
 
-func DialServer(addr string, cfg *Config) (*Server, error) {
-	conn, err := net.Dial("tcp", addr)
+func DialServer(cs *config.Server, cfg *Config) (*Server, error) {
+	conn, err := net.Dial("tcp", cs.Address)
 	if err != nil {
 		return nil, err
 	}
-	c, err := NewClient(conn, cfg)
+	c, err := NewClient(conn, cfg, cs.Options)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to language server at %v", addr)
+		return nil, errors.Wrapf(err, "failed to connect to language server at %v", cs.Address)
 	}
 	return &Server{
 		conn:   conn,
@@ -118,13 +120,13 @@ func (info *ServerInfo) start(cfg *Config) (*Server, error) {
 	}
 
 	if len(info.Address) > 0 {
-		srv, err := DialServer(info.Address, cfg)
+		srv, err := DialServer(info.Server, cfg)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := StartServer(info.Command, cfg)
+		srv, err := StartServer(info.Server, cfg)
 		if err != nil {
 			return nil, err
 		}

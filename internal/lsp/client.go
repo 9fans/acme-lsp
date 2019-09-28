@@ -103,15 +103,15 @@ type Client struct {
 	initializeResult *protocol.InitializeResult
 }
 
-func NewClient(conn net.Conn, cfg *Config) (*Client, error) {
+func NewClient(conn net.Conn, cfg *Config, options interface{}) (*Client, error) {
 	c := &Client{}
-	if err := c.init(conn, cfg); err != nil {
+	if err := c.init(conn, cfg, options); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
-func (c *Client) init(conn net.Conn, cfg *Config) error {
+func (c *Client) init(conn net.Conn, cfg *Config, options interface{}) error {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
@@ -138,6 +138,7 @@ func (c *Client) init(conn net.Conn, cfg *Config) error {
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 	params.Capabilities.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = true
 	params.WorkspaceFolders = cfg.Workspaces
+	params.InitializationOptions = options
 
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
