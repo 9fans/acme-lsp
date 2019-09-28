@@ -13,7 +13,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
@@ -189,31 +188,4 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		w.CloseFiles()
 	}
 	return nil
-}
-
-// NewServerSet creates a new server set from config.
-func NewServerSet(cfg *config.Config) (*lsp.ServerSet, error) {
-	if cfg.Verbose {
-		lsp.Debug = true
-	}
-
-	serverSet, err := lsp.NewServerSet(cfg, NewDiagnosticsWriter())
-	if err != nil {
-		return nil, err
-	}
-
-	for _, h := range cfg.FilenameHandlers {
-		cs, ok := cfg.Servers[h.ServerKey]
-		if !ok {
-			return nil, fmt.Errorf("server not found for key %q", h.ServerKey)
-		}
-		if len(cs.Command) == 0 && len(cs.Address) == 0 {
-			return nil, fmt.Errorf("invalid server for key %q", h.ServerKey)
-		}
-		err := serverSet.Register(h.Pattern, &cs)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return serverSet, nil
 }

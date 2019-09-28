@@ -144,7 +144,12 @@ type ServerSet struct {
 	cfg        *config.Config
 }
 
+// NewServerSet creates a new server set from config.
 func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet, error) {
+	if cfg.Verbose {
+		Debug = true // TODO(fhs): remove package global variable
+	}
+
 	workspaces := make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
 	if len(cfg.WorkspaceDirectories) > 0 {
 		folders, err := DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
@@ -156,25 +161,31 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 			workspaces[d.URI] = d
 		}
 	}
+
+	var data []*ServerInfo
+	for _, h := range cfg.FilenameHandlers {
+		cs, ok := cfg.Servers[h.ServerKey]
+		if !ok {
+			return nil, fmt.Errorf("server not found for key %q", h.ServerKey)
+		}
+		if len(cs.Command) == 0 && len(cs.Address) == 0 {
+			return nil, fmt.Errorf("invalid server for key %q", h.ServerKey)
+		}
+		re, err := regexp.Compile(h.Pattern)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, &ServerInfo{
+			Server: &cs,
+			Re:     re,
+		})
+	}
 	return &ServerSet{
-		Data:       nil,
+		Data:       data,
 		diagWriter: diagWriter,
 		workspaces: workspaces,
 		cfg:        cfg,
 	}, nil
-}
-
-func (ss *ServerSet) Register(pattern string, cs *config.Server) error {
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return err
-	}
-	info := &ServerInfo{
-		Server: cs,
-		Re:     re,
-	}
-	ss.Data = append(ss.Data, info)
-	return nil
 }
 
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {

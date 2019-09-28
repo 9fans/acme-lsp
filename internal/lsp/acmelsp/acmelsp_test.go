@@ -125,7 +125,7 @@ func TestParseFlagSet(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to parse flags: %v", err)
 			}
-			ss, err := NewServerSet(cfg)
+			ss, err := lsp.NewServerSet(cfg, NewDiagnosticsWriter())
 			if err != nil {
 				t.Fatalf("ParseFlagSet failed: %v", err)
 			}

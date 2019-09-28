@@ -43,17 +43,22 @@ func TestServerSetWorkspaces(t *testing.T) {
 		File: config.File{
 			RootDirectory:        "/",
 			WorkspaceDirectories: []string{"/path/to/mod1", "/path/to/mod2"},
+			Servers: map[string]config.Server{
+				"gopls": {
+					Command: []string{"gopls"},
+				},
+			},
+			FilenameHandlers: []config.FilenameHandler{
+				{
+					Pattern:   `\.go$`,
+					ServerKey: "gopls",
+				},
+			},
 		},
 	}
 	ss, err := NewServerSet(cfg, &mockDiagosticsWriter{ioutil.Discard})
 	if err != nil {
 		t.Fatalf("failed to create server set: %v", err)
-	}
-	err = ss.Register(`\.go$`, &config.Server{
-		Command: []string{"gopls"},
-	})
-	if err != nil {
-		t.Fatalf("ServerSet.Register: %v", err)
 	}
 	defer ss.CloseAll()
 
