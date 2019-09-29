@@ -88,6 +88,6 @@ func (dw *diagWin) WriteDiagnostics(diags map[protocol.DocumentURI][]protocol.Di
 	return dw.Ctl("clean")
 }
 
-func NewDiagnosticsWriter() lsp.DiagnosticsWriter {
+func NewDiagnosticsWriter() DiagnosticsWriter {
 	return newDiagWin("/LSP/Diagnostics")
 }

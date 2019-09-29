@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
-	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
@@ -17,7 +16,7 @@ import (
 )
 
 type proxyServer struct {
-	ss *lsp.ServerSet // client connections to upstream LSP server (e.g. gopls)
+	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
 	fm *FileManager
 }
 
@@ -137,7 +136,7 @@ func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeD
 	return srv.Client.TypeDefinition(ctx, params)
 }
 
-func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, error) {
+func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 	filename := text.ToPath(uri)
 	srv, found, err := ss.StartForFile(filename)
 	if !found {
@@ -149,7 +148,7 @@ func serverForURI(ss *lsp.ServerSet, uri protocol.DocumentURI) (*lsp.Server, err
 	return srv, nil
 }
 
-func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *lsp.ServerSet, fm *FileManager) error {
+func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm *FileManager) error {
 	ln, err := Listen(cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return err

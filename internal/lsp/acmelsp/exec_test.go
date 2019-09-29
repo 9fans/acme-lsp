@@ -1,4 +1,4 @@
-package lsp
+package acmelsp
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
@@ -62,7 +63,7 @@ func TestServerSetWorkspaces(t *testing.T) {
 	}
 	defer ss.CloseAll()
 
-	want, err := DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
+	want, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
 	if err != nil {
 		t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
 	}
@@ -71,7 +72,7 @@ func TestServerSetWorkspaces(t *testing.T) {
 		t.Errorf("initial workspaces are %v; want %v", got, want)
 	}
 
-	added, err := DirsToWorkspaceFolders([]string{"/path/to/mod3"})
+	added, err := lsp.DirsToWorkspaceFolders([]string{"/path/to/mod3"})
 	if err != nil {
 		t.Fatalf("DirsToWorkspaceFolders failed: %v", err)
 	}
@@ -108,7 +109,7 @@ func (dw *mockDiagosticsWriter) WriteDiagnostics(diags map[protocol.DocumentURI]
 				URI:   uri,
 				Range: diag.Range,
 			}
-			fmt.Fprintf(dw, "%v: %v\n", LocationLink(loc), diag.Message)
+			fmt.Fprintf(dw, "%v: %v\n", lsp.LocationLink(loc), diag.Message)
 		}
 	}
 	return nil

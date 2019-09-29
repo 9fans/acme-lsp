@@ -1,4 +1,4 @@
-// Package acmelsp defines helper functions for implementation of acme-lsp commands.
+// Package acmelsp implements the core of acme-lsp commands.
 package acmelsp
 
 import (
@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CurrentWindowRemoteCmd(ss *lsp.ServerSet, fm *FileManager) (*RemoteCmd, error) {
+func CurrentWindowRemoteCmd(ss *ServerSet, fm *FileManager) (*RemoteCmd, error) {
 	id, err := strconv.Atoi(os.Getenv("winid"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse $winid")
@@ -26,7 +26,7 @@ func CurrentWindowRemoteCmd(ss *lsp.ServerSet, fm *FileManager) (*RemoteCmd, err
 	return WindowRemoteCmd(ss, fm, id)
 }
 
-func WindowRemoteCmd(ss *lsp.ServerSet, fm *FileManager, winid int) (*RemoteCmd, error) {
+func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, error) {
 	w, err := acmeutil.OpenWin(winid)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to to open window %v", winid)

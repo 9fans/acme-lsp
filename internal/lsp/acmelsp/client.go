@@ -1,9 +1,7 @@
-// Package lsp implements a general LSP client.
-package lsp
+package acmelsp
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"path/filepath"
@@ -18,13 +16,6 @@ import (
 )
 
 var Debug = false
-
-func LocationLink(l *protocol.Location) string {
-	p := text.ToPath(l.URI)
-	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
-		l.Range.Start.Line+1, l.Range.Start.Character+1,
-		l.Range.End.Line+1, l.Range.End.Character+1)
-}
 
 type DiagnosticsWriter interface {
 	WriteDiagnostics(map[protocol.DocumentURI][]protocol.Diagnostic) error
@@ -157,70 +148,6 @@ func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentif
 	return c.initializeResult, nil
 }
 
-func fileLanguage(filename string) string {
-	switch base := filepath.Base(filename); base {
-	case "go.mod", "go.sum":
-		return base
-	}
-	lang := filepath.Ext(filename)
-	if len(lang) == 0 {
-		return lang
-	}
-	if lang[0] == '.' {
-		lang = lang[1:]
-	}
-	switch lang {
-	case "py":
-		lang = "python"
-	}
-	return lang
-}
-
-func DidOpen(ctx context.Context, server protocol.Server, filename string, body []byte) error {
-	return server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
-		TextDocument: protocol.TextDocumentItem{
-			URI:        text.ToURI(filename),
-			LanguageID: fileLanguage(filename),
-			Version:    0,
-			Text:       string(body),
-		},
-	})
-}
-
-func DidClose(ctx context.Context, server protocol.Server, filename string) error {
-	return server.DidClose(ctx, &protocol.DidCloseTextDocumentParams{
-		TextDocument: protocol.TextDocumentIdentifier{
-			URI: text.ToURI(filename),
-		},
-	})
-}
-
-func DidSave(ctx context.Context, server protocol.Server, filename string) error {
-	return server.DidSave(ctx, &protocol.DidSaveTextDocumentParams{
-		TextDocument: protocol.VersionedTextDocumentIdentifier{
-			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
-				URI: text.ToURI(filename),
-			},
-			// TODO(fhs): add text field for includeText option
-		},
-	})
-}
-
-func DidChange(ctx context.Context, server protocol.Server, filename string, body []byte) error {
-	return server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
-		TextDocument: protocol.VersionedTextDocumentIdentifier{
-			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
-				URI: text.ToURI(filename),
-			},
-		},
-		ContentChanges: []protocol.TextDocumentContentChangeEvent{
-			{
-				Text: string(body),
-			},
-		},
-	})
-}
-
 // SendMessage exists only to implement proxy.Server.
 func (c *Client) Version(context.Context) (int, error) {
 	panic("intentionally not implemented")
@@ -234,38 +161,4 @@ func (c *Client) SendMessage(context.Context, *proxy.Message) error {
 // SendMessage exists only to implement proxy.Server.
 func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	panic("intentionally not implemented")
-}
-
-func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.CodeActionKind) bool {
-	switch ap := cap.CodeActionProvider.(type) {
-	case bool:
-		return ap
-	case map[string]interface{}:
-		opt, err := protocol.ToCodeActionOptions(ap)
-		if err != nil {
-			log.Printf("failed to decode CodeActionOptions: %v", err)
-			return false
-		}
-		for _, k := range opt.CodeActionKinds {
-			if k == kind {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func DirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {
-	var workspaces []protocol.WorkspaceFolder
-	for _, d := range dirs {
-		d, err := filepath.Abs(d)
-		if err != nil {
-			return nil, err
-		}
-		workspaces = append(workspaces, protocol.WorkspaceFolder{
-			URI:  text.ToURI(d),
-			Name: d,
-		})
-	}
-	return workspaces, nil
 }

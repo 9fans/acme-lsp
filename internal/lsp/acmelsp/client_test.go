@@ -1,4 +1,4 @@
-package lsp
+package acmelsp
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -76,12 +77,12 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = DidOpen(ctx, srv.Client, gofile, []byte(src))
+	err = lsp.DidOpen(ctx, srv.Client, gofile, []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
 	defer func() {
-		err := DidClose(ctx, srv.Client, gofile)
+		err := lsp.DidClose(ctx, srv.Client, gofile)
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
@@ -304,7 +305,7 @@ func main() {
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = DidOpen(ctx, srv.Client, gofile, []byte(src))
+	err = lsp.DidOpen(ctx, srv.Client, gofile, []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
@@ -315,7 +316,7 @@ func main() {
 		t.Errorf("diagnostics message is %q, want %q", diag.Message, want)
 	}
 
-	err = DidClose(ctx, srv.Client, gofile)
+	err = lsp.DidClose(ctx, srv.Client, gofile)
 	if err != nil {
 		t.Fatalf("DidClose failed: %v", err)
 	}
@@ -373,12 +374,12 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = DidOpen(ctx, srv.Client, pyfile, []byte(src))
+	err = lsp.DidOpen(ctx, srv.Client, pyfile, []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
 	defer func() {
-		err := DidClose(ctx, srv.Client, pyfile)
+		err := lsp.DidClose(ctx, srv.Client, pyfile)
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
@@ -498,7 +499,7 @@ func TestFileLanguage(t *testing.T) {
 		{"/home/gopher/go.sum", "go.sum"},
 		{"/home/gopher/.config/acme-lsp/config.toml", "toml"},
 	} {
-		lang := fileLanguage(tc.name)
+		lang := lsp.DetectLanguage(tc.name)
 		if lang != tc.lang {
 			t.Errorf("language ID of %q is %q; expected %q", tc.name, lang, tc.lang)
 		}
@@ -519,7 +520,7 @@ func TestLocationLink(t *testing.T) {
 			},
 		},
 	}
-	got := LocationLink(l)
+	got := lsp.LocationLink(l)
 	want := "/home/gopher/mod1/main.go:14:10-16:8"
 	if got != want {
 		t.Errorf("LocationLink(%v) returned %q; want %q", l, got, want)
@@ -598,7 +599,7 @@ func TestClientProvidesCodeAction(t *testing.T) {
 				},
 			},
 		}
-		got := ServerProvidesCodeAction(&c.initializeResult.Capabilities, tc.kind)
+		got := lsp.ServerProvidesCodeAction(&c.initializeResult.Capabilities, tc.kind)
 		want := tc.want
 		if got != want {
 			t.Errorf("got %v for provider %v and kind %v; want %v",

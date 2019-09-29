@@ -48,7 +48,7 @@ func TestParseFlagSet(t *testing.T) {
 		name       string
 		args       []string
 		debug      bool
-		serverInfo []*lsp.ServerInfo
+		serverInfo []*ServerInfo
 		workspaces []string
 		err        string
 	}{
@@ -73,7 +73,7 @@ func TestParseFlagSet(t *testing.T) {
 			"ServerFlag",
 			[]string{"-server", `\.go$:gopls -rpc.trace`},
 			false,
-			[]*lsp.ServerInfo{
+			[]*ServerInfo{
 				{
 					Server: &config.Server{
 						Command: []string{"gopls", "-rpc.trace"},
@@ -88,7 +88,7 @@ func TestParseFlagSet(t *testing.T) {
 			"DialFlag",
 			[]string{"-dial", `\.go$:localhost:4389`},
 			false,
-			[]*lsp.ServerInfo{
+			[]*ServerInfo{
 				{
 					Server: &config.Server{
 						Address: "localhost:4389",
@@ -125,7 +125,7 @@ func TestParseFlagSet(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to parse flags: %v", err)
 			}
-			ss, err := lsp.NewServerSet(cfg, NewDiagnosticsWriter())
+			ss, err := NewServerSet(cfg, NewDiagnosticsWriter())
 			if err != nil {
 				t.Fatalf("ParseFlagSet failed: %v", err)
 			}

@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/fhs/acme-lsp/internal/acme"
-	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 )
@@ -102,7 +101,7 @@ func main() {
 	acme.Network = cfg.AcmeNetwork
 	acme.Address = cfg.AcmeAddress
 
-	serverSet, err := lsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
+	serverSet, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
 	if err != nil {
 		log.Fatalf("failed to create server set: %v\n", err)
 	}

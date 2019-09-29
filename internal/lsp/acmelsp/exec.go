@@ -1,4 +1,4 @@
-package lsp
+package acmelsp
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
@@ -152,7 +153,7 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 
 	workspaces := make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
 	if len(cfg.WorkspaceDirectories) > 0 {
-		folders, err := DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
+		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
 		if err != nil {
 			return nil, err
 		}

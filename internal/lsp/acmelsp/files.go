@@ -22,7 +22,7 @@ import (
 // because having the ctl file open prevents del event from
 // being delivered to acme/log file.
 type FileManager struct {
-	ss   *lsp.ServerSet
+	ss   *ServerSet
 	wins map[string]struct{} // set of open files
 	mu   sync.Mutex
 
@@ -30,7 +30,7 @@ type FileManager struct {
 }
 
 // NewFileManager creates a new file manager, initialized with files currently open in acme.
-func NewFileManager(ss *lsp.ServerSet, cfg *config.Config) (*FileManager, error) {
+func NewFileManager(ss *ServerSet, cfg *config.Config) (*FileManager, error) {
 	fm := &FileManager{
 		ss:   ss,
 		wins: make(map[string]struct{}),
@@ -90,7 +90,7 @@ func (fm *FileManager) Run() {
 	}
 }
 
-func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Client, *acmeutil.Win) error) error {
+func (fm *FileManager) withClient(winid int, name string, f func(*Client, *acmeutil.Win) error) error {
 	s, found, err := fm.ss.StartForFile(name)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (fm *FileManager) withClient(winid int, name string, f func(*lsp.Client, *a
 }
 
 func (fm *FileManager) didOpen(winid int, name string) error {
-	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *Client, w *acmeutil.Win) error {
 		fm.mu.Lock()
 		defer fm.mu.Unlock()
 
@@ -138,7 +138,7 @@ func (fm *FileManager) didClose(name string) error {
 	}
 	delete(fm.wins, name)
 
-	return fm.withClient(-1, name, func(c *lsp.Client, _ *acmeutil.Win) error {
+	return fm.withClient(-1, name, func(c *Client, _ *acmeutil.Win) error {
 		return lsp.DidClose(context.Background(), c, name)
 	})
 }
@@ -150,7 +150,7 @@ func (fm *FileManager) didChange(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *Client, w *acmeutil.Win) error {
 		b, err := w.ReadAll("body")
 		if err != nil {
 			return err
@@ -181,7 +181,7 @@ func (fm *FileManager) didSave(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *Client, w *acmeutil.Win) error {
 		b, err := w.ReadAll("body")
 		if err != nil {
 			return err
@@ -203,7 +203,7 @@ func (fm *FileManager) format(winid int, name string) error {
 	if _, ok := fm.wins[name]; !ok {
 		return nil // Unknown language server.
 	}
-	return fm.withClient(winid, name, func(c *lsp.Client, w *acmeutil.Win) error {
+	return fm.withClient(winid, name, func(c *Client, w *acmeutil.Win) error {
 		doc := &protocol.TextDocumentIdentifier{
 			URI: text.ToURI(name),
 		}
