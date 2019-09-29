@@ -14,6 +14,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/pkg/errors"
 )
@@ -93,6 +94,7 @@ type FormatServer interface {
 	DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
 	Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
 	CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
+	ExecuteCommandOnDocument(context.Context, *proxy.ExecuteCommandOnDocumentParams) (interface{}, error)
 }
 
 // OrganizeImportsAndFormat organizes import paths and then formats the file f.
@@ -115,9 +117,23 @@ func OrganizeImportsAndFormat(ctx context.Context, server FormatServer, doc *pro
 			return err
 		}
 		for _, a := range actions {
-			err := editWorkspace(a.Edit)
-			if err != nil {
-				return err
+			if a.Edit != nil {
+				err := editWorkspace(a.Edit)
+				if err != nil {
+					return err
+				}
+			}
+			if a.Command != nil {
+				_, err := server.ExecuteCommandOnDocument(ctx, &proxy.ExecuteCommandOnDocumentParams{
+					TextDocument: *doc,
+					ExecuteCommandParams: protocol.ExecuteCommandParams{
+						Command:   a.Command.Command,
+						Arguments: a.Command.Arguments,
+					},
+				})
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if len(actions) > 0 {

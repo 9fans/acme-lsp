@@ -80,6 +80,14 @@ func (s *proxyServer) CodeAction(ctx context.Context, params *protocol.CodeActio
 	return srv.Client.CodeAction(ctx, params)
 }
 
+func (s *proxyServer) ExecuteCommandOnDocument(ctx context.Context, params *proxy.ExecuteCommandOnDocumentParams) (interface{}, error) {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return nil, fmt.Errorf("ExecuteCommandOnDocument: %v", err)
+	}
+	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+}
+
 func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {

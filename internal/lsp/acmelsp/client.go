@@ -77,8 +77,12 @@ func (h *clientHandler) ShowMessageRequest(context.Context, *protocol.ShowMessag
 	return nil, nil
 }
 
-func (h *clientHandler) ApplyEdit(context.Context, *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResponse, error) {
-	return &protocol.ApplyWorkspaceEditResponse{Applied: false, FailureReason: "not implemented"}, nil
+func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResponse, error) {
+	err := editWorkspace(&params.Edit)
+	if err != nil {
+		return &protocol.ApplyWorkspaceEditResponse{Applied: false, FailureReason: err.Error()}, nil
+	}
+	return &protocol.ApplyWorkspaceEditResponse{Applied: true}, nil
 }
 
 // ClientConfig contains LSP client configuration values.
@@ -125,6 +129,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 		RootURI: text.ToURI(d),
 	}
 	params.Capabilities.Workspace.WorkspaceFolders = true
+	params.Capabilities.Workspace.ApplyEdit = true
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport = new(protocol.CodeActionLiteralSupport)
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
@@ -144,21 +149,22 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	return nil
 }
 
+// InitializeResult implements proxy.Server.
 func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
 	return c.initializeResult, nil
 }
 
-// SendMessage exists only to implement proxy.Server.
+// Version exists only to implement proxy.Server.
 func (c *Client) Version(context.Context) (int, error) {
 	panic("intentionally not implemented")
 }
 
-// SendMessage exists only to implement proxy.Server.
-func (c *Client) SendMessage(context.Context, *proxy.Message) error {
+// WorkspaceFolders exists only to implement proxy.Server.
+func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	panic("intentionally not implemented")
 }
 
-// SendMessage exists only to implement proxy.Server.
-func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
-	panic("intentionally not implemented")
+// ExecuteCommandOnDocument implements proxy.Server.
+func (s *Client) ExecuteCommandOnDocument(ctx context.Context, params *proxy.ExecuteCommandOnDocumentParams) (interface{}, error) {
+	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
 }

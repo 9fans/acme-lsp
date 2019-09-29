@@ -73,3 +73,8 @@ func sendParseError(ctx context.Context, req *jsonrpc2.Request, err error) {
 		log.Error(ctx, "", err)
 	}
 }
+
+type ExecuteCommandOnDocumentParams struct {
+	TextDocument         protocol.TextDocumentIdentifier
+	ExecuteCommandParams protocol.ExecuteCommandParams
+}

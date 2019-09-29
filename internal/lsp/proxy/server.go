@@ -25,7 +25,15 @@ type Server interface {
 	WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error)
 
 	// InitializeResult returns the initialize response from the LSP server.
+	// This is useful for L command to get initialization results (e.g. server capabilities)
+	// of an already initalized LSP server.
 	InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error)
+
+	// ExecuteCommandOnDocument is the same as ExecuteCommand, but
+	// params contain the TextDocumentIdentifier of the original
+	// CodeAction so that the server implemention can multiplex
+	// ExecuteCommand request to the right server.
+	ExecuteCommandOnDocument(context.Context, *ExecuteCommandOnDocumentParams) (interface{}, error)
 
 	DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
 	DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
@@ -82,6 +90,18 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		return true
 
+	case "acme-lsp/executeCommandOnDocument": // req
+		var params ExecuteCommandOnDocumentParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.ExecuteCommandOnDocument(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	default:
 		return false
 	}
@@ -114,6 +134,14 @@ func (s *serverDispatcher) InitializeResult(ctx context.Context, params *protoco
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (s *serverDispatcher) ExecuteCommandOnDocument(ctx context.Context, params *ExecuteCommandOnDocumentParams) (interface{}, error) {
+	var result interface{}
+	if err := s.Conn.Call(ctx, "acme-lsp/executeCommandOnDocument", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 type CancelParams struct {
