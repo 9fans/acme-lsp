@@ -494,6 +494,9 @@ func TestFileLanguage(t *testing.T) {
 	}{
 		{"/home/gopher/hello.py", "python"},
 		{"/home/gopher/hello.go", "go"},
+		{"/home/gopher/go.mod", "go.mod"},
+		{"/home/gopher/go.sum", "go.sum"},
+		{"/home/gopher/.config/acme-lsp/config.toml", "toml"},
 	} {
 		lang := fileLanguage(tc.name)
 		if lang != tc.lang {

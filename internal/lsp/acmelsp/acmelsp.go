@@ -160,6 +160,10 @@ func OrganizeImportsAndFormat(ctx context.Context, server FormatServer, doc *pro
 }
 
 func editWorkspace(we *protocol.WorkspaceEdit) error {
+	if we == nil || we.Changes == nil {
+		return nil // no changes to apply
+	}
+
 	wins, err := acme.Windows()
 	if err != nil {
 		return errors.Wrapf(err, "failed to read list of acme index")

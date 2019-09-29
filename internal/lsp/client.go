@@ -158,6 +158,10 @@ func (c *Client) InitializeResult(context.Context, *protocol.TextDocumentIdentif
 }
 
 func fileLanguage(filename string) string {
+	switch base := filepath.Base(filename); base {
+	case "go.mod", "go.sum":
+		return base
+	}
 	lang := filepath.Ext(filename)
 	if len(lang) == 0 {
 		return lang
