@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var Debug = false
+var Verbose = false
 
 type DiagnosticsWriter interface {
 	WriteDiagnostics(map[protocol.DocumentURI][]protocol.Diagnostic) error
@@ -39,7 +39,7 @@ func (h *clientHandler) LogMessage(ctx context.Context, params *protocol.LogMess
 		h.cfg.Logger.Printf("%v: %v\n", params.Type, params.Message)
 		return nil
 	}
-	if params.Type == protocol.Error || params.Type == protocol.Warning || Debug {
+	if params.Type == protocol.Error || params.Type == protocol.Warning || Verbose {
 		log.Printf("log: LSP %v: %v\n", params.Type, params.Message)
 	}
 	return nil

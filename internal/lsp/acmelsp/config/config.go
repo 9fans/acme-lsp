@@ -216,6 +216,7 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 		"network where acme is serving 9P file system")
 	f.StringVar(&cfg.AcmeAddress, "acme.addr", cfg.AcmeAddress,
 		"address where acme is serving 9P file system")
+	f.BoolVar(&cfg.Verbose, "v", cfg.Verbose, "Verbose output")
 
 	if flags&ProxyFlags != 0 {
 		f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,
@@ -224,7 +225,7 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 			"address used for communication between acme-lsp and L")
 	}
 	if flags&LangServerFlags != 0 {
-		f.BoolVar(&cfg.Verbose, "debug", cfg.Verbose, "turn on debugging prints")
+		f.BoolVar(&cfg.Verbose, "debug", cfg.Verbose, "turn on debugging prints (deprecated: use -v)")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
 		f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)

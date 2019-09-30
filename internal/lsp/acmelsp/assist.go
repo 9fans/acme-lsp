@@ -186,7 +186,7 @@ func helpType(left, right rune) string {
 }
 
 func dprintf(format string, args ...interface{}) {
-	if Debug {
+	if Verbose {
 		log.Printf(format, args...)
 	}
 }

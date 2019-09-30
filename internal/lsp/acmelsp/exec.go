@@ -49,7 +49,7 @@ func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Stdin = p0
 		cmd.Stdout = p0
-		if Debug || cs.StderrFile != "" {
+		if Verbose || cs.StderrFile != "" {
 			cmd.Stderr = stderr
 		}
 		if err := cmd.Start(); err != nil {
@@ -157,10 +157,6 @@ type ServerSet struct {
 
 // NewServerSet creates a new server set from config.
 func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet, error) {
-	if cfg.Verbose {
-		Debug = true // TODO(fhs): remove package global variable
-	}
-
 	workspaces := make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
 	if len(cfg.WorkspaceDirectories) > 0 {
 		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)

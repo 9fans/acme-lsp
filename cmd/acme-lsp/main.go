@@ -71,6 +71,10 @@ func main() {
 	acme.Network = cfg.AcmeNetwork
 	acme.Address = cfg.AcmeAddress
 
+	if cfg.Verbose {
+		acmelsp.Verbose = true
+	}
+
 	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
 	if err != nil {
 		log.Fatalf("failed to create server set: %v\n", err)

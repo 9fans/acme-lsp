@@ -120,6 +120,10 @@ func main() {
 	acme.Network = cfg.AcmeNetwork
 	acme.Address = cfg.AcmeAddress
 
+	if cfg.Verbose {
+		acmelsp.Verbose = true
+	}
+
 	err = run(cfg, flag.Args())
 	if err != nil {
 		log.Fatalf("%v\n", err)
