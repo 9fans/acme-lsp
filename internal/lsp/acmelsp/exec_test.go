@@ -44,7 +44,7 @@ func TestServerSetWorkspaces(t *testing.T) {
 		File: config.File{
 			RootDirectory:        "/",
 			WorkspaceDirectories: []string{"/path/to/mod1", "/path/to/mod2"},
-			Servers: map[string]config.Server{
+			Servers: map[string]*config.Server{
 				"gopls": {
 					Command: []string{"gopls"},
 				},

@@ -23,6 +23,7 @@ type DiagnosticsWriter interface {
 
 // clientHandler handles JSON-RPC requests and notifications.
 type clientHandler struct {
+	cfg        *ClientConfig
 	diagWriter DiagnosticsWriter
 	diag       map[protocol.DocumentURI][]protocol.Diagnostic
 	mu         sync.Mutex
@@ -34,6 +35,10 @@ func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMe
 }
 
 func (h *clientHandler) LogMessage(ctx context.Context, params *protocol.LogMessageParams) error {
+	if h.cfg.Logger != nil {
+		h.cfg.Logger.Printf("%v: %v\n", params.Type, params.Message)
+		return nil
+	}
 	if params.Type == protocol.Error || params.Type == protocol.Warning || Debug {
 		log.Printf("log: LSP %v: %v\n", params.Type, params.Message)
 	}
@@ -91,6 +96,7 @@ type ClientConfig struct {
 	RootDirectory string                     // used to compute RootURI in initialization
 	DiagWriter    DiagnosticsWriter          // notification handler writes diagnostics here
 	Workspaces    []protocol.WorkspaceFolder // initial workspace folders
+	Logger        *log.Logger
 }
 
 // Client represents a LSP client connection.
@@ -111,6 +117,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
+		cfg:        cfg,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})

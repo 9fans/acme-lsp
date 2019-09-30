@@ -31,7 +31,7 @@ type File struct {
 	// Network and address where acme is serving 9P file server.
 	AcmeNetwork, AcmeAddress string
 
-	// Print more messages to stderr or log file
+	// Print more messages to stderr
 	Verbose bool
 
 	// Initial set of workspace directories
@@ -46,18 +46,15 @@ type File struct {
 	// LSP code actions to run when Put is executed in a window.
 	//CodeActionsOnSave []protocol.CodeActionKind
 
-	// Write log to to this file instead of stderr
-	//LogFile string
-
 	// LSP servers keyed by a user provided name
-	Servers map[string]Server
+	Servers map[string]*Server
 
-	// Maping from LSP language ID to server key
-	LanguageHandlers map[string]string
+	// LanguageHandlers is a mapping from LSP language ID to server key.
+	// This might be nice to support later, since this will avoid having to use regexp.
+	//LanguageHandlers map[string]string
 
 	// Servers determined by regular expression match on filename,
 	// as supplied by -server and -dial flags.
-	// This is deprecated in favor of LanguageHandlers.
 	FilenameHandlers []FilenameHandler
 }
 
@@ -77,7 +74,13 @@ type Server struct {
 	// Dial address for server
 	Address string
 
-	// Write LSP server stderr to this file
+	// Write stderr of Command to this file.
+	// If it's not an absolute path, it'll become relative to the cache directory.
+	StderrFile string
+
+	// Write log messages (window/logMessage notifications) sent by LSP server
+	// to this file instead of stderr.
+	// If it's not an absolute path, it'll become relative to the cache directory.
 	LogFile string
 
 	// Sever-specific LSP configuration
@@ -114,7 +117,6 @@ func Default() *Config {
 			//	protocol.SourceOrganizeImports,
 			//},
 			Servers:          nil,
-			LanguageHandlers: nil,
 			FilenameHandlers: nil,
 		},
 	}
@@ -160,9 +162,21 @@ func Load() (*Config, error) {
 	if cfg.File.RootDirectory == "" {
 		cfg.File.RootDirectory = def.File.RootDirectory
 	}
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return nil, err
+	}
+	cacheDir = filepath.Join(cacheDir, "acme-lsp")
 	for key := range cfg.Servers {
 		if len(key) > 0 && key[0] == '_' {
 			return nil, fmt.Errorf("server key %q begins with underscore", key)
+		}
+		s := cfg.File.Servers[key]
+		if s.StderrFile != "" && !filepath.IsAbs(s.StderrFile) {
+			s.StderrFile = filepath.Join(cacheDir, s.StderrFile)
+		}
+		if s.LogFile != "" && !filepath.IsAbs(s.LogFile) {
+			s.LogFile = filepath.Join(cacheDir, s.LogFile)
 		}
 	}
 	return cfg, nil
@@ -227,12 +241,12 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 			cfg.WorkspaceDirectories = strings.Split(workspaces, ":")
 		}
 		if cfg.Servers == nil {
-			cfg.Servers = make(map[string]Server)
+			cfg.Servers = make(map[string]*Server)
 		}
 		handlers := make([]FilenameHandler, 0)
 		for i, sa := range userServers {
 			key := fmt.Sprintf("_userCmdServer%v", i)
-			cfg.Servers[key] = Server{
+			cfg.Servers[key] = &Server{
 				Command: strings.Fields(sa.args),
 			}
 			handlers = append(handlers, FilenameHandler{
@@ -242,7 +256,7 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 		}
 		for i, sa := range dialServers {
 			key := fmt.Sprintf("_userDialServer%v", i)
-			cfg.Servers[key] = Server{
+			cfg.Servers[key] = &Server{
 				Address: sa.args,
 			}
 			handlers = append(handlers, FilenameHandler{

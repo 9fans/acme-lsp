@@ -34,14 +34,23 @@ func (s *Server) Close() {
 func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	args := cs.Command
 
+	stderr := os.Stderr
+	if cs.StderrFile != "" {
+		f, err := os.Create(cs.StderrFile)
+		if err != nil {
+			return nil, fmt.Errorf("could not create server StderrFile: %v", err)
+		}
+		stderr = f
+	}
+
 	startCommand := func() (*exec.Cmd, net.Conn, error) {
 		p0, p1 := net.Pipe()
 		// TODO(fhs): use CommandContext?
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Stdin = p0
 		cmd.Stdout = p0
-		if Debug {
-			cmd.Stderr = os.Stderr
+		if Debug || cs.StderrFile != "" {
+			cmd.Stderr = stderr
 		}
 		if err := cmd.Start(); err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to execute language server")
@@ -111,8 +120,9 @@ func dialServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 type ServerInfo struct {
 	*config.Server
 
-	Re  *regexp.Regexp // filename regular expression
-	srv *Server        // running server instance
+	Re     *regexp.Regexp // filename regular expression
+	Logger *log.Logger    // Logger for config.Server.LogFile
+	srv    *Server        // running server instance
 }
 
 func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
@@ -176,9 +186,18 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 		if err != nil {
 			return nil, err
 		}
+		var logger *log.Logger
+		if cs.LogFile != "" {
+			f, err := os.Create(cs.LogFile)
+			if err != nil {
+				return nil, fmt.Errorf("could not create server %v LogFile: %v", h.ServerKey, err)
+			}
+			logger = log.New(f, "", log.LstdFlags)
+		}
 		data = append(data, &ServerInfo{
-			Server: &cs,
+			Server: cs,
 			Re:     re,
+			Logger: logger,
 		})
 	}
 	return &ServerSet{
@@ -198,12 +217,13 @@ func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	return nil
 }
 
-func (ss *ServerSet) ClientConfig(cs *config.Server) *ClientConfig {
+func (ss *ServerSet) ClientConfig(info *ServerInfo) *ClientConfig {
 	return &ClientConfig{
-		Server:        cs,
+		Server:        info.Server,
 		RootDirectory: ss.cfg.RootDirectory,
 		DiagWriter:    ss.diagWriter,
 		Workspaces:    ss.Workspaces(),
+		Logger:        info.Logger,
 	}
 }
 
@@ -212,7 +232,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if info == nil {
 		return nil, false, nil // unknown language server
 	}
-	srv, err := info.start(ss.ClientConfig(info.Server))
+	srv, err := info.start(ss.ClientConfig(info))
 	if err != nil {
 		return nil, false, err
 	}
@@ -245,7 +265,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 
 func (ss *ServerSet) forEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
-		srv, err := info.start(ss.ClientConfig(info.Server))
+		srv, err := info.start(ss.ClientConfig(info))
 		if err != nil {
 			return err
 		}
