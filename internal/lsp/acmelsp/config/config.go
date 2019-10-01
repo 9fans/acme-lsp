@@ -30,9 +30,6 @@ type File struct {
 	// Network and address where acme is serving 9P file server.
 	AcmeNetwork, AcmeAddress string
 
-	// Print more messages to stderr
-	Verbose bool
-
 	// Initial set of workspace directories
 	WorkspaceDirectories []string
 
@@ -63,6 +60,9 @@ type Config struct {
 
 	// Show current configuration and exit
 	ShowConfig bool
+
+	// Print more messages to stderr
+	Verbose bool
 }
 
 // Language servers describes a LSP server.
@@ -108,7 +108,6 @@ func Default() *Config {
 			ProxyAddress:         filepath.Join(client.Namespace(), "acme-lsp.rpc"),
 			AcmeNetwork:          "unix",
 			AcmeAddress:          filepath.Join(client.Namespace(), "acme"),
-			Verbose:              false,
 			WorkspaceDirectories: nil,
 			RootDirectory:        rootDir,
 			FormatOnPut:          true,
