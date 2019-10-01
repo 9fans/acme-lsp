@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
+	"github.com/fhs/acme-lsp/internal/lsp/cmd"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -50,48 +50,33 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
+	cfg := cmd.Setup(config.LangServerFlags | config.ProxyFlags)
 
-	cfg, err := config.Load()
+	err := run(cfg, flag.Args())
 	if err != nil {
-		log.Fatalf("failed to load config file: %v", err)
+		log.Fatalf("%v", err)
 	}
-	err = config.ParseFlags(cfg, config.LangServerFlags|config.ProxyFlags|config.ShowConfigFlag,
-		flag.CommandLine, os.Args[1:])
-	if err != nil {
-		// Unreached since flag.CommandLine uses flag.ExitOnError.
-		log.Fatalf("failed to parse flags: %v\n", err)
-	}
+}
 
-	if cfg.ShowConfig {
-		config.Show(os.Stdout, cfg)
-		os.Exit(0)
-	}
-
-	// Setup custom acme package
-	acme.Network = cfg.AcmeNetwork
-	acme.Address = cfg.AcmeAddress
-
-	if cfg.Verbose {
-		acmelsp.Verbose = true
-	}
-
+func run(cfg *config.Config, args []string) error {
 	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
 	if err != nil {
-		log.Fatalf("failed to create server set: %v\n", err)
+		return fmt.Errorf("failed to create server set: %v", err)
 	}
 
 	if len(ss.Data) == 0 {
-		log.Fatalf("No servers found in the configuration file or command line flags")
+		return fmt.Errorf("no servers found in the configuration file or command line flags")
 	}
 
 	fm, err := acmelsp.NewFileManager(ss, cfg)
 	if err != nil {
-		log.Fatalf("failed to create file manager: %v\n", err)
+		return fmt.Errorf("failed to create file manager: %v", err)
 	}
 	go fm.Run()
 
 	err = acmelsp.ListenAndServeProxy(context.Background(), cfg, ss, fm)
 	if err != nil {
-		log.Fatalf("proxy failed: %v\n", err)
+		return fmt.Errorf("proxy failed: %v", err)
 	}
+	return nil
 }

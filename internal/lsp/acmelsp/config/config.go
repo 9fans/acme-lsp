@@ -20,7 +20,6 @@ type Flags uint
 const (
 	LangServerFlags Flags = 1 << iota
 	ProxyFlags
-	ShowConfigFlag
 )
 
 // File represents user configuration file for acme-lsp and L.
@@ -217,6 +216,7 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 	f.StringVar(&cfg.AcmeAddress, "acme.addr", cfg.AcmeAddress,
 		"address where acme is serving 9P file system")
 	f.BoolVar(&cfg.Verbose, "v", cfg.Verbose, "Verbose output")
+	f.BoolVar(&cfg.ShowConfig, "showconfig", false, "show configuration values and exit")
 
 	if flags&ProxyFlags != 0 {
 		f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,
@@ -229,9 +229,6 @@ func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) e
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
 		f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
-	}
-	if flags&ShowConfigFlag != 0 {
-		f.BoolVar(&cfg.ShowConfig, "showconfig", false, "show configuration values and exit")
 	}
 	if err := f.Parse(arguments); err != nil {
 		return err

@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
+	"github.com/fhs/acme-lsp/internal/lsp/cmd"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -86,71 +86,61 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
+	cfg := cmd.Setup(config.LangServerFlags)
 
-	cfg, err := config.Load()
+	err := run(cfg, flag.Args())
 	if err != nil {
-		log.Fatalf("failed to load config file: %v", err)
+		log.Fatalf("%v", err)
 	}
-	err = config.ParseFlags(cfg, config.LangServerFlags, flag.CommandLine, os.Args[1:])
-	if err != nil {
-		// Unreached since flag.CommandLine uses flag.ExitOnError.
-		log.Fatalf("failed to parse flags: %v\n", err)
-	}
+}
 
-	// Setup custom acme package
-	acme.Network = cfg.AcmeNetwork
-	acme.Address = cfg.AcmeAddress
-
-	if cfg.Verbose {
-		acmelsp.Verbose = true
-	}
-
+func run(cfg *config.Config, args []string) error {
 	serverSet, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
 	if err != nil {
-		log.Fatalf("failed to create server set: %v\n", err)
+		return fmt.Errorf("failed to create server set: %v", err)
 	}
 	defer serverSet.CloseAll()
 
 	if len(serverSet.Data) == 0 {
-		log.Fatalf("No servers found in the configuration file or command line flags")
+		return fmt.Errorf("no servers found in the configuration file or command line flags")
 	}
 
-	if flag.NArg() < 1 {
+	if len(args) == 0 {
 		usage()
 	}
 
 	fm, err := acmelsp.NewFileManager(serverSet, cfg)
 	if err != nil {
-		log.Fatalf("failed to create file manager: %v\n", err)
+		return fmt.Errorf("failed to create file manager: %v", err)
 	}
-	switch flag.Arg(0) {
+	switch args[0] {
 	case "win", "assist": // "win" is deprecated
 		assist := "auto"
-		if flag.NArg() >= 2 {
-			assist = flag.Arg(1)
+		if len(args) >= 2 {
+			assist = args[1]
 		}
 		if err := acmelsp.Assist(serverSet, assist); err != nil {
-			log.Fatalf("assist failed: %v", err)
+			return fmt.Errorf("assist failed: %v", err)
 		}
-		return
+		return nil
 
 	case "monitor":
 		fm.Run()
-		return
+		return nil
 
 	case "servers":
 		serverSet.PrintTo(os.Stdout)
-		return
+		return nil
 	}
 
 	rc, err := acmelsp.CurrentWindowRemoteCmd(serverSet, fm)
 	if err != nil {
-		log.Fatalf("CurrentWindowRemoteCmd failed: %v\n", err)
+		return fmt.Errorf("CurrentWindowRemoteCmd failed: %v", err)
 	}
 
 	ctx := context.Background()
 
-	switch flag.Arg(0) {
+	switch args[0] {
 	case "comp":
 		err = rc.Completion(ctx, false)
 	case "def":
@@ -162,19 +152,16 @@ func main() {
 	case "refs":
 		err = rc.References(ctx)
 	case "rn":
-		if flag.NArg() < 2 {
+		if len(args) < 2 {
 			usage()
 		}
-		err = rc.Rename(ctx, flag.Arg(1))
+		err = rc.Rename(ctx, args[1])
 	case "sig":
 		err = rc.SignatureHelp(ctx)
 	case "syms":
 		err = rc.DocumentSymbol(ctx)
 	default:
-		log.Printf("unknown command %q\n", flag.Arg(0))
-		os.Exit(1)
+		return fmt.Errorf("unknown command %q", args[0])
 	}
-	if err != nil {
-		log.Fatalf("%v\n", err)
-	}
+	return err
 }

@@ -13,11 +13,11 @@ import (
 	"strconv"
 
 	p9client "9fans.net/go/plan9/client"
-	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
+	"github.com/fhs/acme-lsp/internal/lsp/cmd"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/pkg/errors"
@@ -106,27 +106,11 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
+	cfg := cmd.Setup(config.ProxyFlags)
 
-	cfg, err := config.Load()
+	err := run(cfg, flag.Args())
 	if err != nil {
-		log.Fatalf("failed to load config file: %v", err)
-	}
-	err = config.ParseFlags(cfg, config.ProxyFlags, flag.CommandLine, os.Args[1:])
-	if err != nil {
-		log.Fatalf("%v\n", err)
-	}
-
-	// Setup custom acme package
-	acme.Network = cfg.AcmeNetwork
-	acme.Address = cfg.AcmeAddress
-
-	if cfg.Verbose {
-		acmelsp.Verbose = true
-	}
-
-	err = run(cfg, flag.Args())
-	if err != nil {
-		log.Fatalf("%v\n", err)
+		log.Fatalf("%v", err)
 	}
 }
 
