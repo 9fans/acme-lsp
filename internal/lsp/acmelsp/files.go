@@ -207,6 +207,6 @@ func (fm *FileManager) format(winid int, name string) error {
 		doc := &protocol.TextDocumentIdentifier{
 			URI: text.ToURI(name),
 		}
-		return OrganizeImportsAndFormat(context.Background(), c, doc, w)
+		return CodeActionAndFormat(context.Background(), c, doc, w, fm.cfg.CodeActionsOnPut)
 	})
 }

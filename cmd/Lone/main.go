@@ -41,7 +41,7 @@ List of sub-commands:
 		send the location to the plumber.
 
 	fmt
-		Format current window buffer.
+		Organize imports and format current window buffer.
 
 	hov
 		Show more information about the identifier under the cursor

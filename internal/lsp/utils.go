@@ -30,6 +30,39 @@ func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.Co
 	return false
 }
 
+func CompatibleCodeActions(cap *protocol.ServerCapabilities, kinds []protocol.CodeActionKind) []protocol.CodeActionKind {
+	switch ap := cap.CodeActionProvider.(type) {
+	case bool:
+		if ap {
+			return kinds
+		}
+		return nil
+	case map[string]interface{}:
+		opt, err := protocol.ToCodeActionOptions(ap)
+		if err != nil {
+			log.Printf("failed to decode CodeActionOptions: %v", err)
+			return nil
+		}
+		var compat []protocol.CodeActionKind
+		for _, k := range kinds {
+			found := false
+			for _, kk := range opt.CodeActionKinds {
+				if k == kk {
+					found = true
+					break
+				}
+			}
+			if found {
+				compat = append(compat, k)
+			} else {
+				log.Printf("code action %v is not compatible with server", k)
+			}
+		}
+		return compat
+	}
+	return nil
+}
+
 func LocationLink(l *protocol.Location) string {
 	p := text.ToPath(l.URI)
 	return fmt.Sprintf("%s:%v:%v-%v:%v", p,

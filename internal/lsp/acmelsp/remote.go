@@ -140,7 +140,9 @@ func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
 	doc := &protocol.TextDocumentIdentifier{
 		URI: uri,
 	}
-	return OrganizeImportsAndFormat(ctx, rc.server, doc, win)
+	return CodeActionAndFormat(ctx, rc.server, doc, win, []protocol.CodeActionKind{
+		protocol.SourceOrganizeImports,
+	})
 }
 
 func (rc *RemoteCmd) Hover(ctx context.Context) error {

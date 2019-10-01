@@ -97,20 +97,21 @@ type FormatServer interface {
 	ExecuteCommandOnDocument(context.Context, *proxy.ExecuteCommandOnDocumentParams) (interface{}, error)
 }
 
-// OrganizeImportsAndFormat organizes import paths and then formats the file f.
-func OrganizeImportsAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File) error {
+// CodeActionAndFormat runs the given code actions and then formats the file f.
+func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File, actions []protocol.CodeActionKind) error {
 	initres, err := server.InitializeResult(ctx, doc)
 	if err != nil {
 		return err
 	}
 
-	if lsp.ServerProvidesCodeAction(&initres.Capabilities, protocol.SourceOrganizeImports) {
+	actions = lsp.CompatibleCodeActions(&initres.Capabilities, actions)
+	if len(actions) > 0 {
 		actions, err := server.CodeAction(ctx, &protocol.CodeActionParams{
 			TextDocument: *doc,
 			Range:        protocol.Range{},
 			Context: protocol.CodeActionContext{
 				Diagnostics: nil,
-				Only:        []protocol.CodeActionKind{protocol.SourceOrganizeImports},
+				Only:        actions,
 			},
 		})
 		if err != nil {

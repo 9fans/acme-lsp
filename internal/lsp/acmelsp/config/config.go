@@ -13,6 +13,7 @@ import (
 
 	"9fans.net/go/plan9/client"
 	"github.com/BurntSushi/toml"
+	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 type Flags uint
@@ -40,7 +41,7 @@ type File struct {
 	FormatOnPut bool
 
 	// LSP code actions to run when Put is executed in a window.
-	//CodeActionsOnSave []protocol.CodeActionKind
+	CodeActionsOnPut []protocol.CodeActionKind
 
 	// LSP servers keyed by a user provided name
 	Servers map[string]*Server
@@ -111,9 +112,9 @@ func Default() *Config {
 			WorkspaceDirectories: nil,
 			RootDirectory:        rootDir,
 			FormatOnPut:          true,
-			//CodeActionsOnSave: []protocol.CodeActionKind{
-			//	protocol.SourceOrganizeImports,
-			//},
+			CodeActionsOnPut: []protocol.CodeActionKind{
+				protocol.SourceOrganizeImports,
+			},
 			Servers:          nil,
 			FilenameHandlers: nil,
 		},

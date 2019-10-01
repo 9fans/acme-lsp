@@ -26,7 +26,7 @@ type Server interface {
 
 	// InitializeResult returns the initialize response from the LSP server.
 	// This is useful for L command to get initialization results (e.g. server capabilities)
-	// of an already initalized LSP server.
+	// of an already initialized LSP server.
 	InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error)
 
 	// ExecuteCommandOnDocument is the same as ExecuteCommand, but
