@@ -82,7 +82,7 @@ func (fm *FileManager) Run() {
 				log.Printf("didSave failed in file manager: %v", err)
 			}
 			if fm.cfg.FormatOnPut {
-				if err := fm.format(ev.ID, ev.Name); err != nil {
+				if err := fm.format(ev.ID, ev.Name); err != nil && Verbose {
 					log.Printf("Format failed in file manager: %v", err)
 				}
 			}
