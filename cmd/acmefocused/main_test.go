@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/fhs/acme-lsp/internal/p9service"
 )
 
 const testWinID = "42"
@@ -83,7 +85,7 @@ func TestListenAndServe(t *testing.T) {
 	<-killed
 
 	// This should reuse the unix domain socket.
-	_, err = Listen("unix", addr)
+	_, err = p9service.Listen("unix", addr)
 	if err != nil {
 		t.Errorf("second listen returned error %v", err)
 	}

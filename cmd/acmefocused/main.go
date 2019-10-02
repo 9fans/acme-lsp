@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 
 	"9fans.net/go/acme"
 	"9fans.net/go/plan9/client"
+	"github.com/fhs/acme-lsp/internal/p9service"
 )
 
 func main() {
@@ -75,7 +74,7 @@ func listenAddr() string {
 }
 
 func listenAndServe(addr string, handle func(net.Conn)) {
-	ln, err := Listen("unix", addr)
+	ln, err := p9service.Listen("unix", addr)
 	if err != nil {
 		log.Fatalf("listen failed: %v\n", err)
 	}
@@ -88,39 +87,4 @@ func listenAndServe(addr string, handle func(net.Conn)) {
 		}
 		go handle(conn)
 	}
-}
-
-// Listen is the same as net.Listen but it reuses dead unix domain socket.
-func Listen(network, address string) (net.Listener, error) {
-	ln, err := net.Listen(network, address)
-	if err != nil && network == "unix" && isAddrInUse(err) {
-		if _, err1 := net.Dial(network, address); !isConnRefused(err1) {
-			return nil, err // Listen error
-		}
-		// Dead socket, so remove it.
-		err = os.Remove(address)
-		if err != nil {
-			return nil, err
-		}
-		ln, err = net.Listen(network, address)
-	}
-	return ln, err
-}
-
-func isAddrInUse(err error) bool {
-	if err, ok := err.(*net.OpError); ok {
-		if err, ok := err.Err.(*os.SyscallError); ok {
-			return err.Err == syscall.EADDRINUSE
-		}
-	}
-	return false
-}
-
-func isConnRefused(err error) bool {
-	if err, ok := err.(*net.OpError); ok {
-		if err, ok := err.Err.(*os.SyscallError); ok {
-			return err.Err == syscall.ECONNREFUSED
-		}
-	}
-	return false
 }

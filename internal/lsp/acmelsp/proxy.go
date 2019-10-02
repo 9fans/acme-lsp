@@ -3,15 +3,13 @@ package acmelsp
 import (
 	"context"
 	"fmt"
-	"net"
-	"os"
-	"syscall"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
+	"github.com/fhs/acme-lsp/internal/p9service"
 	"github.com/pkg/errors"
 )
 
@@ -157,7 +155,7 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 }
 
 func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm *FileManager) error {
-	ln, err := Listen(cfg.ProxyNetwork, cfg.ProxyAddress)
+	ln, err := p9service.Listen(cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return err
 	}
@@ -173,39 +171,4 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 		})
 		go rpc.Run(ctx)
 	}
-}
-
-// Listen is like net.Listen but it removes dead unix sockets.
-func Listen(network, address string) (net.Listener, error) {
-	ln, err := net.Listen(network, address)
-	if err != nil && network == "unix" && isAddrInUse(err) {
-		if _, err1 := net.Dial(network, address); !isConnRefused(err1) {
-			return nil, err // Listen error
-		}
-		// Dead socket, so remove it.
-		err = os.Remove(address)
-		if err != nil {
-			return nil, err
-		}
-		return net.Listen(network, address)
-	}
-	return ln, err
-}
-
-func isAddrInUse(err error) bool {
-	if err, ok := err.(*net.OpError); ok {
-		if err, ok := err.Err.(*os.SyscallError); ok {
-			return err.Err == syscall.EADDRINUSE
-		}
-	}
-	return false
-}
-
-func isConnRefused(err error) bool {
-	if err, ok := err.(*net.OpError); ok {
-		if err, ok := err.Err.(*os.SyscallError); ok {
-			return err.Err == syscall.ECONNREFUSED
-		}
-	}
-	return false
 }
