@@ -166,6 +166,10 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 	cacheDir = filepath.Join(cacheDir, "acme-lsp")
+	err = os.MkdirAll(cacheDir, 0700)
+	if err != nil {
+		return nil, err
+	}
 	for key := range cfg.Servers {
 		if len(key) > 0 && key[0] == '_' {
 			return nil, fmt.Errorf("server key %q begins with underscore", key)
