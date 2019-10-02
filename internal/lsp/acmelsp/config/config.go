@@ -1,3 +1,4 @@
+// Package config defines LSP tools configuration.
 package config
 
 import (
@@ -16,34 +17,40 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
+// Flags represent a set of command line flags.
 type Flags uint
 
 const (
+	// LangServerFlags include flags that configure LSP servers.
 	LangServerFlags Flags = 1 << iota
+
+	// ProxyFlags include flags that configure how to connect to proxy server.
 	ProxyFlags
 )
 
 // File represents user configuration file for acme-lsp and L.
 type File struct {
-	// Network and address used for communication between acme-lsp and L
+	// Network and address used for communication between acme-lsp and L.
+	// Only required on Windows.
 	ProxyNetwork, ProxyAddress string
 
 	// Network and address where acme is serving 9P file server.
+	// Only required on Windows.
 	AcmeNetwork, AcmeAddress string
 
-	// Initial set of workspace directories
+	// Initial set of workspace directories.
 	WorkspaceDirectories []string
 
-	// Root directory used for LSP initialization
+	// Root directory used for LSP initialization.
 	RootDirectory string
 
-	// Format file when Put is executed in a window
+	// Format file when Put is executed in a window.
 	FormatOnPut bool
 
 	// LSP code actions to run when Put is executed in a window.
 	CodeActionsOnPut []protocol.CodeActionKind
 
-	// LSP servers keyed by a user provided name
+	// LSP servers keyed by a user provided name.
 	Servers map[string]*Server
 
 	// LanguageHandlers is a mapping from LSP language ID to server key.
@@ -66,12 +73,13 @@ type Config struct {
 	Verbose bool
 }
 
-// Language servers describes a LSP server.
+// Server describes a LSP server.
 type Server struct {
-	// Command that runs the LSP server on stdin/stdout
+	// Command that speaks LSP on stdin/stdout.
+	// Can be empty if Address is given.
 	Command []string
 
-	// Dial address for server
+	// Dial address for LSP server. Ignored if Command is not empty.
 	Address string
 
 	// Write stderr of Command to this file.
@@ -83,20 +91,21 @@ type Server struct {
 	// If it's not an absolute path, it'll become relative to the cache directory.
 	LogFile string
 
-	// Sever-specific LSP configuration
+	// Options contain server-specific settings that are passed as-is to the LSP server.
 	Options interface{}
 }
 
 // FilenameHandler contains a regular expression pattern that matches a filename
 // and the associated server key.
 type FilenameHandler struct {
-	// Regular expression pattern for filename
+	// Pattern is a regular expression that matches filename.
 	Pattern string
 
-	// Server key
+	// ServerKey is the key in Config.File.Servers.
 	ServerKey string
 }
 
+// Default returns the default Config.
 func Default() *Config {
 	rootDir := "/"
 	switch runtime.GOOS {
@@ -129,6 +138,7 @@ func userConfigFilename() (string, error) {
 	return filepath.Join(dir, "acme-lsp/config.toml"), nil
 }
 
+// Load loads Config from file system, falling back to a default if it doesn't exist.
 func Load() (*Config, error) {
 	def := Default()
 
@@ -198,7 +208,8 @@ func load(filename string) (*Config, error) {
 	return &Config{File: f}, nil
 }
 
-func Show(w io.Writer, cfg *Config) error {
+// Write writes Config to writer w.
+func Write(w io.Writer, cfg *Config) error {
 	filename, err := userConfigFilename()
 	if err == nil {
 		fmt.Fprintf(w, "# Configuration file location: %v\n\n", filename)
@@ -208,7 +219,8 @@ func Show(w io.Writer, cfg *Config) error {
 	return toml.NewEncoder(w).Encode(cfg.File)
 }
 
-func ParseFlags(cfg *Config, flags Flags, f *flag.FlagSet, arguments []string) error {
+// ParseFlags parses command line flags and updates Config.
+func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) error {
 	var (
 		workspaces  string
 		userServers serverFlag

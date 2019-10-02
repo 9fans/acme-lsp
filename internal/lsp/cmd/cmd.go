@@ -16,14 +16,14 @@ func Setup(flags config.Flags) *config.Config {
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}
-	err = config.ParseFlags(cfg, flags, flag.CommandLine, os.Args[1:])
+	err = cfg.ParseFlags(flags, flag.CommandLine, os.Args[1:])
 	if err != nil {
 		// Unreached since flag.CommandLine uses flag.ExitOnError.
 		log.Fatalf("failed to parse flags: %v", err)
 	}
 
 	if cfg.ShowConfig {
-		config.Show(os.Stdout, cfg)
+		config.Write(os.Stdout, cfg)
 		os.Exit(0)
 	}
 

@@ -4,6 +4,4 @@ package config
 
 import "os"
 
-func UserConfigDir() (string, error) {
-	return os.UserConfigDir()
-}
+var userConfigDir = os.UserConfigDir
