@@ -18,7 +18,7 @@ acme window.  When `Put` is executed in an acme window, `acme-lsp`
 also organizes import paths in the window and formats it.
 
 Currently, `acme-lsp` has been tested with
-[gopls](https://godoc.org/golang.org/x/tools/cmd/gopls),
+[gopls](https://github.com/golang/tools/tree/master/gopls),
 [go-langserver](https://github.com/sourcegraph/go-langserver) and
 [pyls](https://github.com/palantir/python-language-server). Please report
 incompatibilities with those or other servers.
@@ -38,7 +38,7 @@ First install the latest release of gopls:
 
 Start acme-lsp like this:
 
-	acme-lsp -server '\.go$:gopls' -workspaces /path/to/mod1:/path/to/mod2
+	acme-lsp -server '([/\\]go\.mod)|([/\\]go\.sum)|(\.go)$:gopls serve' -workspaces /path/to/mod1:/path/to/mod2
 
 where mod1 and mod2 are module directories with a `go.mod` file.
 The set of workspace directories can be changed at runtime
@@ -47,9 +47,36 @@ by using the `L ws+` and `L ws-` sub-commands.
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also
 enables commands like `L def` (jump to defenition), `L refs` (list of
-references), etc. within acme. Note: any output from these commands are
-printed to stdout by `acme-lsp`, so it's beneficial to start `acme-lsp` from
-within acme, where the output is written to `+Errors` window.
+references), etc. within acme.
+
+If you want to change `gopls`
+[settings](https://github.com/golang/tools/blob/master/gopls/doc/settings.md),
+you can create a configuration file at
+`UserConfigDir/acme-lsp/config.toml` (the `-showconfig` flag prints
+the exact location) and then run `acme-lsp` without any flags. Example
+config file:
+```toml
+WorkspaceDirectories = [
+	"/path/to/mod1",
+	"/path/to/mod2",
+]
+FormatOnPut = true
+CodeActionsOnPut = ["source.organizeImports"]
+
+[Servers]
+	[Servers.gopls]
+	Command = ["gopls", "serve", "-rpc.trace"]
+	StderrFile = "gopls.stderr.log"
+	LogFile = "gopls.log"
+
+		# These settings gets passed to gopls
+		[Servers.gopls.Options]
+		hoverKind = "FullDocumentation"
+
+[[FilenameHandlers]]
+Pattern = '([/\\]go\.mod)|([/\\]go\.sum)|(\.go)$'
+ServerKey = "gopls"
+```
 
 ## Hints & Tips
 
@@ -59,7 +86,7 @@ in the LSP server.
 
 * Create scripts like `Ldef`, `Lrefs`, `Ltype`, etc., so that you can
 easily execute those commands with a single middle click:
-```
+```sh
 for cmd in comp def fmt hov refs rn sig syms type assist ws ws+ ws-
 do
 	cat > L${cmd} <<EOF

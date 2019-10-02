@@ -26,7 +26,7 @@ List of sub-commands:
 		send the location to the plumber.
 
 	fmt
-		Format current window buffer.
+		Organize imports and format current window buffer.
 
 	hov
 		Show more information about the identifier under the cursor
@@ -61,12 +61,19 @@ List of sub-commands:
 		Note: this is a very experimental feature, and may not
 		be very useful in practice.
 
+  -acme.addr string
+    	address where acme is serving 9P file system (default "/tmp/ns.fhs.:0/acme")
+  -acme.net string
+    	network where acme is serving 9P file system (default "unix")
   -debug
-    	turn on debugging prints
+    	turn on debugging prints (deprecated: use -v)
   -dial value
     	language server address for filename match (e.g. '\.go$:localhost:4389')
   -server value
     	language server command for filename match (e.g. '\.go$:gopls')
+  -showconfig
+    	show configuration values and exit
+  -v	Verbose output
   -workspaces string
     	colon-separated list of initial workspace directories
 */
