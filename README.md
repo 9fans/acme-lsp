@@ -82,3 +82,4 @@ in X11) and running
 * https://github.com/davidrjenni/A - Similar tool but only for Go programming language
 * https://godoc.org/9fans.net/go/acme/acmego - Implements formatting and import fixes for Go
 * https://godoc.org/github.com/fhs/misc/cmd/acmepy - Python formatter based on acmego
+* https://github.com/ilanpillemer/acmecrystal - Crystal formatter
