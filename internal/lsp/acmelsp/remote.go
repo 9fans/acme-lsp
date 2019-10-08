@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
@@ -111,7 +110,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 	return nil
 }
 
-func (rc *RemoteCmd) Definition(ctx context.Context) error {
+func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -121,6 +120,9 @@ func (rc *RemoteCmd) Definition(ctx context.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+	if print {
+		return PrintLocations(rc.Stdout, locations)
 	}
 	return PlumbLocations(locations)
 }
@@ -160,7 +162,7 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	return nil
 }
 
-func (rc *RemoteCmd) Implementation(ctx context.Context) error {
+func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -170,6 +172,9 @@ func (rc *RemoteCmd) Implementation(ctx context.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+	if print {
+		return PrintLocations(rc.Stdout, locations)
 	}
 	return PlumbLocations(locations)
 }
@@ -192,23 +197,7 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 		fmt.Fprintf(rc.Stderr, "No references found.\n")
 		return nil
 	}
-	sort.Slice(loc, func(i, j int) bool {
-		a := loc[i]
-		b := loc[j]
-		n := strings.Compare(string(a.URI), string(b.URI))
-		if n == 0 {
-			m := a.Range.Start.Line - b.Range.Start.Line
-			if m == 0 {
-				return a.Range.Start.Character < b.Range.Start.Character
-			}
-			return m < 0
-		}
-		return n < 0
-	})
-	for _, l := range loc {
-		fmt.Fprintf(rc.Stdout, "%v\n", lsp.LocationLink(&l))
-	}
-	return nil
+	return PrintLocations(rc.Stdout, loc)
 }
 
 // Rename renames the identifier at cursor position to newname.
@@ -289,7 +278,7 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 	return nil
 }
 
-func (rc *RemoteCmd) TypeDefinition(ctx context.Context) error {
+func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -299,6 +288,9 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+	if print {
+		return PrintLocations(rc.Stdout, locations)
 	}
 	return PlumbLocations(locations)
 }

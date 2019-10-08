@@ -144,7 +144,7 @@ func run(cfg *config.Config, args []string) error {
 	case "comp":
 		err = rc.Completion(ctx, false)
 	case "def":
-		err = rc.Definition(ctx)
+		err = rc.Definition(ctx, false)
 	case "fmt":
 		err = rc.OrganizeImportsAndFormat(ctx)
 	case "hov":

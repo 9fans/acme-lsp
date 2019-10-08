@@ -21,12 +21,13 @@ List of sub-commands:
 		-e (edit) flag is given and there is only one candidate,
 		the completion is applied instead of being printed.
 
-	def
-		Find where identifier at the cursor position is define and
-		send the location to the plumber.
+	def [-p]
+		Find where identifier at the cursor position is defined
+		and send the location to the plumber. If -p flag is given,
+		the location is printed to stdout instead.
 
 	fmt
-		Format current window buffer.
+		Organize imports and format current window buffer.
 
 	hov
 		Show more information about the identifier under the cursor
@@ -46,9 +47,10 @@ List of sub-commands:
 	syms
 		List symbols in the current file.
 
-	type
-		Find where the type of identifier at the cursor position is define
-		and send the location to the plumber.
+	type [-p]
+		Find where the type of identifier at the cursor position
+		is defined and send the location to the plumber. If -p
+		flag is given, the location is printed to stdout instead.
 
 	assist [comp|hov|sig]
 		A new window is created where completion (comp), hover
@@ -70,5 +72,16 @@ List of sub-commands:
 		Remove given directories to the set of workspace directories.
 		Current working directory is removed if no directory is specified.
 
+  -acme.addr string
+    	address where acme is serving 9P file system (default "/tmp/ns.fhs.:0/acme")
+  -acme.net string
+    	network where acme is serving 9P file system (default "unix")
+  -proxy.addr string
+    	address used for communication between acme-lsp and L (default "/tmp/ns.fhs.:0/acme-lsp.rpc")
+  -proxy.net string
+    	network used for communication between acme-lsp and L (default "unix")
+  -showconfig
+    	show configuration values and exit
+  -v	Verbose output
 */
 package main

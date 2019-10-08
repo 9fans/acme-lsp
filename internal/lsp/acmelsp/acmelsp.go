@@ -4,9 +4,12 @@ package acmelsp
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
@@ -53,6 +56,26 @@ func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, err
 	}
 
 	return NewRemoteCmd(srv.Client, winid), nil
+}
+
+func PrintLocations(w io.Writer, loc []protocol.Location) error {
+	sort.Slice(loc, func(i, j int) bool {
+		a := loc[i]
+		b := loc[j]
+		n := strings.Compare(string(a.URI), string(b.URI))
+		if n == 0 {
+			m := a.Range.Start.Line - b.Range.Start.Line
+			if m == 0 {
+				return a.Range.Start.Character < b.Range.Start.Character
+			}
+			return m < 0
+		}
+		return n < 0
+	})
+	for _, l := range loc {
+		fmt.Fprintf(w, "%v\n", lsp.LocationLink(&l))
+	}
+	return nil
 }
 
 // PlumbLocations sends the locations to the plumber.

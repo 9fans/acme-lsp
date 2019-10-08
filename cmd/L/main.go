@@ -47,9 +47,10 @@ List of sub-commands:
 		-e (edit) flag is given and there is only one candidate,
 		the completion is applied instead of being printed.
 
-	def
-		Find where identifier at the cursor position is define and
-		send the location to the plumber.
+	def [-p]
+		Find where identifier at the cursor position is defined
+		and send the location to the plumber. If -p flag is given,
+		the location is printed to stdout instead.
 
 	fmt
 		Organize imports and format current window buffer.
@@ -72,9 +73,10 @@ List of sub-commands:
 	syms
 		List symbols in the current file.
 
-	type
-		Find where the type of identifier at the cursor position is define
-		and send the location to the plumber.
+	type [-p]
+		Find where the type of identifier at the cursor position
+		is defined and send the location to the plumber. If -p
+		flag is given, the location is printed to stdout instead.
 
 	assist [comp|hov|sig]
 		A new window is created where completion (comp), hover
@@ -200,7 +202,8 @@ func run(cfg *config.Config, args []string) error {
 		args = args[1:]
 		return rc.Completion(ctx, len(args) > 0 && args[0] == "-e")
 	case "def":
-		return rc.Definition(ctx)
+		args = args[1:]
+		return rc.Definition(ctx, len(args) > 0 && args[0] == "-p")
 	case "fmt":
 		return rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
@@ -218,7 +221,8 @@ func run(cfg *config.Config, args []string) error {
 	case "syms":
 		return rc.DocumentSymbol(ctx)
 	case "type":
-		return rc.TypeDefinition(ctx)
+		args = args[1:]
+		return rc.TypeDefinition(ctx, len(args) > 0 && args[0] == "-p")
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }

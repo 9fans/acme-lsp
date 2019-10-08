@@ -31,11 +31,11 @@ const (
 // File represents user configuration file for acme-lsp and L.
 type File struct {
 	// Network and address used for communication between acme-lsp and L.
-	// Only required on Windows.
+	// Only required on systems without unix domain socket.
 	ProxyNetwork, ProxyAddress string
 
 	// Network and address where acme is serving 9P file server.
-	// Only required on Windows.
+	// Only required on systems without unix domain socket.
 	AcmeNetwork, AcmeAddress string
 
 	// Initial set of workspace directories.
