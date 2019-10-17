@@ -47,7 +47,9 @@ by using the `L ws+` and `L ws-` sub-commands.
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also
 enables commands like `L def` (jump to defenition), `L refs` (list of
-references), etc. within acme.
+references), etc. within acme. The `L assist` command opens a window 
+where completion, hover, or signature help output is shown for the
+current cursor position in the `.go` file being edited.
 
 If you want to change `gopls`
 [settings](https://github.com/golang/tools/blob/master/gopls/doc/settings.md),
