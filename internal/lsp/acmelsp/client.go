@@ -2,6 +2,7 @@ package acmelsp
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/pkg/errors"
 )
 
 var Verbose = false
@@ -146,10 +146,10 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
-		return errors.Wrap(err, "initialize failed")
+		return fmt.Errorf("initialize failed: %v", err)
 	}
 	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
-		return errors.Wrap(err, "initialized failed")
+		return fmt.Errorf("initialized failed: %v", err)
 	}
 	c.Server = server
 	c.initializeResult = &result

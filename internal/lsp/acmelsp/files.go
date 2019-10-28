@@ -12,7 +12,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/pkg/errors"
 )
 
 // FileManager keeps track of open files in acme.
@@ -39,7 +38,7 @@ func NewFileManager(ss *ServerSet, cfg *config.Config) (*FileManager, error) {
 
 	wins, err := acme.Windows()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read list of acme index")
+		return nil, fmt.Errorf("failed to read list of acme index: %v", err)
 	}
 	for _, info := range wins {
 		err := fm.didOpen(info.ID, info.Name)

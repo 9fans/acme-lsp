@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/fhs/acme-lsp/internal/acme"
-	"github.com/pkg/errors"
 )
 
 type Win struct {
@@ -35,7 +34,7 @@ func OpenWin(id int) (*Win, error) {
 func OpenCurrentWin() (*Win, error) {
 	id, err := strconv.Atoi(os.Getenv("winid"))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse $winid")
+		return nil, fmt.Errorf("failed to parse $winid: %v", err)
 	}
 	return OpenWin(id)
 }
@@ -76,7 +75,7 @@ func (w *Win) FileReadWriter(filename string) io.ReadWriter {
 func (w *Win) Reader() (io.Reader, error) {
 	_, err := w.Seek("body", 0, 0)
 	if err != nil {
-		return nil, errors.Wrapf(err, "seed failed for window %v", w.ID())
+		return nil, fmt.Errorf("seed failed for window %v: %v", w.ID(), err)
 	}
 	return w.FileReadWriter("body"), nil
 }
@@ -85,7 +84,7 @@ func (w *Win) Reader() (io.Reader, error) {
 func (w *Win) WriteAt(q0, q1 int, b []byte) (int, error) {
 	err := w.Addr("#%d,#%d", q0, q1)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to write to addr for winid=%v", w.ID())
+		return 0, fmt.Errorf("failed to write to addr for winid=%v: %v", w.ID(), err)
 	}
 	return w.Write("data", b)
 }

@@ -20,7 +20,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/cmd"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
-	"github.com/pkg/errors"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -229,11 +228,11 @@ func run(cfg *config.Config, args []string) error {
 func getWinID() (int, error) {
 	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
 	if err != nil {
-		return 0, errors.Wrap(err, "could not get focused window ID")
+		return 0, fmt.Errorf("could not get focused window ID: %v", err)
 	}
 	n, err := strconv.Atoi(winid)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to parse $winid")
+		return 0, fmt.Errorf("failed to parse $winid: %v", err)
 	}
 	return n, nil
 }
@@ -254,12 +253,12 @@ func getFocusedWinID(addr string) (string, error) {
 	if winid == "" {
 		conn, err := net.Dial("unix", addr)
 		if err != nil {
-			return "", errors.Wrap(err, "$winid is empty and could not dial acmefocused")
+			return "", fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
 		}
 		defer conn.Close()
 		b, err := ioutil.ReadAll(conn)
 		if err != nil {
-			return "", errors.Wrap(err, "$winid is empty and could not read acmefocused")
+			return "", fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
 		}
 		return string(bytes.TrimSpace(b)), nil
 	}

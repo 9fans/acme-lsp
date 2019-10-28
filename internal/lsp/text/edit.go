@@ -2,11 +2,11 @@
 package text
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/span"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
-	"github.com/pkg/errors"
 )
 
 // File represents an open file in text editor.
@@ -35,7 +35,7 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	}
 	off, err := getNewlineOffsets(reader)
 	if err != nil {
-		return errors.Wrapf(err, "failed to obtain newline offsets")
+		return fmt.Errorf("failed to obtain newline offsets: %v", err)
 	}
 
 	f.DisableMark()

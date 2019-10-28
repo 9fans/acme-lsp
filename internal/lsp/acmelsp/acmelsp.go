@@ -19,13 +19,12 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/pkg/errors"
 )
 
 func CurrentWindowRemoteCmd(ss *ServerSet, fm *FileManager) (*RemoteCmd, error) {
 	id, err := strconv.Atoi(os.Getenv("winid"))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse $winid")
+		return nil, fmt.Errorf("failed to parse $winid: %v", err)
 	}
 	return WindowRemoteCmd(ss, fm, id)
 }
@@ -33,17 +32,17 @@ func CurrentWindowRemoteCmd(ss *ServerSet, fm *FileManager) (*RemoteCmd, error) 
 func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, error) {
 	w, err := acmeutil.OpenWin(winid)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to to open window %v", winid)
+		return nil, fmt.Errorf("failed to to open window %v: %v", winid, err)
 	}
 	defer w.CloseFiles()
 
 	_, fname, err := text.DocumentURI(w)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get text position")
+		return nil, fmt.Errorf("failed to get text position: %v", err)
 	}
 	srv, found, err := ss.StartForFile(fname)
 	if err != nil {
-		return nil, errors.Wrap(err, "cound not start language server")
+		return nil, fmt.Errorf("cound not start language server: %v", err)
 	}
 	if !found {
 		return nil, fmt.Errorf("no language server for filename %q", fname)
@@ -52,7 +51,7 @@ func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, err
 	// In case the window has unsaved changes (it's dirty),
 	// send changes to LSP server.
 	if err = fm.didChange(winid, fname); err != nil {
-		return nil, errors.Wrap(err, "DidChange failed")
+		return nil, fmt.Errorf("DidChange failed: %v", err)
 	}
 
 	return NewRemoteCmd(srv.Client, winid), nil
@@ -82,13 +81,13 @@ func PrintLocations(w io.Writer, loc []protocol.Location) error {
 func PlumbLocations(locations []protocol.Location) error {
 	p, err := plumb.Open("send", plan9.OWRITE)
 	if err != nil {
-		return errors.Wrap(err, "failed to open plumber")
+		return fmt.Errorf("failed to open plumber: %v", err)
 	}
 	defer p.Close()
 	for _, loc := range locations {
 		err := plumbLocation(&loc).Send(p)
 		if err != nil {
-			return errors.Wrap(err, "failed to plumb location")
+			return fmt.Errorf("failed to plumb location: %v", err)
 		}
 	}
 	return nil
@@ -194,7 +193,7 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 		return err
 	}
 	if err := text.Edit(f, edits); err != nil {
-		return errors.Wrapf(err, "failed to apply edits")
+		return fmt.Errorf("failed to apply edits: %v", err)
 	}
 	return nil
 }
@@ -206,7 +205,7 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 
 	wins, err := acme.Windows()
 	if err != nil {
-		return errors.Wrapf(err, "failed to read list of acme index")
+		return fmt.Errorf("failed to read list of acme index: %v", err)
 	}
 	winid := make(map[string]int, len(wins))
 	for _, info := range wins {
@@ -224,10 +223,10 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		id := winid[fname]
 		w, err := acmeutil.OpenWin(id)
 		if err != nil {
-			return errors.Wrapf(err, "failed to open window %v", id)
+			return fmt.Errorf("failed to open window %v: %v", id, err)
 		}
 		if err := text.Edit(w, edits); err != nil {
-			return errors.Wrapf(err, "failed to apply edits to window %v", id)
+			return fmt.Errorf("failed to apply edits to window %v: %v", id, err)
 		}
 		w.CloseFiles()
 	}

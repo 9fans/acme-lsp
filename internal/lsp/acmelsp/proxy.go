@@ -10,7 +10,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/fhs/acme-lsp/internal/p9service"
-	"github.com/pkg/errors"
 )
 
 type proxyServer struct {
@@ -149,7 +148,7 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 		return nil, fmt.Errorf("unknown language server for URI %q", uri)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "cound not start language server")
+		return nil, fmt.Errorf("cound not start language server: %v", err)
 	}
 	return srv, nil
 }

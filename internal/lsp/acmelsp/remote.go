@@ -12,7 +12,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/pkg/errors"
 )
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.
@@ -35,7 +34,7 @@ func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
 func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, filename string, err error) {
 	w, err := acmeutil.OpenWin(rc.winid)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to to open window %v", rc.winid)
+		return nil, "", fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
 	}
 	defer w.CloseFiles()
 
@@ -45,7 +44,7 @@ func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, fi
 func (rc *RemoteCmd) DidChange(ctx context.Context) error {
 	w, err := acmeutil.OpenWin(rc.winid)
 	if err != nil {
-		return errors.Wrapf(err, "failed to to open window %v", rc.winid)
+		return fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
 	}
 	defer w.CloseFiles()
 
@@ -97,7 +96,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 			return fmt.Errorf("nil TextEdit in completion item")
 		}
 		if err := text.Edit(w, []protocol.TextEdit{*textEdit}); err != nil {
-			return errors.Wrapf(err, "failed to apply completion edit")
+			return fmt.Errorf("failed to apply completion edit: %v", err)
 		}
 		return nil
 	}

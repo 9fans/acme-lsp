@@ -17,7 +17,6 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
-	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -53,7 +52,7 @@ func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 			cmd.Stderr = stderr
 		}
 		if err := cmd.Start(); err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to execute language server")
+			return nil, nil, fmt.Errorf("failed to execute language server: %v", err)
 		}
 		return cmd, p1, nil
 	}
@@ -96,7 +95,7 @@ func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	srv.Client, err = NewClient(p1, cfg)
 	if err != nil {
 		cmd.Process.Kill()
-		return nil, errors.Wrapf(err, "failed to connect to language server %q", args)
+		return nil, fmt.Errorf("failed to connect to language server %q: %v", args, err)
 	}
 	return srv, nil
 }
@@ -108,7 +107,7 @@ func dialServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	}
 	c, err := NewClient(conn, cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to language server at %v", cs.Address)
+		return nil, fmt.Errorf("failed to connect to language server at %v: %v", cs.Address, err)
 	}
 	return &Server{
 		conn:   conn,
