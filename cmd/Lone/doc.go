@@ -69,6 +69,8 @@ List of sub-commands:
     	turn on debugging prints (deprecated: use -v)
   -dial value
     	language server address for filename match (e.g. '\.go$:localhost:4389')
+  -rootdir string
+    	root directory used for LSP initialization. (default "/")
   -server value
     	language server command for filename match (e.g. '\.go$:gopls')
   -showconfig

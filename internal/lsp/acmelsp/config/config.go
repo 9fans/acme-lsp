@@ -242,6 +242,7 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 	}
 	if flags&LangServerFlags != 0 {
 		f.BoolVar(&cfg.Verbose, "debug", cfg.Verbose, "turn on debugging prints (deprecated: use -v)")
+		f.StringVar(&cfg.RootDirectory, "rootdir", cfg.RootDirectory, "root directory used for LSP initialization.")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
 		f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)

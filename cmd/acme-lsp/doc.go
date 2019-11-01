@@ -43,6 +43,8 @@ be changed by the FormatOnPut and CodeActionsOnPut configuration options.
     	address used for communication between acme-lsp and L (default "/tmp/ns.fhs.:0/acme-lsp.rpc")
   -proxy.net string
     	network used for communication between acme-lsp and L (default "unix")
+  -rootdir string
+    	root directory used for LSP initialization. (default "/")
   -server value
     	language server command for filename match (e.g. '\.go$:gopls')
   -showconfig
