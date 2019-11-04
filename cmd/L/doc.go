@@ -16,12 +16,12 @@ attempt to find the focused window ID by connecting to acmefocused
 List of sub-commands:
 
 	comp [-e]
-		Print candidate completions at current cursor position. If
+		Print candidate completions at the cursor position. If
 		-e (edit) flag is given and there is only one candidate,
 		the completion is applied instead of being printed.
 
 	def [-p]
-		Find where identifier at the cursor position is defined
+		Find where the symbol at the cursor position is defined
 		and send the location to the plumber. If -p flag is given,
 		the location is printed to stdout instead.
 
@@ -29,15 +29,18 @@ List of sub-commands:
 		Organize imports and format current window buffer.
 
 	hov
-		Show more information about the identifier under the cursor
+		Show more information about the symbol under the cursor
 		("hover").
 
+	impls
+		List implementation location(s) of the symbol under the cursor.
+
 	refs
-		List locations where the identifier under the cursor is used
+		List locations where the symbol under the cursor is used
 		("references").
 
 	rn <newname>
-		Rename the identifier under the cursor to newname.
+		Rename the symbol under the cursor to newname.
 
 	sig
 		Show signature help for the function, method, etc. under
@@ -47,7 +50,7 @@ List of sub-commands:
 		List symbols in the current file.
 
 	type [-p]
-		Find where the type of identifier at the cursor position
+		Find where the type of the symbol at the cursor position
 		is defined and send the location to the plumber. If -p
 		flag is given, the location is printed to stdout instead.
 

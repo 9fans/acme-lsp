@@ -89,7 +89,7 @@ in the LSP server.
 * Create scripts like `Ldef`, `Lrefs`, `Ltype`, etc., so that you can
 easily execute those commands with a single middle click:
 ```sh
-for cmd in comp def fmt hov refs rn sig syms type assist ws ws+ ws-
+for cmd in comp def fmt hov impls refs rn sig syms type assist ws ws+ ws-
 do
 	cat > L${cmd} <<EOF
 #!/bin/sh

@@ -166,16 +166,17 @@ func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
 	if err != nil {
 		return err
 	}
-	locations, err := rc.server.Implementation(ctx, &protocol.ImplementationParams{
+	loc, err := rc.server.Implementation(ctx, &protocol.ImplementationParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
 		return err
 	}
-	if print {
-		return PrintLocations(rc.Stdout, locations)
+	if len(loc) == 0 {
+		fmt.Fprintf(rc.Stderr, "No implementations found.\n")
+		return nil
 	}
-	return PlumbLocations(locations)
+	return PrintLocations(rc.Stdout, loc)
 }
 
 func (rc *RemoteCmd) References(ctx context.Context) error {
