@@ -2,13 +2,15 @@
 package p9service
 
 import (
+	"context"
 	"net"
 	"os"
 )
 
 // Listen is like net.Listen but it removes dead unix sockets.
-func Listen(network, address string) (net.Listener, error) {
-	ln, err := net.Listen(network, address)
+func Listen(ctx context.Context, network, address string) (net.Listener, error) {
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, network, address)
 	if err != nil && network == "unix" && isAddrInUse(err) {
 		if _, err1 := net.Dial(network, address); !isConnRefused(err1) {
 			return nil, err // Listen error

@@ -58,29 +58,48 @@ func main() {
 	flag.Usage = usage
 	cfg := cmd.Setup(config.LangServerFlags | config.ProxyFlags)
 
-	err := run(cfg, flag.Args())
+	ctx := context.Background()
+	app, err := NewApplication(ctx, cfg, flag.Args())
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	err = app.Run(ctx)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 }
 
-func run(cfg *config.Config, args []string) error {
+type Application struct {
+	cfg *config.Config
+	fm  *acmelsp.FileManager
+	ss  *acmelsp.ServerSet
+}
+
+func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Application, error) {
 	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
 	if err != nil {
-		return fmt.Errorf("failed to create server set: %v", err)
+		return nil, fmt.Errorf("failed to create server set: %v", err)
 	}
 
 	if len(ss.Data) == 0 {
-		return fmt.Errorf("no servers found in the configuration file or command line flags")
+		return nil, fmt.Errorf("no servers found in the configuration file or command line flags")
 	}
 
 	fm, err := acmelsp.NewFileManager(ss, cfg)
 	if err != nil {
-		return fmt.Errorf("failed to create file manager: %v", err)
+		return nil, fmt.Errorf("failed to create file manager: %v", err)
 	}
-	go fm.Run()
+	return &Application{
+		cfg: cfg,
+		ss:  ss,
+		fm:  fm,
+	}, nil
+}
 
-	err = acmelsp.ListenAndServeProxy(context.Background(), cfg, ss, fm)
+func (app *Application) Run(ctx context.Context) error {
+	go app.fm.Run()
+
+	err := acmelsp.ListenAndServeProxy(ctx, app.cfg, app.ss, app.fm)
 	if err != nil {
 		return fmt.Errorf("proxy failed: %v", err)
 	}

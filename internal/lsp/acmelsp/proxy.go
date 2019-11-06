@@ -154,10 +154,17 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 }
 
 func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm *FileManager) error {
-	ln, err := p9service.Listen(cfg.ProxyNetwork, cfg.ProxyAddress)
+	ln, err := p9service.Listen(ctx, cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return err
 	}
+	// The context doesn't affect Accept below,
+	// so roll our own cancellation/timeout.
+	// See https://github.com/golang/go/issues/28120#issuecomment-428978461
+	go func() {
+		<-ctx.Done()
+		ln.Close()
+	}()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {

@@ -54,14 +54,16 @@ func NewFileManager(ss *ServerSet, cfg *config.Config) (*FileManager, error) {
 func (fm *FileManager) Run() {
 	alog, err := acme.Log()
 	if err != nil {
-		panic(err)
+		log.Printf("file manager opening acme/log: %v", err)
+		return
 	}
 	defer alog.Close()
 
 	for {
 		ev, err := alog.Read()
 		if err != nil {
-			panic(err)
+			log.Printf("file manager reading acme/log: %v", err)
+			return
 		}
 		switch ev.Op {
 		case "new":

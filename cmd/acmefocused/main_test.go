@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -85,7 +86,7 @@ func TestListenAndServe(t *testing.T) {
 	<-killed
 
 	// This should reuse the unix domain socket.
-	_, err = p9service.Listen("unix", addr)
+	_, err = p9service.Listen(context.Background(), "unix", addr)
 	if err != nil {
 		t.Errorf("second listen returned error %v", err)
 	}

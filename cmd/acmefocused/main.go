@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -74,7 +75,7 @@ func listenAddr() string {
 }
 
 func listenAndServe(addr string, handle func(net.Conn)) {
-	ln, err := p9service.Listen("unix", addr)
+	ln, err := p9service.Listen(context.Background(), "unix", addr)
 	if err != nil {
 		log.Fatalf("listen failed: %v\n", err)
 	}
