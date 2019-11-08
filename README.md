@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/fhs/acme-lsp.svg?branch=master)](https://travis-ci.com/fhs/acme-lsp)
+[![GitHub Actions Status](https://github.com/fhs/acme-lsp/workflows/Test/badge.svg)](https://github.com/fhs/acme-lsp/actions)
+[![Travis CI Status](https://travis-ci.com/fhs/acme-lsp.svg?branch=master)](https://travis-ci.com/fhs/acme-lsp)
 [![GoDoc](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp?status.svg)](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fhs/acme-lsp)](https://goreportcard.com/report/github.com/fhs/acme-lsp)
 
