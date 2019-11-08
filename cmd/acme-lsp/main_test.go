@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 				log.Fatalf("failed to execute Xvfb: %v", err)
 			}
 			// Wait for Xvfb to start up.
-			for i := 0; i < 5*60; i++ {
+			for i := 0; i < 60; i++ {
 				err := exec.Command("xdpyinfo", "-display", dp).Run()
 				if err == nil {
 					break
@@ -105,6 +105,12 @@ func xvfbServerNumber() int {
 }
 
 func TestAcmeLSP(t *testing.T) {
+	switch runtime.GOOS {
+	case "darwin":
+		t.Skip("skipping on darwin because Edwood is crashing")
+	case "windows":
+		t.Skip("skipping on windows because unix domain sockets are not supported")
+	}
 	dir, err := ioutil.TempDir("", "acme-lsp-test")
 	if err != nil {
 		t.Fatal(err)
@@ -137,26 +143,28 @@ func TestAcmeLSP(t *testing.T) {
 		wg.Wait()
 	}()
 
+	// Use Edwood instead of plan9port acme because it's
+	// easier to install on CI systems and it seems to be
+	// easier to kill than acme. Sending a KILL signal to
+	// acme doesn't really kill it.
+	cmd := exec.CommandContext(ctx, "edwood", "-c", "1")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = append(os.Environ(), fmt.Sprintf("NAMESPACE=%v", dir))
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("failed to start edwood: %v", err)
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		// Use Edwood instead of plan9port acme because it's
-		// easier to install on CI systems and it seems to be
-		// easier to kill than acme. Sending a KILL signal to
-		// acme doesn't really kill it.
-		cmd := exec.CommandContext(ctx, "edwood", "-c", "1")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Env = append(os.Environ(), fmt.Sprintf("NAMESPACE=%v", dir))
-		if err := cmd.Run(); err != nil {
+		if err := cmd.Wait(); err != nil {
 			t.Logf("edwood died: %v", err)
 		}
 	}()
 
 	// Wait for acme to start up.
 	acmeReady := false
-	for i := 0; i < 5*60; i++ {
+	for i := 0; i < 60; i++ {
 		conn, err := net.Dial(cfg.AcmeNetwork, cfg.AcmeAddress)
 		if err == nil {
 			conn.Close()

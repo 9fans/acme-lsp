@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -30,6 +31,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestListenAndServe(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows because unix domain sockets are not supported")
+	}
+
 	dir, err := ioutil.TempDir("", "acmefocused-test")
 	if err != nil {
 		t.Fatalf("couldn't create temporary directory: %v", err)
