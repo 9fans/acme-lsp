@@ -1,0 +1,4 @@
+# Disable '\n' -> '\r\n' conversion in Windows,
+# which can make gofmt unhappy.
+* text=auto
+*.go text eol=lf

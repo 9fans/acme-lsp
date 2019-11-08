@@ -1,0 +1,83 @@
+on: [push, pull_request]
+name: Test
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.12.x, 1.13.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.platform }}
+    env:
+      GO111MODULE: on
+
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Go environment
+      run: |
+        go version
+        go env
+        echo PATH is $PATH
+      shell: bash
+
+    - name: Checkout code
+      uses: actions/checkout@v1
+
+    - name: Check gofmt
+      run: |
+        gofmt -l .
+        test `gofmt -l . | wc -l` = 0
+      shell: bash
+
+    - name: Create /tmp/.X11-unix/ for xvfb
+      if: matrix.platform == 'ubuntu-latest'
+      run: |
+        sudo mkdir /tmp/.X11-unix/
+        sudo chmod 1777 /tmp/.X11-unix/
+
+    - name: Install gopls
+      run: go get golang.org/x/tools/cmd/gopls@latest
+      working-directory: /
+
+    - name: Install go-langserver
+      run: go get github.com/sourcegraph/go-langserver
+      working-directory: /
+
+    - name: Install Edwood
+      run: go get -tags 'duitdraw mux9p' github.com/rjkroege/edwood@v0.2.1-0.20191103164119-87ca479e7ef7
+      working-directory: /
+
+    - name: Install pyls on unix
+      if: matrix.platform != 'windows-latest'
+      run: sudo pip install 'python-language-server[yapf]'
+
+    - name: Install pyls on windows
+      if: matrix.platform == 'windows-latest'
+      run: pip install 'python-language-server[yapf]'
+
+    - name: Check if 'go get' modified go.mod file
+      run: git diff --exit-code
+
+    - name: Test on unix
+      if: matrix.platform != 'windows-latest'
+      run: |
+        export PATH=${PATH}:$(go env GOPATH)/bin
+        go test -race -v ./...
+      shell: bash
+
+    - name: Test on windows
+      if: matrix.platform == 'windows-latest'
+      run: |
+        $Env:path += ";C:\Users\runneradmin\go\bin"
+        go test -race -v ./...
+
+    - name: Cross compile for plan9
+      if: matrix.platform == 'ubuntu-latest'
+      env:
+        GOOS: plan9
+      run: go build ./...
