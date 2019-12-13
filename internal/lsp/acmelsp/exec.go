@@ -216,6 +216,7 @@ func (ss *ServerSet) ClientConfig(info *ServerInfo) *ClientConfig {
 	return &ClientConfig{
 		Server:        info.Server,
 		RootDirectory: ss.cfg.RootDirectory,
+		HideDiag:      ss.cfg.HideDiagnostics,
 		DiagWriter:    ss.diagWriter,
 		Workspaces:    ss.Workspaces(),
 		Logger:        info.Logger,

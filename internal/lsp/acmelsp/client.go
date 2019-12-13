@@ -24,6 +24,7 @@ type DiagnosticsWriter interface {
 // clientHandler handles JSON-RPC requests and notifications.
 type clientHandler struct {
 	cfg        *ClientConfig
+	hideDiag   bool
 	diagWriter DiagnosticsWriter
 	diag       map[protocol.DocumentURI][]protocol.Diagnostic
 	mu         sync.Mutex
@@ -50,6 +51,9 @@ func (h *clientHandler) Event(context.Context, *interface{}) error {
 }
 
 func (h *clientHandler) PublishDiagnostics(ctx context.Context, params *protocol.PublishDiagnosticsParams) error {
+	if h.hideDiag {
+		return nil
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -94,6 +98,7 @@ func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWor
 type ClientConfig struct {
 	*config.Server
 	RootDirectory string                     // used to compute RootURI in initialization
+	HideDiag      bool                       // don't write diagnostics to DiagWriter
 	DiagWriter    DiagnosticsWriter          // notification handler writes diagnostics here
 	Workspaces    []protocol.WorkspaceFolder // initial workspace folders
 	Logger        *log.Logger
@@ -118,6 +123,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
 		cfg:        cfg,
+		hideDiag:   cfg.HideDiag,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
