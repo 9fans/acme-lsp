@@ -223,28 +223,43 @@ func TestFormattingOptions(t *testing.T) {
 	}
 }
 
-func TestChangeNotifications_UnmarshalJSON(t *testing.T) {
-	tt := []struct {
-		data []byte
-		cn   interface{}
-	}{
-		{[]byte("true"), true},
-		{[]byte("false"), false},
-		{[]byte(`"true"`), "true"},
-		{[]byte(`"false"`), "false"},
-		{
-			[]byte(`"workspace/didChangeWorkspaceFolders"`), // gopls
-			"workspace/didChangeWorkspaceFolders",
-		},
-	}
+var changeNotificationsTests = []struct {
+	data []byte
+	cn   interface{}
+}{
+	{[]byte(`{"workspace": {"workspaceFolders": {"changeNotifications": true}}}`), true},
+	{[]byte(`{"workspace": {"workspaceFolders": {"changeNotifications": false}}}`), false},
+	{[]byte(`{"workspace": {"workspaceFolders": {"changeNotifications": "true"}}}`), "true"},
+	{[]byte(`{"workspace": {"workspaceFolders": {"changeNotifications": "false"}}}`), "false"},
+	{
+		[]byte(`{"workspace": {"workspaceFolders": {"changeNotifications": "workspace/didChangeWorkspaceFolders"}}}`), // gopls
+		"workspace/didChangeWorkspaceFolders",
+	},
+}
 
-	for _, tc := range tt {
-		var cn interface{}
-		err := json.Unmarshal(tc.data, &cn)
+func TestWorkspaceFoldersServerCapabilities_ChangeNotifications(t *testing.T) {
+	for _, tc := range changeNotificationsTests {
+		var cap WorkspaceFoldersServerCapabilities
+		err := json.Unmarshal(tc.data, &cap)
 		if err != nil {
-			t.Fatalf("unmarshal of %q returned error %v", tc.data, err)
+			t.Fatalf("unmarshal of %q failed: %v", tc.data, err)
 		}
-		if got, want := &cn, &tc.cn; !cmp.Equal(got, want) {
+		cn := cap.Workspace.WorkspaceFolders.ChangeNotifications
+		if got, want := cn, tc.cn; !cmp.Equal(got, want) {
+			t.Errorf("unmarshal of %q returned %#v; want %#v", tc.data, got, want)
+		}
+	}
+}
+
+func TestServerCapabilities_ChangeNotifications(t *testing.T) {
+	for _, tc := range changeNotificationsTests {
+		var cap ServerCapabilities
+		err := json.Unmarshal(tc.data, &cap)
+		if err != nil {
+			t.Fatalf("unmarshal of %q failed: %v", tc.data, err)
+		}
+		cn := cap.Workspace.WorkspaceFolders.ChangeNotifications
+		if got, want := cn, tc.cn; !cmp.Equal(got, want) {
 			t.Errorf("unmarshal of %q returned %#v; want %#v", tc.data, got, want)
 		}
 	}

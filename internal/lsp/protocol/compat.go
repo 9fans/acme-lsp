@@ -5,9 +5,8 @@ import (
 	"strings"
 )
 
-// tsprotocol.go (copied from golang.org/x/tools/internal/lsp/protocol)
-// is not general enough to support other LSP servers besides gopls. Let's
-// try to be compatible with all LSP servers.
+// tsprotocol.go is not general enough to support other LSP servers besides
+// gopls. Let's try to be compatible with all LSP servers.
 
 func (m *MarkupContent) UnmarshalJSON(data []byte) error {
 	d := strings.TrimSpace(string(data))

@@ -140,15 +140,26 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	}
 	params := &protocol.InitializeParams{
 		RootURI: text.ToURI(d),
+		Capabilities: protocol.ClientCapabilities{
+			// Workspace: ..., (struct literal)
+			TextDocument: protocol.TextDocumentClientCapabilities{
+				CodeAction: &protocol.CodeActionClientCapabilities{
+					CodeActionLiteralSupport: &protocol.CodeActionLiteralSupport{
+						// CodeActionKind: ..., (struct literal)
+					},
+				},
+				DocumentSymbol: &protocol.DocumentSymbolClientCapabilities{
+					HierarchicalDocumentSymbolSupport: true,
+				},
+			},
+		},
+		WorkspaceFolders:      cfg.Workspaces,
+		InitializationOptions: cfg.Options,
 	}
 	params.Capabilities.Workspace.WorkspaceFolders = true
 	params.Capabilities.Workspace.ApplyEdit = true
-	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport = new(protocol.CodeActionLiteralSupport)
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
-	params.Capabilities.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = true
-	params.WorkspaceFolders = cfg.Workspaces
-	params.InitializationOptions = cfg.Options
 
 	var result protocol.InitializeResult
 	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
