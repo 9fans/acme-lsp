@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -99,6 +100,7 @@ type ClientConfig struct {
 	*config.Server
 	RootDirectory string                     // used to compute RootURI in initialization
 	HideDiag      bool                       // don't write diagnostics to DiagWriter
+	RPCTrace      bool                       // print LSP rpc trace to stderr
 	DiagWriter    DiagnosticsWriter          // notification handler writes diagnostics here
 	Workspaces    []protocol.WorkspaceFolder // initial workspace folders
 	Logger        *log.Logger
@@ -121,6 +123,9 @@ func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
 func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	ctx := context.Background()
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	if cfg.RPCTrace {
+		stream = protocol.LoggingStream(stream, os.Stderr)
+	}
 	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
 		cfg:        cfg,
 		hideDiag:   cfg.HideDiag,

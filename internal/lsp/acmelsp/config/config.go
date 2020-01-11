@@ -50,6 +50,9 @@ type File struct {
 	// Format file when Put is executed in a window.
 	FormatOnPut bool
 
+	// Print to stderr the full rpc trace in lsp inspector format
+	RPCTrace bool
+
 	// LSP code actions to run when Put is executed in a window.
 	CodeActionsOnPut []protocol.CodeActionKind
 
@@ -247,6 +250,7 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 		f.BoolVar(&cfg.Verbose, "debug", cfg.Verbose, "turn on debugging prints (deprecated: use -v)")
 		f.StringVar(&cfg.RootDirectory, "rootdir", cfg.RootDirectory, "root directory used for LSP initialization")
 		f.BoolVar(&cfg.HideDiagnostics, "hidediag", false, "hide diagnostics sent by LSP server")
+		f.BoolVar(&cfg.RPCTrace, "rpc.trace", false, "print the full rpc trace in lsp inspector format")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
 		f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
