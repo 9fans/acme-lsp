@@ -9,7 +9,7 @@ env:
     - GO111MODULE=on
 
 script:
-  - go get golang.org/x/tools/cmd/gopls
+  - go get golang.org/x/tools/gopls
   - go get github.com/sourcegraph/go-langserver
   - go get -tags 'duitdraw mux9p' github.com/rjkroege/edwood@v0.2.1-0.20191103164119-87ca479e7ef7
   - sudo pip install 'python-language-server[yapf]'
