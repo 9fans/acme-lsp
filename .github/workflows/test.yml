@@ -41,7 +41,7 @@ jobs:
         sudo chmod 1777 /tmp/.X11-unix/
 
     - name: Install gopls
-      run: go get golang.org/x/tools/cmd/gopls@latest
+      run: go get golang.org/x/tools/gopls@latest
       working-directory: /
 
     - name: Install go-langserver
