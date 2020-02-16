@@ -199,7 +199,20 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 }
 
 func editWorkspace(we *protocol.WorkspaceEdit) error {
-	if we == nil || we.Changes == nil {
+	if we == nil {
+		return nil // no changes to apply
+	}
+	if we.Changes == nil && we.DocumentChanges != nil {
+		// gopls version >= 0.3.1 sends versioned document edits
+		// for organizeImports code action even when we don't
+		// support it. Convert versioned edits to non-versioned.
+		changes := make(map[string][]protocol.TextEdit)
+		for _, dc := range we.DocumentChanges {
+			changes[dc.TextDocument.TextDocumentIdentifier.URI] = dc.Edits
+		}
+		we.Changes = &changes
+	}
+	if we.Changes == nil {
 		return nil // no changes to apply
 	}
 
