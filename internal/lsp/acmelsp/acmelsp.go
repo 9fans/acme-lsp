@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
 	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
@@ -79,7 +78,7 @@ func PrintLocations(w io.Writer, loc []protocol.Location) error {
 
 // PlumbLocations sends the locations to the plumber.
 func PlumbLocations(locations []protocol.Location) error {
-	p, err := plumb.Open("send", plan9.OWRITE)
+	p, err := plumbOpenSend()
 	if err != nil {
 		return fmt.Errorf("failed to open plumber: %v", err)
 	}
