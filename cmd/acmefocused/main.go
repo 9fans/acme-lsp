@@ -24,8 +24,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"9fans.net/go/acme"
-	"9fans.net/go/plan9/client"
+	"github.com/fhs/9fans-go/acme"
+	"github.com/fhs/9fans-go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/p9service"
 )
 

@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"strings"
 
-	"9fans.net/go/plan9/client"
 	"github.com/BurntSushi/toml"
+	"github.com/fhs/9fans-go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 

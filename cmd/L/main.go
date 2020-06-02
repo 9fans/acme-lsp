@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	p9client "9fans.net/go/plan9/client"
+	p9client "github.com/fhs/9fans-go/plan9/client"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"

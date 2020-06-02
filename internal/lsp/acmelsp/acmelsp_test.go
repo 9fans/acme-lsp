@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"9fans.net/go/plumb"
+	"github.com/fhs/9fans-go/plumb"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"

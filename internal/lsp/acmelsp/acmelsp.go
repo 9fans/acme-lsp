@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"9fans.net/go/plan9"
-	"9fans.net/go/plumb"
+	"github.com/fhs/9fans-go/plan9"
+	"github.com/fhs/9fans-go/plumb"
 	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
