@@ -76,19 +76,19 @@ func DocumentURI(f AddressableFile) (uri protocol.DocumentURI, filename string, 
 func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, filename string, err error) {
 	name, err := f.Filename()
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("could not get window filename: %v", err)
 	}
 	q0, _, err := f.CurrentAddr()
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("could not get current address: %v", err)
 	}
 	reader, err := f.Reader()
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("could not get window body reader: %v", err)
 	}
 	off, err := getNewlineOffsets(reader)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to get newline offset: %v", err)
 	}
 	line, col := off.OffsetToLine(q0)
 	return &protocol.TextDocumentPositionParams{

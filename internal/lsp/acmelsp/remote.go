@@ -112,13 +112,13 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get position: %v", err)
 	}
 	locations, err := rc.server.Definition(ctx, &protocol.DefinitionParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("bad server response: %v", err)
 	}
 	if print {
 		return PrintLocations(rc.Stdout, locations)

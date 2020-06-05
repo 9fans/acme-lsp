@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -57,13 +58,6 @@ var Address string
 var fsys *client.Fsys
 var fsysErr error
 var fsysOnce sync.Once
-
-func mountAcme() {
-	if Network == "" || Address == "" {
-		panic("network or address not set")
-	}
-	fsys, fsysErr = client.Mount(Network, Address)
-}
 
 // AutoExit sets whether to call os.Exit the next time the last managed acme window is deleted.
 // If there are no acme windows at the time of the call, the exit does not happen until one
@@ -376,7 +370,7 @@ func (w *Win) ReadAddr() (q0, q1 int, err error) {
 	}
 	buf := make([]byte, 40)
 	n, err := f.ReadAt(buf, 0)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return 0, 0, err
 	}
 	a := strings.Fields(string(buf[0:n]))

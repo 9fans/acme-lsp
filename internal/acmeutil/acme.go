@@ -55,11 +55,11 @@ func (w *Win) Filename() (string, error) {
 func (w *Win) CurrentAddr() (q0, q1 int, err error) {
 	_, _, err = w.ReadAddr() // open addr file
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("read addr: %v", err)
 	}
 	err = w.Ctl("addr=dot")
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("setting addr=dot: %v", err)
 	}
 	return w.ReadAddr()
 }
