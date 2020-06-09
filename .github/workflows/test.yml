@@ -67,7 +67,12 @@ jobs:
     - name: Test on windows
       if: matrix.platform == 'windows-latest'
       run: |
-        $Env:path += ";C:\Users\runneradmin\go\bin"
+        # 8.3 filenames causes issues. See
+        # https://github.com/actions/virtual-environments/issues/712
+        $env:TMP = "$env:USERPROFILE\AppData\Local\Temp"
+        $env:TEMP = "$env:USERPROFILE\AppData\Local\Temp"
+
+        $env:path += ";C:\Users\runneradmin\go\bin"
         go test -race -v ./...
 
     - name: Cross compile for plan9
