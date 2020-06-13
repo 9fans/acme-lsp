@@ -540,13 +540,10 @@ type chanDiagosticsWriter struct {
 	ch chan *protocol.Diagnostic
 }
 
-func (dw *chanDiagosticsWriter) WriteDiagnostics(diags map[protocol.DocumentURI][]protocol.Diagnostic) error {
-	for _, uriDiag := range diags {
-		for _, diag := range uriDiag {
-			dw.ch <- &diag
-		}
+func (dw *chanDiagosticsWriter) PublishDiagnostics(params *protocol.PublishDiagnosticsParams) {
+	for _, diag := range params.Diagnostics {
+		dw.ch <- &diag
 	}
-	return nil
 }
 
 var _ = text.File((*BytesFile)(nil))

@@ -107,15 +107,12 @@ type mockDiagosticsWriter struct {
 	io.Writer
 }
 
-func (dw *mockDiagosticsWriter) WriteDiagnostics(diags map[protocol.DocumentURI][]protocol.Diagnostic) error {
-	for uri, uriDiag := range diags {
-		for _, diag := range uriDiag {
-			loc := &protocol.Location{
-				URI:   uri,
-				Range: diag.Range,
-			}
-			fmt.Fprintf(dw, "%v: %v\n", lsp.LocationLink(loc), diag.Message)
+func (dw *mockDiagosticsWriter) PublishDiagnostics(params *protocol.PublishDiagnosticsParams) {
+	for _, diag := range params.Diagnostics {
+		loc := &protocol.Location{
+			URI:   params.URI,
+			Range: diag.Range,
 		}
+		fmt.Fprintf(dw, "%v: %v\n", lsp.LocationLink(loc), diag.Message)
 	}
-	return nil
 }

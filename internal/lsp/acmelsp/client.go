@@ -19,7 +19,7 @@ import (
 var Verbose = false
 
 type DiagnosticsWriter interface {
-	WriteDiagnostics(map[protocol.DocumentURI][]protocol.Diagnostic) error
+	PublishDiagnostics(params *protocol.PublishDiagnosticsParams)
 }
 
 // clientHandler handles JSON-RPC requests and notifications.
@@ -55,15 +55,8 @@ func (h *clientHandler) PublishDiagnostics(ctx context.Context, params *protocol
 	if h.hideDiag {
 		return nil
 	}
-	h.mu.Lock()
-	defer h.mu.Unlock()
 
-	if len(h.diag[params.URI]) == 0 && len(params.Diagnostics) == 0 {
-		return nil
-	}
-	h.diag[params.URI] = params.Diagnostics
-
-	h.diagWriter.WriteDiagnostics(h.diag)
+	h.diagWriter.PublishDiagnostics(params)
 	return nil
 }
 
