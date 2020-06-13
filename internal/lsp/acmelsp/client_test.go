@@ -540,7 +540,7 @@ type chanDiagosticsWriter struct {
 	ch chan *protocol.Diagnostic
 }
 
-func (dw *chanDiagosticsWriter) PublishDiagnostics(params *protocol.PublishDiagnosticsParams) {
+func (dw *chanDiagosticsWriter) WriteDiagnostics(params *protocol.PublishDiagnosticsParams) {
 	for _, diag := range params.Diagnostics {
 		dw.ch <- &diag
 	}

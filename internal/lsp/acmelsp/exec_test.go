@@ -107,7 +107,7 @@ type mockDiagosticsWriter struct {
 	io.Writer
 }
 
-func (dw *mockDiagosticsWriter) PublishDiagnostics(params *protocol.PublishDiagnosticsParams) {
+func (dw *mockDiagosticsWriter) WriteDiagnostics(params *protocol.PublishDiagnosticsParams) {
 	for _, diag := range params.Diagnostics {
 		loc := &protocol.Location{
 			URI:   params.URI,

@@ -99,7 +99,7 @@ func (dw *diagWin) update(diags map[protocol.DocumentURI][]protocol.Diagnostic) 
 	return dw.Ctl("clean")
 }
 
-func (dw *diagWin) PublishDiagnostics(params *protocol.PublishDiagnosticsParams) {
+func (dw *diagWin) WriteDiagnostics(params *protocol.PublishDiagnosticsParams) {
 	dw.paramsChan <- params
 }
 
