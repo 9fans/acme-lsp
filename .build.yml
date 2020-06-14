@@ -1,0 +1,6 @@
+image: 9front
+tasks:
+- build: |
+    pwd
+    go version
+    go build
