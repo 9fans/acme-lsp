@@ -1,6 +1,8 @@
 image: 9front
+sources:
+  - https://github.com/fhs/acme-lsp
 tasks:
 - build: |
-    pwd
+    cd acme-lsp
     go version
     go build
