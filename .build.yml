@@ -4,5 +4,6 @@ sources:
 tasks:
 - build: |
     cd acme-lsp
+    git/branch
     go version
     go build
