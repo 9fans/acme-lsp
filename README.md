@@ -89,15 +89,14 @@ in the LSP server.
 
 * Create scripts like `Ldef`, `Lrefs`, `Ltype`, etc., so that you can
 easily execute those commands with a single middle click:
-```sh
-for cmd in comp def fmt hov impls refs rn sig syms type assist ws ws+ ws-
-do
-	cat > L${cmd} <<EOF
-#!/bin/sh
-exec L ${cmd} "\$@"
-EOF
-	chmod +x L${cmd}
-done
+```
+for(cmd in comp def fmt hov impls refs rn sig syms type assist ws ws+ ws-){
+	> L^$cmd {
+		echo '#!/bin/rc'
+		echo exec L $cmd '$*'
+	}
+	chmod +x L^$cmd
+}
 ```
 
 * Create custom keybindings that allow you to do completion
