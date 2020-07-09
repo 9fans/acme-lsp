@@ -5,6 +5,6 @@ tasks:
 - build: |
     cd acme-lsp
     git/branch
-    exit build_failed
     go version
-    go build
+    go build ./...
+    go test ./...
