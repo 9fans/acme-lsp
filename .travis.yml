@@ -8,4 +8,4 @@ env:
     - GO111MODULE=on
 
 script:
-  - docker run --rm -t fshahriar/plan9go:1.14.1-front.1 go version
+  - docker run --rm -t --device /dev/kvm:/dev/kvm fshahriar/plan9go:1.14.1-front.1 go version
