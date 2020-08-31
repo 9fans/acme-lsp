@@ -8,4 +8,7 @@ env:
     - GO111MODULE=on
 
 script:
+  - sudo modprobe kvm
+  - ls -l /dev/kvm
+  - id
   - docker run --rm -t --device /dev/kvm:/dev/kvm fshahriar/plan9go:1.14.1-front.1 go version
