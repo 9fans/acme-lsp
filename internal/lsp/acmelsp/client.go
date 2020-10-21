@@ -91,6 +91,7 @@ func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWor
 // ClientConfig contains LSP client configuration values.
 type ClientConfig struct {
 	*config.Server
+	*config.FilenameHandler
 	RootDirectory string                     // used to compute RootURI in initialization
 	HideDiag      bool                       // don't write diagnostics to DiagWriter
 	RPCTrace      bool                       // print LSP rpc trace to stderr
@@ -103,10 +104,11 @@ type ClientConfig struct {
 type Client struct {
 	protocol.Server
 	initializeResult *protocol.InitializeResult
+	cfg              *ClientConfig
 }
 
 func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
-	c := &Client{}
+	c := &Client{cfg: cfg}
 	if err := c.init(conn, cfg); err != nil {
 		return nil, err
 	}

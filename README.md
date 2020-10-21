@@ -77,8 +77,19 @@ CodeActionsOnPut = ["source.organizeImports"]
 		hoverKind = "FullDocumentation"
 
 [[FilenameHandlers]]
-Pattern = '([/\\]go\.mod)|([/\\]go\.sum)|(\.go)$'
-ServerKey = "gopls"
+  Pattern = "[/\\\\]go\\.mod$"
+  LanguageID = "go.mod"
+  ServerKey = "gopls"
+
+[[FilenameHandlers]]
+  Pattern = "[/\\\\]go\\.sum$"
+  LanguageID = "go.sum"
+  ServerKey = "gopls"
+
+[[FilenameHandlers]]
+  Pattern = "\\.go$"
+  LanguageID = "go"
+  ServerKey = "gopls"
 ```
 
 ## Hints & Tips

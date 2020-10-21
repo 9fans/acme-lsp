@@ -70,11 +70,14 @@ func LocationLink(l *protocol.Location) string {
 		l.Range.End.Line+1, l.Range.End.Character+1)
 }
 
-func DidOpen(ctx context.Context, server protocol.Server, filename string, body []byte) error {
+func DidOpen(ctx context.Context, server protocol.Server, filename string, lang string, body []byte) error {
+	if lang == "" {
+		lang = DetectLanguage(filename)
+	}
 	return server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
 			URI:        text.ToURI(filename),
-			LanguageID: DetectLanguage(filename),
+			LanguageID: lang,
 			Version:    0,
 			Text:       string(body),
 		},

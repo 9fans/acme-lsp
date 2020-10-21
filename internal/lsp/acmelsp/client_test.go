@@ -78,7 +78,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = lsp.DidOpen(ctx, srv.Client, gofile, []byte(src))
+	err = lsp.DidOpen(ctx, srv.Client, gofile, "go", []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
@@ -306,7 +306,7 @@ func main() {
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = lsp.DidOpen(ctx, srv.Client, gofile, []byte(src))
+	err = lsp.DidOpen(ctx, srv.Client, gofile, "go", []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}
@@ -375,7 +375,7 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = lsp.DidOpen(ctx, srv.Client, pyfile, []byte(src))
+	err = lsp.DidOpen(ctx, srv.Client, pyfile, "python", []byte(src))
 	if err != nil {
 		t.Fatalf("DidOpen failed: %v", err)
 	}

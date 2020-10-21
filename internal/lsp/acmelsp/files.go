@@ -126,7 +126,7 @@ func (fm *FileManager) didOpen(winid int, name string) error {
 		if err != nil {
 			return err
 		}
-		return lsp.DidOpen(context.Background(), c, name, b)
+		return lsp.DidOpen(context.Background(), c, name, c.cfg.FilenameHandler.LanguageID, b)
 	})
 }
 

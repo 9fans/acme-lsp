@@ -118,6 +118,7 @@ func dialServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 // ServerInfo holds information about a LSP server and optionally a connection to it.
 type ServerInfo struct {
 	*config.Server
+	*config.FilenameHandler
 
 	Re     *regexp.Regexp // filename regular expression
 	Logger *log.Logger    // Logger for config.Server.LogFile
@@ -169,7 +170,7 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 	}
 
 	var data []*ServerInfo
-	for _, h := range cfg.FilenameHandlers {
+	for i, h := range cfg.FilenameHandlers {
 		cs, ok := cfg.Servers[h.ServerKey]
 		if !ok {
 			return nil, fmt.Errorf("server not found for key %q", h.ServerKey)
@@ -190,9 +191,10 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 			logger = log.New(f, "", log.LstdFlags)
 		}
 		data = append(data, &ServerInfo{
-			Server: cs,
-			Re:     re,
-			Logger: logger,
+			Server:          cs,
+			FilenameHandler: &cfg.FilenameHandlers[i],
+			Re:              re,
+			Logger:          logger,
 		})
 	}
 	return &ServerSet{
@@ -214,13 +216,14 @@ func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 
 func (ss *ServerSet) ClientConfig(info *ServerInfo) *ClientConfig {
 	return &ClientConfig{
-		Server:        info.Server,
-		RootDirectory: ss.cfg.RootDirectory,
-		HideDiag:      ss.cfg.HideDiagnostics,
-		RPCTrace:      ss.cfg.RPCTrace,
-		DiagWriter:    ss.diagWriter,
-		Workspaces:    ss.Workspaces(),
-		Logger:        info.Logger,
+		Server:          info.Server,
+		FilenameHandler: info.FilenameHandler,
+		RootDirectory:   ss.cfg.RootDirectory,
+		HideDiag:        ss.cfg.HideDiagnostics,
+		RPCTrace:        ss.cfg.RPCTrace,
+		DiagWriter:      ss.diagWriter,
+		Workspaces:      ss.Workspaces(),
+		Logger:          info.Logger,
 	}
 }
 

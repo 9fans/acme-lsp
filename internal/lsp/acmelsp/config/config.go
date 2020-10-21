@@ -59,10 +59,6 @@ type File struct {
 	// LSP servers keyed by a user provided name.
 	Servers map[string]*Server
 
-	// LanguageHandlers is a mapping from LSP language ID to server key.
-	// This might be nice to support later, since this will avoid having to use regexp.
-	//LanguageHandlers map[string]string
-
 	// Servers determined by regular expression match on filename,
 	// as supplied by -server and -dial flags.
 	FilenameHandlers []FilenameHandler
@@ -106,6 +102,11 @@ type Server struct {
 type FilenameHandler struct {
 	// Pattern is a regular expression that matches filename.
 	Pattern string
+
+	// Language identifier (e.g. "go" or "python")
+	// See list of languages here:
+	// https://microsoft.github.io/language-server-protocol/specifications/specification-current/#textDocumentItem
+	LanguageID string
 
 	// ServerKey is the key in Config.File.Servers.
 	ServerKey string
