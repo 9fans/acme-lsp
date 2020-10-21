@@ -253,8 +253,14 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 		f.BoolVar(&cfg.HideDiagnostics, "hidediag", false, "hide diagnostics sent by LSP server")
 		f.BoolVar(&cfg.RPCTrace, "rpc.trace", false, "print the full rpc trace in lsp inspector format")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
-		f.Var(&userServers, "server", `language server command for filename match (e.g. '\.go$:gopls')`)
-		f.Var(&dialServers, "dial", `language server address for filename match (e.g. '\.go$:localhost:4389')`)
+		f.Var(&userServers, "server", `map filename to language server command. The format is
+'handlers:cmd' where cmd is the LSP server command and handlers is
+a comma separated list of 'regexp[@lang]'. The regexp matches the
+filename and lang is a language identifier. (e.g. '\.go$:gopls' or
+'go.mod$@go.mod,go.sum$@go.sum,\.go$@go:gopls')`)
+		f.Var(&dialServers, "dial", `map filename to language server address. The format is
+'handlers:host:port'. See -server flag for format of
+handlers. (e.g. '\.go$:localhost:4389')`)
 	}
 	if err := f.Parse(arguments); err != nil {
 		return err
@@ -273,20 +279,20 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 			cfg.Servers[key] = &Server{
 				Command: strings.Fields(sa.args),
 			}
-			handlers = append(handlers, FilenameHandler{
-				Pattern:   sa.pattern,
-				ServerKey: key,
-			})
+			for _, h := range sa.handlers {
+				h.ServerKey = key
+				handlers = append(handlers, h)
+			}
 		}
 		for i, sa := range dialServers {
 			key := fmt.Sprintf("_userDialServer%v", i)
 			cfg.Servers[key] = &Server{
 				Address: sa.args,
 			}
-			handlers = append(handlers, FilenameHandler{
-				Pattern:   sa.pattern,
-				ServerKey: key,
-			})
+			for _, h := range sa.handlers {
+				h.ServerKey = key
+				handlers = append(handlers, h)
+			}
 		}
 		// Prepend to give higher priority to command line flags.
 		cfg.FilenameHandlers = append(handlers, cfg.FilenameHandlers...)
@@ -295,7 +301,8 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 }
 
 type serverArgs struct {
-	pattern, args string
+	handlers []FilenameHandler
+	args     string
 }
 
 type serverFlag []serverArgs
@@ -309,12 +316,31 @@ func (sf *serverFlag) Set(val string) error {
 	if len(f) != 2 {
 		return errors.New("flag value must contain a colon")
 	}
+	// allow f[0] to be empty, as that's a valid regexp that matches anything
 	if len(f[1]) == 0 {
 		return errors.New("empty server command or addresss")
 	}
+	pairs := strings.Split(f[0], ",")
+	args := f[1]
+
+	var handlers []FilenameHandler
+	for _, pp := range pairs {
+		f := strings.SplitN(pp, "@", 2)
+		if len(f) != 2 {
+			handlers = append(handlers, FilenameHandler{
+				Pattern:    pp,
+				LanguageID: "",
+			})
+		} else {
+			handlers = append(handlers, FilenameHandler{
+				Pattern:    f[0],
+				LanguageID: f[1],
+			})
+		}
+	}
 	*sf = append(*sf, serverArgs{
-		pattern: f[0],
-		args:    f[1],
+		handlers: handlers,
+		args:     args,
 	})
 	return nil
 }
