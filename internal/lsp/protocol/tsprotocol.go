@@ -3307,7 +3307,7 @@ type CompletionItem struct {
 	/*Documentation defined:
 	 * A human-readable string that represents a doc-comment.
 	 */
-	Documentation string `json:"documentation,omitempty"` // string | MarkupContent
+	Documentation MarkupContent `json:"documentation,omitempty"` // string | MarkupContent
 
 	/*Deprecated defined:
 	 * Indicates if this item is deprecated.
