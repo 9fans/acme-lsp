@@ -73,6 +73,9 @@ type Config struct {
 
 	// Print more messages to stderr
 	Verbose bool
+
+	// Path to configuration file.
+	filename string
 }
 
 // Server describes a LSP server.
@@ -145,24 +148,29 @@ func userConfigFilename() (string, error) {
 	return filepath.Join(dir, "acme-lsp/config.toml"), nil
 }
 
-// Load loads Config from file system, falling back to a default if it doesn't exist.
+// Load loads Config from file system. It first looks at ACME_LSP_CONFIG
+// environment variable for location of configuration file and loads
+// it if it is set.  If the environment variable is not set, it'll use
+// UserConfigDir/acme-lsp/config.toml if it exists. Otherwise, it'll
+// falling back to a default configuration.
 func Load() (*Config, error) {
-	def := Default()
-
-	filename, err := userConfigFilename()
-	if err != nil {
-		return nil, err
-	}
-	_, err = os.Stat(filename)
-	if os.IsNotExist(err) {
-		return def, nil
+	filename := os.Getenv("ACME_LSP_CONFIG")
+	if filename == "" {
+		var err error
+		filename, err = userConfigFilename()
+		if err != nil {
+			return nil, err
+		}
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			return Default(), nil
+		}
 	}
 
 	cfg, err := load(filename)
 	if err != nil {
 		return nil, err
 	}
-
+	def := Default()
 	if cfg.File.ProxyNetwork == "" {
 		cfg.File.ProxyNetwork = def.File.ProxyNetwork
 	}
@@ -212,16 +220,15 @@ func load(filename string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Config{File: f}, nil
+	return &Config{File: f, filename: filename}, nil
 }
 
 // Write writes Config to writer w.
 func Write(w io.Writer, cfg *Config) error {
-	filename, err := userConfigFilename()
-	if err == nil {
-		fmt.Fprintf(w, "# Configuration file location: %v\n\n", filename)
+	if cfg.filename != "" {
+		fmt.Fprintf(w, "# Configuration file location: %v\n\n", cfg.filename)
 	} else {
-		fmt.Fprintf(w, "# Cound not find configuration file location: %v\n\n", err)
+		fmt.Fprintf(w, "# Cound not find configuration file location.\n\n")
 	}
 	return toml.NewEncoder(w).Encode(cfg.File)
 }
