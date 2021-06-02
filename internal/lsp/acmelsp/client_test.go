@@ -36,6 +36,9 @@ fmt . Println	( "Hello, 世界" )
 }
 `
 
+const goMod = `module github.com/fhs/acme-lsp/internal/lsp/acmelsp/client_test
+`
+
 func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, c *Client, uri protocol.DocumentURI)) {
 	serverArgs := map[string][]string{
 		"gopls":         {"gopls"},
@@ -54,7 +57,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 	modfile := filepath.Join(dir, "go.mod")
-	if err := ioutil.WriteFile(modfile, nil, 0644); err != nil {
+	if err := ioutil.WriteFile(modfile, []byte(goMod), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
@@ -286,7 +289,7 @@ func main() {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 	modfile := filepath.Join(dir, "go.mod")
-	if err := ioutil.WriteFile(modfile, nil, 0644); err != nil {
+	if err := ioutil.WriteFile(modfile, []byte(goMod), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
