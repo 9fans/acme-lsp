@@ -1,6 +1,5 @@
 [![GitHub Actions Status](https://github.com/fhs/acme-lsp/workflows/Test/badge.svg)](https://github.com/fhs/acme-lsp/actions?query=branch%3Amaster+event%3Apush)
-[![Travis CI Status](https://travis-ci.com/fhs/acme-lsp.svg?branch=master)](https://travis-ci.com/fhs/acme-lsp)
-[![GoDoc](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp?status.svg)](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp)
+[![Go Reference](https://pkg.go.dev/badge/github.com/fhs/acme-lsp/cmd/acme-lsp.svg)](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/acme-lsp)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fhs/acme-lsp)](https://goreportcard.com/report/github.com/fhs/acme-lsp)
 
 # acme-lsp
@@ -8,9 +7,9 @@
 [Language Server Protocol](https://langserver.org/) tools for [acme](https://en.wikipedia.org/wiki/Acme_(text_editor)) text editor.
 
 The main tool is
-[acme-lsp](https://godoc.org/github.com/fhs/acme-lsp/cmd/acme-lsp),
+[acme-lsp](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/acme-lsp),
 which listens for commands from the [L
-command](https://godoc.org/github.com/fhs/acme-lsp/cmd/L).
+command](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/L).
 It also watches for files created (`New`), loaded (`Get`), saved
 (`Put`), or deleted (`Del`) in acme, and tells the LSP server about
 these changes. The LSP server in turn responds by sending diagnostics
@@ -48,7 +47,7 @@ by using the `L ws+` and `L ws-` sub-commands.
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also
 enables commands like `L def` (jump to defenition), `L refs` (list of
-references), etc. within acme. The `L assist` command opens a window 
+references), etc. within acme. The `L assist` command opens a window
 where completion, hover, or signature help output is shown for the
 current cursor position in the `.go` file being edited.
 
@@ -115,12 +114,12 @@ for(cmd in comp def fmt hov impls refs rn sig syms type assist ws ws+ ws-){
 typing. This can be achieved by using a general keybinding daemon
 (e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
 in X11) and running
-[acmefocused](https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
+[acmefocused](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/acmefocused).
 
 ## See also
 
 * [A setup with Acme on Darwin using acme-lsp with ccls](https://www.bytelabs.org/posts/acme-lsp/) by Igor Böhm
 * https://github.com/davidrjenni/A - Similar tool but only for Go programming language
-* https://godoc.org/9fans.net/go/acme/acmego - Implements formatting and import fixes for Go
-* https://godoc.org/github.com/fhs/misc/cmd/acmepy - Python formatter based on acmego
+* https://pkg.go.dev/9fans.net/go/acme/acmego - Implements formatting and import fixes for Go
+* https://pkg.go.dev/github.com/fhs/misc/cmd/acmepy - Python formatter based on acmego
 * https://github.com/ilanpillemer/acmecrystal - Crystal formatter
