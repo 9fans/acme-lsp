@@ -50,7 +50,7 @@ jobs:
 
     - name: Install pyls on unix
       if: matrix.platform != 'windows-latest'
-      run: sudo pip install 'python-language-server[yapf]'
+      run: sudo python3 -m pip install 'python-language-server[yapf]'
 
     - name: Install pyls on windows
       if: matrix.platform == 'windows-latest'
