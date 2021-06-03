@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )

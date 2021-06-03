@@ -21,6 +21,9 @@ mv tools/internal/jsonrpc2 $DIR/jsonrpc2
 mv tools/internal/span $DIR/span
 mv tools/internal/telemetry $DIR/telemetry
 mv tools/internal/xcontext $DIR/xcontext
+mkdir $DIR/lsp
+mv tools/internal/lsp/protocol $DIR/lsp
+rm -rf $DIR/lsp/protocol/typescript
 
 (
 	cd tools

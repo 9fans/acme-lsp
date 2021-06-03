@@ -133,7 +133,7 @@ type WorkspaceFoldersServerCapabilities struct {
 			 * side. The ID can be used to unregister for these events
 			 * using the `client/unregisterCapability` request.
 			 */
-			ChangeNotifications interface{} `json:"changeNotifications,omitempty"` // string | boolean
+			ChangeNotifications string `json:"changeNotifications,omitempty"` // string | boolean
 		} `json:"workspaceFolders,omitempty"`
 	} `json:"workspace,omitempty"`
 }
@@ -1119,7 +1119,7 @@ type ServerCapabilities struct {
 			 * side. The ID can be used to unregister for these events
 			 * using the `client/unregisterCapability` request.
 			 */
-			ChangeNotifications interface{} `json:"changeNotifications,omitempty"` // string | boolean
+			ChangeNotifications string `json:"changeNotifications,omitempty"` // string | boolean
 		} `json:"workspaceFolders,omitempty"`
 	} `json:"workspace,omitempty"`
 }

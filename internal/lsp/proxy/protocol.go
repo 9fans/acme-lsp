@@ -8,10 +8,10 @@ import (
 	"context"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/trace"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 type DocumentUri = string

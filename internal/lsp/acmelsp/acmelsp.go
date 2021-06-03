@@ -15,8 +15,8 @@ import (
 	"github.com/fhs/9fans-go/plumb"
 	"github.com/fhs/acme-lsp/internal/acme"
 	"github.com/fhs/acme-lsp/internal/acmeutil"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )

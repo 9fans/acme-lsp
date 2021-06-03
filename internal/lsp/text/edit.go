@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/span"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 // File represents an open file in text editor.

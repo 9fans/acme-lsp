@@ -14,7 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/fhs/9fans-go/plan9/client"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 )
 
 // Flags represent a set of command line flags.

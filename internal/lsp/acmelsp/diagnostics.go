@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 // diagWin implements client.DiagnosticsWriter.
