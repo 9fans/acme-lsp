@@ -144,7 +144,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 			// Workspace: ..., (struct literal)
 			TextDocument: protocol.TextDocumentClientCapabilities{
 				CodeAction: &protocol.CodeActionClientCapabilities{
-					CodeActionLiteralSupport: &protocol.CodeActionLiteralSupport{
+					CodeActionLiteralSupport: &CodeActionLiteralSupport{
 						// CodeActionKind: ..., (struct literal)
 					},
 				},
@@ -191,4 +191,12 @@ func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, 
 // ExecuteCommandOnDocument implements proxy.Server.
 func (s *Client) ExecuteCommandOnDocument(ctx context.Context, params *proxy.ExecuteCommandOnDocumentParams) (interface{}, error) {
 	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+}
+
+// CodeActionLiteralSupport is a type alias that works around difficulty in initializing the pointer
+// InitializeParams.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.
+type CodeActionLiteralSupport = struct {
+	CodeActionKind struct {
+		ValueSet []protocol.CodeActionKind `json:"valueSet"`
+	} `json:"codeActionKind"`
 }

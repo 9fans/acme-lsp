@@ -15,13 +15,8 @@ func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.Co
 	switch ap := cap.CodeActionProvider.(type) {
 	case bool:
 		return ap
-	case map[string]interface{}:
-		opt, err := protocol.ToCodeActionOptions(ap)
-		if err != nil {
-			log.Printf("failed to decode CodeActionOptions: %v", err)
-			return false
-		}
-		for _, k := range opt.CodeActionKinds {
+	case protocol.CodeActionOptions:
+		for _, k := range ap.CodeActionKinds {
 			if k == kind {
 				return true
 			}
@@ -37,16 +32,11 @@ func CompatibleCodeActions(cap *protocol.ServerCapabilities, kinds []protocol.Co
 			return kinds
 		}
 		return nil
-	case map[string]interface{}:
-		opt, err := protocol.ToCodeActionOptions(ap)
-		if err != nil {
-			log.Printf("failed to decode CodeActionOptions: %v", err)
-			return nil
-		}
+	case protocol.CodeActionOptions:
 		var compat []protocol.CodeActionKind
 		for _, k := range kinds {
 			found := false
-			for _, kk := range opt.CodeActionKinds {
+			for _, kk := range ap.CodeActionKinds {
 				if k == kk {
 					found = true
 					break

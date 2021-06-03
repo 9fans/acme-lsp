@@ -3,7 +3,7 @@ package lsp
 import (
 	"testing"
 
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -28,8 +28,8 @@ func TestCompatibleCodeActions(t *testing.T) {
 		{
 			"AllFound",
 			protocol.ServerCapabilities{
-				CodeActionProvider: map[string]interface{}{
-					"CodeActionKinds": []protocol.CodeActionKind{
+				CodeActionProvider: protocol.CodeActionOptions{
+					CodeActionKinds: []protocol.CodeActionKind{
 						protocol.QuickFix,
 						protocol.SourceOrganizeImports,
 					},
@@ -41,32 +41,9 @@ func TestCompatibleCodeActions(t *testing.T) {
 		{
 			"NoneFound",
 			protocol.ServerCapabilities{
-				CodeActionProvider: map[string]interface{}{
-					"CodeActionKinds": []protocol.CodeActionKind{
-						protocol.QuickFix,
-					},
-				},
-			},
-			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
-			nil,
-		},
-		{
-			"DecodeError",
-			protocol.ServerCapabilities{
-				CodeActionProvider: map[string]interface{}{
-					"CodeActionKinds": []int{0},
-				},
-			},
-			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
-			nil,
-		},
-		{
-			"BadType",
-			protocol.ServerCapabilities{
 				CodeActionProvider: protocol.CodeActionOptions{
 					CodeActionKinds: []protocol.CodeActionKind{
 						protocol.QuickFix,
-						protocol.SourceOrganizeImports,
 					},
 				},
 			},

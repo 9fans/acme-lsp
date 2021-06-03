@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
 
