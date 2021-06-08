@@ -1,5 +1,10 @@
 package protocol
 
+// Package protocol contains data types and code for LSP jsonrpcs
+// generated automatically from vscode-languageserver-node
+// commit: 7b90c29d0cb5cd7b9c41084f6cb3781a955adeba
+// last fetched Wed Feb 12 2020 17:16:47 GMT-0500 (Eastern Standard Time)
+
 // Code generated (see typescript/README.md) DO NOT EDIT.
 
 import (
@@ -13,6 +18,7 @@ import (
 
 type Server interface {
 	DidChangeWorkspaceFolders(context.Context, *DidChangeWorkspaceFoldersParams) error
+	WorkDoneProgressCancel(context.Context, *WorkDoneProgressCancelParams) error
 	Initialized(context.Context, *InitializedParams) error
 	Exit(context.Context) error
 	DidChangeConfiguration(context.Context, *DidChangeConfigurationParams) error
@@ -25,36 +31,44 @@ type Server interface {
 	Progress(context.Context, *ProgressParams) error
 	SetTraceNotification(context.Context, *SetTraceParams) error
 	LogTraceNotification(context.Context, *LogTraceParams) error
-	Implementation(context.Context, *ImplementationParams) ([]Location, error)
-	TypeDefinition(context.Context, *TypeDefinitionParams) ([]Location, error)
+	Implementation(context.Context, *ImplementationParams) (Definition /*Definition | DefinitionLink[] | null*/, error)
+	TypeDefinition(context.Context, *TypeDefinitionParams) (Definition /*Definition | DefinitionLink[] | null*/, error)
 	DocumentColor(context.Context, *DocumentColorParams) ([]ColorInformation, error)
 	ColorPresentation(context.Context, *ColorPresentationParams) ([]ColorPresentation, error)
-	FoldingRange(context.Context, *FoldingRangeParams) ([]FoldingRange, error)
-	Declaration(context.Context, *DeclarationParams) ([]DeclarationLink, error)
-	SelectionRange(context.Context, *SelectionRangeParams) ([]SelectionRange, error)
-	Initialize(context.Context, *ParamInitia) (*InitializeResult, error)
+	FoldingRange(context.Context, *FoldingRangeParams) ([]FoldingRange /*FoldingRange[] | null*/, error)
+	Declaration(context.Context, *DeclarationParams) (Declaration /*Declaration | DeclarationLink[] | null*/, error)
+	SelectionRange(context.Context, *SelectionRangeParams) ([]SelectionRange /*SelectionRange[] | null*/, error)
+	WorkDoneProgressCreate(context.Context, *WorkDoneProgressCreateParams) error
+	Initialize(context.Context, *ParamInitialize) (*InitializeResult, error)
 	Shutdown(context.Context) error
-	WillSaveWaitUntil(context.Context, *WillSaveTextDocumentParams) ([]TextEdit, error)
-	Completion(context.Context, *CompletionParams) (*CompletionList, error)
+	WillSaveWaitUntil(context.Context, *WillSaveTextDocumentParams) ([]TextEdit /*TextEdit[] | null*/, error)
+	Completion(context.Context, *CompletionParams) (*CompletionList /*CompletionItem[] | CompletionList | null*/, error)
 	Resolve(context.Context, *CompletionItem) (*CompletionItem, error)
-	Hover(context.Context, *HoverParams) (*Hover, error)
-	SignatureHelp(context.Context, *SignatureHelpParams) (*SignatureHelp, error)
-	Definition(context.Context, *DefinitionParams) ([]Location, error)
-	References(context.Context, *ReferenceParams) ([]Location, error)
-	DocumentHighlight(context.Context, *DocumentHighlightParams) ([]DocumentHighlight, error)
-	DocumentSymbol(context.Context, *DocumentSymbolParams) ([]DocumentSymbol, error)
-	CodeAction(context.Context, *CodeActionParams) ([]CodeAction, error)
-	Symbol(context.Context, *WorkspaceSymbolParams) ([]SymbolInformation, error)
-	CodeLens(context.Context, *CodeLensParams) ([]CodeLens, error)
+	Hover(context.Context, *HoverParams) (*Hover /*Hover | null*/, error)
+	SignatureHelp(context.Context, *SignatureHelpParams) (*SignatureHelp /*SignatureHelp | null*/, error)
+	Definition(context.Context, *DefinitionParams) (Definition /*Definition | DefinitionLink[] | null*/, error)
+	References(context.Context, *ReferenceParams) ([]Location /*Location[] | null*/, error)
+	DocumentHighlight(context.Context, *DocumentHighlightParams) ([]DocumentHighlight /*DocumentHighlight[] | null*/, error)
+	DocumentSymbol(context.Context, *DocumentSymbolParams) ([]DocumentSymbol /*SymbolInformation[] | DocumentSymbol[] | null*/, error)
+	CodeAction(context.Context, *CodeActionParams) ([]CodeAction /*(Command | CodeAction)[] | null*/, error)
+	Symbol(context.Context, *WorkspaceSymbolParams) ([]SymbolInformation /*SymbolInformation[] | null*/, error)
+	CodeLens(context.Context, *CodeLensParams) ([]CodeLens /*CodeLens[] | null*/, error)
 	ResolveCodeLens(context.Context, *CodeLens) (*CodeLens, error)
-	DocumentLink(context.Context, *DocumentLinkParams) ([]DocumentLink, error)
+	DocumentLink(context.Context, *DocumentLinkParams) ([]DocumentLink /*DocumentLink[] | null*/, error)
 	ResolveDocumentLink(context.Context, *DocumentLink) (*DocumentLink, error)
-	Formatting(context.Context, *DocumentFormattingParams) ([]TextEdit, error)
-	RangeFormatting(context.Context, *DocumentRangeFormattingParams) ([]TextEdit, error)
-	OnTypeFormatting(context.Context, *DocumentOnTypeFormattingParams) ([]TextEdit, error)
-	Rename(context.Context, *RenameParams) (*WorkspaceEdit, error)
-	PrepareRename(context.Context, *PrepareRenameParams) (*Range, error)
-	ExecuteCommand(context.Context, *ExecuteCommandParams) (interface{}, error)
+	Formatting(context.Context, *DocumentFormattingParams) ([]TextEdit /*TextEdit[] | null*/, error)
+	RangeFormatting(context.Context, *DocumentRangeFormattingParams) ([]TextEdit /*TextEdit[] | null*/, error)
+	OnTypeFormatting(context.Context, *DocumentOnTypeFormattingParams) ([]TextEdit /*TextEdit[] | null*/, error)
+	Rename(context.Context, *RenameParams) (*WorkspaceEdit /*WorkspaceEdit | null*/, error)
+	PrepareRename(context.Context, *PrepareRenameParams) (*Range /*Range | { range: Range, placeholder: string } | null*/, error)
+	ExecuteCommand(context.Context, *ExecuteCommandParams) (interface{} /*any | null*/, error)
+	PrepareCallHierarchy(context.Context, *CallHierarchyPrepareParams) ([]CallHierarchyItem /*CallHierarchyItem[] | null*/, error)
+	IncomingCalls(context.Context, *CallHierarchyIncomingCallsParams) ([]CallHierarchyIncomingCall /*CallHierarchyIncomingCall[] | null*/, error)
+	OutgoingCalls(context.Context, *CallHierarchyOutgoingCallsParams) ([]CallHierarchyOutgoingCall /*CallHierarchyOutgoingCall[] | null*/, error)
+	SemanticTokens(context.Context, *SemanticTokensParams) (*SemanticTokens /*SemanticTokens | null*/, error)
+	SemanticTokensEdits(context.Context, *SemanticTokensEditsParams) (interface{} /* SemanticTokens | SemanticTokensEdits | nil*/, error)
+	SemanticTokensRange(context.Context, *SemanticTokensRangeParams) (*SemanticTokens /*SemanticTokens | null*/, error)
+	NonstandardRequest(ctx context.Context, method string, params interface{}) (interface{}, error)
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -74,6 +88,16 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 		if err := h.server.DidChangeWorkspaceFolders(ctx, &params); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "window/workDoneProgress/cancel": // notif
+		var params WorkDoneProgressCancelParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		if err := h.server.WorkDoneProgressCancel(ctx, &params); err != nil {
 			log.Error(ctx, "", err)
 		}
 		return true
@@ -269,8 +293,19 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			log.Error(ctx, "", err)
 		}
 		return true
+	case "window/workDoneProgress/create": // req
+		var params WorkDoneProgressCreateParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		err := h.server.WorkDoneProgressCreate(ctx, &params)
+		if err := r.Reply(ctx, nil, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
 	case "initialize": // req
-		var params ParamInitia
+		var params ParamInitialize
 		if err := json.Unmarshal(*r.Params, &params); err != nil {
 			sendParseError(ctx, r, err)
 			return true
@@ -521,9 +556,84 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			log.Error(ctx, "", err)
 		}
 		return true
-
+	case "textDocument/prepareCallHierarchy": // req
+		var params CallHierarchyPrepareParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.PrepareCallHierarchy(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "callHierarchy/incomingCalls": // req
+		var params CallHierarchyIncomingCallsParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.IncomingCalls(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "callHierarchy/outgoingCalls": // req
+		var params CallHierarchyOutgoingCallsParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.OutgoingCalls(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "textDocument/semanticTokens": // req
+		var params SemanticTokensParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.SemanticTokens(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "textDocument/semanticTokens/edits": // req
+		var params SemanticTokensEditsParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.SemanticTokensEdits(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "textDocument/semanticTokens/range": // req
+		var params SemanticTokensRangeParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.SemanticTokensRange(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
 	default:
-		return false
+		var params interface{}
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.server.NonstandardRequest(ctx, r.Method, params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+
 	}
 }
 
@@ -533,6 +643,10 @@ type serverDispatcher struct {
 
 func (s *serverDispatcher) DidChangeWorkspaceFolders(ctx context.Context, params *DidChangeWorkspaceFoldersParams) error {
 	return s.Conn.Notify(ctx, "workspace/didChangeWorkspaceFolders", params)
+}
+
+func (s *serverDispatcher) WorkDoneProgressCancel(ctx context.Context, params *WorkDoneProgressCancelParams) error {
+	return s.Conn.Notify(ctx, "window/workDoneProgress/cancel", params)
 }
 
 func (s *serverDispatcher) Initialized(ctx context.Context, params *InitializedParams) error {
@@ -582,16 +696,16 @@ func (s *serverDispatcher) SetTraceNotification(ctx context.Context, params *Set
 func (s *serverDispatcher) LogTraceNotification(ctx context.Context, params *LogTraceParams) error {
 	return s.Conn.Notify(ctx, "$/logTraceNotification", params)
 }
-func (s *serverDispatcher) Implementation(ctx context.Context, params *ImplementationParams) ([]Location, error) {
-	var result []Location
+func (s *serverDispatcher) Implementation(ctx context.Context, params *ImplementationParams) (Definition /*Definition | DefinitionLink[] | null*/, error) {
+	var result Definition /*Definition | DefinitionLink[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/implementation", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) TypeDefinition(ctx context.Context, params *TypeDefinitionParams) ([]Location, error) {
-	var result []Location
+func (s *serverDispatcher) TypeDefinition(ctx context.Context, params *TypeDefinitionParams) (Definition /*Definition | DefinitionLink[] | null*/, error) {
+	var result Definition /*Definition | DefinitionLink[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/typeDefinition", params, &result); err != nil {
 		return nil, err
 	}
@@ -614,31 +728,35 @@ func (s *serverDispatcher) ColorPresentation(ctx context.Context, params *ColorP
 	return result, nil
 }
 
-func (s *serverDispatcher) FoldingRange(ctx context.Context, params *FoldingRangeParams) ([]FoldingRange, error) {
-	var result []FoldingRange
+func (s *serverDispatcher) FoldingRange(ctx context.Context, params *FoldingRangeParams) ([]FoldingRange /*FoldingRange[] | null*/, error) {
+	var result []FoldingRange /*FoldingRange[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/foldingRange", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) Declaration(ctx context.Context, params *DeclarationParams) ([]DeclarationLink, error) {
-	var result []DeclarationLink
+func (s *serverDispatcher) Declaration(ctx context.Context, params *DeclarationParams) (Declaration /*Declaration | DeclarationLink[] | null*/, error) {
+	var result Declaration /*Declaration | DeclarationLink[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/declaration", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) SelectionRange(ctx context.Context, params *SelectionRangeParams) ([]SelectionRange, error) {
-	var result []SelectionRange
+func (s *serverDispatcher) SelectionRange(ctx context.Context, params *SelectionRangeParams) ([]SelectionRange /*SelectionRange[] | null*/, error) {
+	var result []SelectionRange /*SelectionRange[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/selectionRange", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) Initialize(ctx context.Context, params *ParamInitia) (*InitializeResult, error) {
+func (s *serverDispatcher) WorkDoneProgressCreate(ctx context.Context, params *WorkDoneProgressCreateParams) error {
+	return s.Conn.Call(ctx, "window/workDoneProgress/create", params, nil) // Call, not Notify
+}
+
+func (s *serverDispatcher) Initialize(ctx context.Context, params *ParamInitialize) (*InitializeResult, error) {
 	var result InitializeResult
 	if err := s.Conn.Call(ctx, "initialize", params, &result); err != nil {
 		return nil, err
@@ -650,16 +768,16 @@ func (s *serverDispatcher) Shutdown(ctx context.Context) error {
 	return s.Conn.Call(ctx, "shutdown", nil, nil)
 }
 
-func (s *serverDispatcher) WillSaveWaitUntil(ctx context.Context, params *WillSaveTextDocumentParams) ([]TextEdit, error) {
-	var result []TextEdit
+func (s *serverDispatcher) WillSaveWaitUntil(ctx context.Context, params *WillSaveTextDocumentParams) ([]TextEdit /*TextEdit[] | null*/, error) {
+	var result []TextEdit /*TextEdit[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/willSaveWaitUntil", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) Completion(ctx context.Context, params *CompletionParams) (*CompletionList, error) {
-	var result CompletionList
+func (s *serverDispatcher) Completion(ctx context.Context, params *CompletionParams) (*CompletionList /*CompletionItem[] | CompletionList | null*/, error) {
+	var result CompletionList /*CompletionItem[] | CompletionList | null*/
 	if err := s.Conn.Call(ctx, "textDocument/completion", params, &result); err != nil {
 		return nil, err
 	}
@@ -674,72 +792,72 @@ func (s *serverDispatcher) Resolve(ctx context.Context, params *CompletionItem) 
 	return &result, nil
 }
 
-func (s *serverDispatcher) Hover(ctx context.Context, params *HoverParams) (*Hover, error) {
-	var result Hover
+func (s *serverDispatcher) Hover(ctx context.Context, params *HoverParams) (*Hover /*Hover | null*/, error) {
+	var result Hover /*Hover | null*/
 	if err := s.Conn.Call(ctx, "textDocument/hover", params, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureHelpParams) (*SignatureHelp, error) {
-	var result SignatureHelp
+func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureHelpParams) (*SignatureHelp /*SignatureHelp | null*/, error) {
+	var result SignatureHelp /*SignatureHelp | null*/
 	if err := s.Conn.Call(ctx, "textDocument/signatureHelp", params, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (s *serverDispatcher) Definition(ctx context.Context, params *DefinitionParams) ([]Location, error) {
-	var result []Location
+func (s *serverDispatcher) Definition(ctx context.Context, params *DefinitionParams) (Definition /*Definition | DefinitionLink[] | null*/, error) {
+	var result Definition /*Definition | DefinitionLink[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) References(ctx context.Context, params *ReferenceParams) ([]Location, error) {
-	var result []Location
+func (s *serverDispatcher) References(ctx context.Context, params *ReferenceParams) ([]Location /*Location[] | null*/, error) {
+	var result []Location /*Location[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/references", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) DocumentHighlight(ctx context.Context, params *DocumentHighlightParams) ([]DocumentHighlight, error) {
-	var result []DocumentHighlight
+func (s *serverDispatcher) DocumentHighlight(ctx context.Context, params *DocumentHighlightParams) ([]DocumentHighlight /*DocumentHighlight[] | null*/, error) {
+	var result []DocumentHighlight /*DocumentHighlight[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/documentHighlight", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) DocumentSymbol(ctx context.Context, params *DocumentSymbolParams) ([]DocumentSymbol, error) {
-	var result []DocumentSymbol
+func (s *serverDispatcher) DocumentSymbol(ctx context.Context, params *DocumentSymbolParams) ([]DocumentSymbol /*SymbolInformation[] | DocumentSymbol[] | null*/, error) {
+	var result []DocumentSymbol /*SymbolInformation[] | DocumentSymbol[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/documentSymbol", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) CodeAction(ctx context.Context, params *CodeActionParams) ([]CodeAction, error) {
-	var result []CodeAction
+func (s *serverDispatcher) CodeAction(ctx context.Context, params *CodeActionParams) ([]CodeAction /*(Command | CodeAction)[] | null*/, error) {
+	var result []CodeAction /*(Command | CodeAction)[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/codeAction", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) Symbol(ctx context.Context, params *WorkspaceSymbolParams) ([]SymbolInformation, error) {
-	var result []SymbolInformation
+func (s *serverDispatcher) Symbol(ctx context.Context, params *WorkspaceSymbolParams) ([]SymbolInformation /*SymbolInformation[] | null*/, error) {
+	var result []SymbolInformation /*SymbolInformation[] | null*/
 	if err := s.Conn.Call(ctx, "workspace/symbol", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) CodeLens(ctx context.Context, params *CodeLensParams) ([]CodeLens, error) {
-	var result []CodeLens
+func (s *serverDispatcher) CodeLens(ctx context.Context, params *CodeLensParams) ([]CodeLens /*CodeLens[] | null*/, error) {
+	var result []CodeLens /*CodeLens[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/codeLens", params, &result); err != nil {
 		return nil, err
 	}
@@ -754,8 +872,8 @@ func (s *serverDispatcher) ResolveCodeLens(ctx context.Context, params *CodeLens
 	return &result, nil
 }
 
-func (s *serverDispatcher) DocumentLink(ctx context.Context, params *DocumentLinkParams) ([]DocumentLink, error) {
-	var result []DocumentLink
+func (s *serverDispatcher) DocumentLink(ctx context.Context, params *DocumentLinkParams) ([]DocumentLink /*DocumentLink[] | null*/, error) {
+	var result []DocumentLink /*DocumentLink[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/documentLink", params, &result); err != nil {
 		return nil, err
 	}
@@ -770,63 +888,106 @@ func (s *serverDispatcher) ResolveDocumentLink(ctx context.Context, params *Docu
 	return &result, nil
 }
 
-func (s *serverDispatcher) Formatting(ctx context.Context, params *DocumentFormattingParams) ([]TextEdit, error) {
-	var result []TextEdit
+func (s *serverDispatcher) Formatting(ctx context.Context, params *DocumentFormattingParams) ([]TextEdit /*TextEdit[] | null*/, error) {
+	var result []TextEdit /*TextEdit[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/formatting", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) RangeFormatting(ctx context.Context, params *DocumentRangeFormattingParams) ([]TextEdit, error) {
-	var result []TextEdit
+func (s *serverDispatcher) RangeFormatting(ctx context.Context, params *DocumentRangeFormattingParams) ([]TextEdit /*TextEdit[] | null*/, error) {
+	var result []TextEdit /*TextEdit[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/rangeFormatting", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) OnTypeFormatting(ctx context.Context, params *DocumentOnTypeFormattingParams) ([]TextEdit, error) {
-	var result []TextEdit
+func (s *serverDispatcher) OnTypeFormatting(ctx context.Context, params *DocumentOnTypeFormattingParams) ([]TextEdit /*TextEdit[] | null*/, error) {
+	var result []TextEdit /*TextEdit[] | null*/
 	if err := s.Conn.Call(ctx, "textDocument/onTypeFormatting", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *serverDispatcher) Rename(ctx context.Context, params *RenameParams) (*WorkspaceEdit, error) {
-	var result WorkspaceEdit
+func (s *serverDispatcher) Rename(ctx context.Context, params *RenameParams) (*WorkspaceEdit /*WorkspaceEdit | null*/, error) {
+	var result WorkspaceEdit /*WorkspaceEdit | null*/
 	if err := s.Conn.Call(ctx, "textDocument/rename", params, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (s *serverDispatcher) PrepareRename(ctx context.Context, params *PrepareRenameParams) (*Range, error) {
-	var result Range
+func (s *serverDispatcher) PrepareRename(ctx context.Context, params *PrepareRenameParams) (*Range /*Range | { range: Range, placeholder: string } | null*/, error) {
+	var result Range /*Range | { range: Range, placeholder: string } | null*/
 	if err := s.Conn.Call(ctx, "textDocument/prepareRename", params, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (s *serverDispatcher) ExecuteCommand(ctx context.Context, params *ExecuteCommandParams) (interface{}, error) {
-	var result interface{}
+func (s *serverDispatcher) ExecuteCommand(ctx context.Context, params *ExecuteCommandParams) (interface{} /*any | null*/, error) {
+	var result interface{} /*any | null*/
 	if err := s.Conn.Call(ctx, "workspace/executeCommand", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-type CancelParams struct {
-	/**
-	 * The request id to cancel.
-	 */
-	ID jsonrpc2.ID `json:"id"`
+func (s *serverDispatcher) PrepareCallHierarchy(ctx context.Context, params *CallHierarchyPrepareParams) ([]CallHierarchyItem /*CallHierarchyItem[] | null*/, error) {
+	var result []CallHierarchyItem /*CallHierarchyItem[] | null*/
+	if err := s.Conn.Call(ctx, "textDocument/prepareCallHierarchy", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
-// Types constructed to avoid structs as formal argument types
-type ParamInitia struct {
-	InitializeParams
-	WorkDoneProgressParams
+func (s *serverDispatcher) IncomingCalls(ctx context.Context, params *CallHierarchyIncomingCallsParams) ([]CallHierarchyIncomingCall /*CallHierarchyIncomingCall[] | null*/, error) {
+	var result []CallHierarchyIncomingCall /*CallHierarchyIncomingCall[] | null*/
+	if err := s.Conn.Call(ctx, "callHierarchy/incomingCalls", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *serverDispatcher) OutgoingCalls(ctx context.Context, params *CallHierarchyOutgoingCallsParams) ([]CallHierarchyOutgoingCall /*CallHierarchyOutgoingCall[] | null*/, error) {
+	var result []CallHierarchyOutgoingCall /*CallHierarchyOutgoingCall[] | null*/
+	if err := s.Conn.Call(ctx, "callHierarchy/outgoingCalls", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *serverDispatcher) SemanticTokens(ctx context.Context, params *SemanticTokensParams) (*SemanticTokens /*SemanticTokens | null*/, error) {
+	var result SemanticTokens /*SemanticTokens | null*/
+	if err := s.Conn.Call(ctx, "textDocument/semanticTokens", params, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (s *serverDispatcher) SemanticTokensEdits(ctx context.Context, params *SemanticTokensEditsParams) (interface{} /* SemanticTokens | SemanticTokensEdits | nil*/, error) {
+	var result interface{} /* SemanticTokens | SemanticTokensEdits | nil*/
+	if err := s.Conn.Call(ctx, "textDocument/semanticTokens/edits", params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *serverDispatcher) SemanticTokensRange(ctx context.Context, params *SemanticTokensRangeParams) (*SemanticTokens /*SemanticTokens | null*/, error) {
+	var result SemanticTokens /*SemanticTokens | null*/
+	if err := s.Conn.Call(ctx, "textDocument/semanticTokens/range", params, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (s *serverDispatcher) NonstandardRequest(ctx context.Context, method string, params interface{}) (interface{}, error) {
+	var result interface{}
+	if err := s.Conn.Call(ctx, method, params, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }

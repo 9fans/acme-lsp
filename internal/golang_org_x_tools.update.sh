@@ -5,8 +5,8 @@ set -ex
 DIR=golang_org_x_tools
 REPO=https://go.googlesource.com/tools
 
-# golang.org/x/tools version that gopls/v0.2.2 depends on
-COMMIT=952e2c076240
+# golang.org/x/tools version that gopls/v0.3.4 depends on
+COMMIT=fafb6e2e8a4a
 
 rm -rf $DIR
 git clone $REPO

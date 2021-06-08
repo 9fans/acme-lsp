@@ -46,9 +46,8 @@ func Discover() *Config {
 type exporter struct {
 	mu      sync.Mutex
 	config  Config
-	node    *wire.Node
-	spans   []*wire.Span
-	metrics []*wire.Metric
+	spans   []*telemetry.Span
+	metrics []telemetry.MetricData
 }
 
 // Connect creates a process specific exporter with the specified
@@ -78,23 +77,8 @@ func Connect(config *Config) export.Exporter {
 	if exporter.config.Rate == 0 {
 		exporter.config.Rate = 2 * time.Second
 	}
-	exporter.node = &wire.Node{
-		Identifier: &wire.ProcessIdentifier{
-			HostName:       exporter.config.Host,
-			Pid:            exporter.config.Process,
-			StartTimestamp: convertTimestamp(exporter.config.Start),
-		},
-		LibraryInfo: &wire.LibraryInfo{
-			Language:           wire.LanguageGo,
-			ExporterVersion:    "0.0.1",
-			CoreLibraryVersion: "x/tools",
-		},
-		ServiceInfo: &wire.ServiceInfo{
-			Name: exporter.config.Service,
-		},
-	}
 	go func() {
-		for _ = range time.Tick(exporter.config.Rate) {
+		for range time.Tick(exporter.config.Rate) {
 			exporter.Flush()
 		}
 	}()
@@ -106,7 +90,7 @@ func (e *exporter) StartSpan(ctx context.Context, span *telemetry.Span) {}
 func (e *exporter) FinishSpan(ctx context.Context, span *telemetry.Span) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.spans = append(e.spans, convertSpan(span))
+	e.spans = append(e.spans, span)
 }
 
 func (e *exporter) Log(context.Context, telemetry.Event) {}
@@ -114,30 +98,54 @@ func (e *exporter) Log(context.Context, telemetry.Event) {}
 func (e *exporter) Metric(ctx context.Context, data telemetry.MetricData) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.metrics = append(e.metrics, convertMetric(data, e.config.Start))
+	e.metrics = append(e.metrics, data)
 }
 
 func (e *exporter) Flush() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	spans := e.spans
+	spans := make([]*wire.Span, len(e.spans))
+	for i, s := range e.spans {
+		spans[i] = convertSpan(s)
+	}
 	e.spans = nil
-	metrics := e.metrics
+	metrics := make([]*wire.Metric, len(e.metrics))
+	for i, m := range e.metrics {
+		metrics[i] = convertMetric(m, e.config.Start)
+	}
 	e.metrics = nil
 
 	if len(spans) > 0 {
 		e.send("/v1/trace", &wire.ExportTraceServiceRequest{
-			Node:  e.node,
+			Node:  e.config.buildNode(),
 			Spans: spans,
 			//TODO: Resource?
 		})
 	}
 	if len(metrics) > 0 {
 		e.send("/v1/metrics", &wire.ExportMetricsServiceRequest{
-			Node:    e.node,
+			Node:    e.config.buildNode(),
 			Metrics: metrics,
 			//TODO: Resource?
 		})
+	}
+}
+
+func (cfg *Config) buildNode() *wire.Node {
+	return &wire.Node{
+		Identifier: &wire.ProcessIdentifier{
+			HostName:       cfg.Host,
+			Pid:            cfg.Process,
+			StartTimestamp: convertTimestamp(cfg.Start),
+		},
+		LibraryInfo: &wire.LibraryInfo{
+			Language:           wire.LanguageGo,
+			ExporterVersion:    "0.0.1",
+			CoreLibraryVersion: "x/tools",
+		},
+		ServiceInfo: &wire.ServiceInfo{
+			Name: cfg.Service,
+		},
 	}
 }
 
@@ -162,7 +170,6 @@ func (e *exporter) send(endpoint string, message interface{}) {
 	if res.Body != nil {
 		res.Body.Close()
 	}
-	return
 }
 
 func errorInExport(message string, args ...interface{}) {
@@ -183,10 +190,10 @@ func toTruncatableString(s string) *wire.TruncatableString {
 
 func convertSpan(span *telemetry.Span) *wire.Span {
 	result := &wire.Span{
-		TraceId:                 span.ID.TraceID[:],
-		SpanId:                  span.ID.SpanID[:],
+		TraceID:                 span.ID.TraceID[:],
+		SpanID:                  span.ID.SpanID[:],
 		TraceState:              nil, //TODO?
-		ParentSpanId:            span.ParentID[:],
+		ParentSpanID:            span.ParentID[:],
 		Name:                    toTruncatableString(span.Name),
 		Kind:                    wire.UnspecifiedSpanKind,
 		StartTime:               convertTimestamp(span.Start),
@@ -288,7 +295,7 @@ func convertAnnotation(event telemetry.Event) *wire.Annotation {
 	}
 	tags := event.Tags
 	if event.Error != nil {
-		tags = append(tags, tag.Of("Error", event.Error))
+		tags = append(tags, tag.Of("error", event.Error))
 	}
 	if description == "" && len(tags) == 0 {
 		return nil
