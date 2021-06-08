@@ -135,7 +135,7 @@ func DirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {
 			return nil, err
 		}
 		workspaces = append(workspaces, protocol.WorkspaceFolder{
-			URI:  text.ToURI(d),
+			URI:  string(text.ToURI(d)),
 			Name: d,
 		})
 	}

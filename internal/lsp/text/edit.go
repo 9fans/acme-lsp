@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/span"
 )
 
 // File represents an open file in text editor.
@@ -104,10 +103,10 @@ func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, file
 
 // ToURI converts filename to URI.
 func ToURI(filename string) protocol.DocumentURI {
-	return protocol.DocumentURI(span.NewURI(filename))
+	return protocol.URIFromPath(filename)
 }
 
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
-	return span.NewURI(uri).Filename()
+	return uri.SpanURI().Filename()
 }

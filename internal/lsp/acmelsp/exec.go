@@ -165,7 +165,7 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 		}
 		for i := range folders {
 			d := &folders[i]
-			workspaces[d.URI] = d
+			workspaces[protocol.DocumentURI(d.URI)] = d
 		}
 	}
 
@@ -304,10 +304,10 @@ func (ss *ServerSet) DidChangeWorkspaceFolders(ctx context.Context, added, remov
 	}
 	for i := range added {
 		d := &added[i]
-		ss.workspaces[d.URI] = d
+		ss.workspaces[protocol.DocumentURI(d.URI)] = d
 	}
 	for _, d := range removed {
-		delete(ss.workspaces, d.URI)
+		delete(ss.workspaces, protocol.DocumentURI(d.URI))
 	}
 	return nil
 }

@@ -18,6 +18,9 @@ type clientDispatcher struct {
 	protocol.Client
 }
 
+var _ Client = (*lspClientDispatcher)(nil)
+var _ protocol.Client = (*lspClientDispatcher)(nil)
+
 type lspClientDispatcher struct {
 	Client
 }
@@ -45,7 +48,7 @@ func (c *lspClientDispatcher) WorkspaceFolders(context.Context) ([]protocol.Work
 	return nil, fmt.Errorf("WorkspaceFolders not implemented")
 }
 
-func (c *lspClientDispatcher) Configuration(context.Context, *protocol.ParamConfig) ([]interface{}, error) {
+func (c *lspClientDispatcher) Configuration(context.Context, *protocol.ParamConfiguration) ([]interface{}, error) {
 	return nil, fmt.Errorf("Configuration not implemented")
 }
 

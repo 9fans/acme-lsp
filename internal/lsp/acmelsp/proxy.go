@@ -158,23 +158,10 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 	if err != nil {
 		return err
 	}
-	// The context doesn't affect Accept below,
-	// so roll our own cancellation/timeout.
-	// See https://github.com/golang/go/issues/28120#issuecomment-428978461
-	go func() {
-		<-ctx.Done()
-		ln.Close()
-	}()
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			return err
-		}
-		stream := jsonrpc2.NewHeaderStream(conn, conn)
-		ctx, rpc, _ := proxy.NewServer(ctx, stream, &proxyServer{
-			ss: ss,
-			fm: fm,
-		})
-		go rpc.Run(ctx)
+	defer ln.Close()
+	server := &proxyServer{
+		ss: ss,
+		fm: fm,
 	}
+	return jsonrpc2.Serve(ctx, ln, proxy.NewStreamServer(server), 0)
 }

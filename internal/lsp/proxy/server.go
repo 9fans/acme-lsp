@@ -156,6 +156,9 @@ type Message struct {
 	Attr map[string]string
 }
 
+var _ Server = (*lspServerDispatcher)(nil)
+var _ protocol.Server = (*lspServerDispatcher)(nil)
+
 type lspServerDispatcher struct {
 	Server
 }
@@ -216,7 +219,7 @@ func (s *lspServerDispatcher) FoldingRange(context.Context, *protocol.FoldingRan
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *lspServerDispatcher) Declaration(context.Context, *protocol.DeclarationParams) ([]protocol.DeclarationLink, error) {
+func (s *lspServerDispatcher) Declaration(context.Context, *protocol.DeclarationParams) ([]protocol.Location, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -224,7 +227,7 @@ func (s *lspServerDispatcher) SelectionRange(context.Context, *protocol.Selectio
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *lspServerDispatcher) Initialize(context.Context, *protocol.ParamInitia) (*protocol.InitializeResult, error) {
+func (s *lspServerDispatcher) Initialize(context.Context, *protocol.ParamInitialize) (*protocol.InitializeResult, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -278,4 +281,40 @@ func (s *lspServerDispatcher) ResolveDocumentLink(context.Context, *protocol.Doc
 
 func (s *lspServerDispatcher) ExecuteCommand(context.Context, *protocol.ExecuteCommandParams) (interface{}, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) IncomingCalls(ctx context.Context, params *protocol.CallHierarchyIncomingCallsParams) ([]protocol.CallHierarchyIncomingCall, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) OutgoingCalls(ctx context.Context, params *protocol.CallHierarchyOutgoingCallsParams) ([]protocol.CallHierarchyOutgoingCall, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) PrepareCallHierarchy(ctx context.Context, params *protocol.CallHierarchyPrepareParams) ([]protocol.CallHierarchyItem, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) NonstandardRequest(ctx context.Context, method string, params interface{}) (interface{}, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) SemanticTokens(ctx context.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) SemanticTokensEdits(ctx context.Context, params *protocol.SemanticTokensEditsParams) (interface{}, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) SemanticTokensRange(ctx context.Context, params *protocol.SemanticTokensRangeParams) (*protocol.SemanticTokens, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) WorkDoneProgressCancel(ctx context.Context, params *protocol.WorkDoneProgressCancelParams) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) WorkDoneProgressCreate(ctx context.Context, params *protocol.WorkDoneProgressCreateParams) error {
+	return fmt.Errorf("not implemented")
 }

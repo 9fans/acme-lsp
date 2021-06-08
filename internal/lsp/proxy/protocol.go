@@ -6,6 +6,7 @@ package proxy
 
 import (
 	"context"
+	"net"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
@@ -39,30 +40,49 @@ func (canceller) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID
 	return true
 }
 
-func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client) (context.Context, *jsonrpc2.Conn, Server) {
-	c := &lspClientDispatcher{
-		Client: client,
-	}
-	ctx, conn, server := protocol.NewClient(ctx, stream, c)
-	conn.AddHandler(&clientHandler{client: client})
-	s := &serverDispatcher{
+func ServerDispatcher(conn *jsonrpc2.Conn, server protocol.Server) Server {
+	return &serverDispatcher{
 		Conn:   conn,
 		Server: server,
 	}
-	return ctx, conn, s
 }
 
-func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server) (context.Context, *jsonrpc2.Conn, Client) {
-	s := &lspServerDispatcher{
-		Server: server,
-	}
-	ctx, conn, client := protocol.NewServer(ctx, stream, s)
-	conn.AddHandler(&serverHandler{server: server})
-	c := &clientDispatcher{
+func ClientDispatcher(conn *jsonrpc2.Conn, client protocol.Client) Client {
+	return &clientDispatcher{
 		Conn:   conn,
 		Client: client,
 	}
-	return ctx, conn, c
+}
+
+func NewClient(ctx context.Context, conn net.Conn, client Client) Server {
+	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	cc := jsonrpc2.NewConn(stream)
+	server := ServerDispatcher(cc, protocol.ServerDispatcher(cc))
+	cc.AddHandler(protocol.ClientHandler(&lspClientDispatcher{Client: client}))
+	cc.AddHandler(protocol.Canceller{})
+	cc.AddHandler(&clientHandler{client: client})
+	go cc.Run(ctx)
+	return server
+}
+
+type streamServer struct {
+	server Server
+}
+
+func NewStreamServer(server Server) jsonrpc2.StreamServer {
+	return &streamServer{
+		server: server,
+	}
+}
+
+func (s *streamServer) ServeStream(ctx context.Context, stream jsonrpc2.Stream) error {
+	cc := jsonrpc2.NewConn(stream)
+	// The proxy server doesn't need to make calls to the client.
+	//client := ClientDispatcher(cc, protocol.ClientDispatcher(cc))
+	cc.AddHandler(protocol.ServerHandler(&lspServerDispatcher{Server: s.server}))
+	cc.AddHandler(protocol.Canceller{})
+	cc.AddHandler(&serverHandler{server: s.server})
+	return cc.Run(ctx)
 }
 
 func sendParseError(ctx context.Context, req *jsonrpc2.Request, err error) {

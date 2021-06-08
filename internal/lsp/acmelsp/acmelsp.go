@@ -140,11 +140,9 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 			return err
 		}
 		for _, a := range actions {
-			if a.Edit != nil {
-				err := editWorkspace(a.Edit)
-				if err != nil {
-					return err
-				}
+			err := editWorkspace(&a.Edit)
+			if err != nil {
+				return err
 			}
 			if a.Command != nil {
 				_, err := server.ExecuteCommandOnDocument(ctx, &proxy.ExecuteCommandOnDocumentParams{
@@ -208,9 +206,9 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		// support it. Convert versioned edits to non-versioned.
 		changes := make(map[string][]protocol.TextEdit)
 		for _, dc := range we.DocumentChanges {
-			changes[dc.TextDocument.TextDocumentIdentifier.URI] = dc.Edits
+			changes[string(dc.TextDocument.TextDocumentIdentifier.URI)] = dc.Edits
 		}
-		we.Changes = &changes
+		we.Changes = changes
 	}
 	if we.Changes == nil {
 		return nil // no changes to apply
@@ -225,14 +223,14 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		winid[info.Name] = info.ID
 	}
 
-	for uri := range *we.Changes {
-		fname := text.ToPath(uri)
+	for uri := range we.Changes {
+		fname := text.ToPath(protocol.DocumentURI(uri))
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
-	for uri, edits := range *we.Changes {
-		fname := text.ToPath(uri)
+	for uri, edits := range we.Changes {
+		fname := text.ToPath(protocol.DocumentURI(uri))
 		id := winid[fname]
 		w, err := acmeutil.OpenWin(id)
 		if err != nil {

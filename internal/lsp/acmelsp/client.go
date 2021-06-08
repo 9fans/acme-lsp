@@ -64,7 +64,7 @@ func (h *clientHandler) WorkspaceFolders(context.Context) ([]protocol.WorkspaceF
 	return nil, nil
 }
 
-func (h *clientHandler) Configuration(context.Context, *protocol.ParamConfig) ([]interface{}, error) {
+func (h *clientHandler) Configuration(context.Context, *protocol.ParamConfiguration) ([]interface{}, error) {
 	return nil, nil
 }
 
@@ -121,55 +121,61 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if cfg.RPCTrace {
 		stream = protocol.LoggingStream(stream, os.Stderr)
 	}
-	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
+	cc := jsonrpc2.NewConn(stream)
+	server := protocol.ServerDispatcher(cc)
+	client := &clientHandler{
 		cfg:        cfg,
 		hideDiag:   cfg.HideDiag,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
-	})
-	go func() {
-		err := rpc.Run(ctx)
-		if err != nil {
-			log.Printf("connection terminated: %v", err)
-		}
-	}()
+	}
+	cc.AddHandler(protocol.ClientHandler(client))
+	cc.AddHandler(protocol.Canceller{})
+	ctx = protocol.WithClient(ctx, client)
+	go cc.Run(ctx)
 
 	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {
 		return err
 	}
-	params := &protocol.InitializeParams{
-		RootURI: text.ToURI(d),
-		Capabilities: protocol.ClientCapabilities{
-			// Workspace: ..., (struct literal)
-			TextDocument: protocol.TextDocumentClientCapabilities{
-				CodeAction: &protocol.CodeActionClientCapabilities{
-					CodeActionLiteralSupport: &CodeActionLiteralSupport{
-						// CodeActionKind: ..., (struct literal)
+	params := &protocol.ParamInitialize{
+		InitializeParams: protocol.InitializeParams{
+			InnerInitializeParams: protocol.InnerInitializeParams{
+				RootURI: text.ToURI(d),
+				Capabilities: protocol.ClientCapabilities{
+					// Workspace: ..., (struct literal)
+					TextDocument: protocol.TextDocumentClientCapabilities{
+						CodeAction: protocol.CodeActionClientCapabilities{
+							CodeActionLiteralSupport: CodeActionLiteralSupport{
+								// CodeActionKind: ..., (struct literal)
+							},
+						},
+						DocumentSymbol: protocol.DocumentSymbolClientCapabilities{
+							HierarchicalDocumentSymbolSupport: true,
+						},
 					},
 				},
-				DocumentSymbol: &protocol.DocumentSymbolClientCapabilities{
-					HierarchicalDocumentSymbolSupport: true,
-				},
+				InitializationOptions: cfg.Options,
+			},
+			WorkspaceFoldersInitializeParams: protocol.WorkspaceFoldersInitializeParams{
+				WorkspaceFolders: cfg.Workspaces,
 			},
 		},
-		WorkspaceFolders:      cfg.Workspaces,
-		InitializationOptions: cfg.Options,
 	}
 	params.Capabilities.Workspace.WorkspaceFolders = true
 	params.Capabilities.Workspace.ApplyEdit = true
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 
-	var result protocol.InitializeResult
-	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
+	result, err := server.Initialize(ctx, params)
+	if err != nil {
 		return fmt.Errorf("initialize failed: %v", err)
 	}
-	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
+	if err := server.Initialized(ctx, &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialized failed: %v", err)
 	}
 	c.Server = server
-	c.initializeResult = &result
+	c.initializeResult = result
 	return nil
 }
 

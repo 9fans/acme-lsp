@@ -13,7 +13,6 @@ import (
 	"strconv"
 
 	p9client "github.com/fhs/9fans-go/plan9/client"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
@@ -130,9 +129,7 @@ func run(cfg *config.Config, args []string) error {
 	}
 	defer conn.Close()
 
-	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
-	go rpc.Run(ctx)
+	server := proxy.NewClient(ctx, conn, nil)
 
 	ver, err := server.Version(ctx)
 	if err != nil {
