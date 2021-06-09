@@ -1,8 +1,10 @@
 // Package protocol contains data types and code for LSP jsonrpcs
 // generated automatically from vscode-languageserver-node
-// commit: 7b90c29d0cb5cd7b9c41084f6cb3781a955adeba
-// last fetched Wed Feb 12 2020 17:16:47 GMT-0500 (Eastern Standard Time)
+// commit: 1f688e2f65f3a6fc9ba395380cd7b059667a9ecf
+// last fetched Tue Jun 09 2020 11:22:02 GMT-0400 (Eastern Daylight Time)
 package protocol
+
+import "encoding/json"
 
 // Code generated (see typescript/README.md) DO NOT EDIT.
 
@@ -45,9 +47,21 @@ type ApplyWorkspaceEditResponse struct {
 }
 
 /**
+ * @since 3.16.0
+ */
+type CallHierarchyClientCapabilities struct {
+	/**
+	 * Whether implementation supports dynamic registration. If this is set to `true`
+	 * the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+	 * return value for the corresponding server capability as well.
+	 */
+	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
+}
+
+/**
  * Represents an incoming call, e.g. a caller of a method or constructor.
  *
- * @since 3.16.0 - Proposed state
+ * @since 3.16.0
  */
 type CallHierarchyIncomingCall struct {
 	/**
@@ -55,7 +69,7 @@ type CallHierarchyIncomingCall struct {
 	 */
 	From CallHierarchyItem `json:"from"`
 	/**
-	 * The range at which at which the calls appears. This is relative to the caller
+	 * The ranges at which the calls appear. This is relative to the caller
 	 * denoted by [`this.from`](#CallHierarchyIncomingCall.from).
 	 */
 	FromRanges []Range `json:"fromRanges"`
@@ -64,7 +78,7 @@ type CallHierarchyIncomingCall struct {
 /**
  * The parameter of a `callHierarchy/incomingCalls` request.
  *
- * @since 3.16.0 - Proposed state
+ * @since 3.16.0
  */
 type CallHierarchyIncomingCallsParams struct {
 	Item CallHierarchyItem `json:"item"`
@@ -76,7 +90,7 @@ type CallHierarchyIncomingCallsParams struct {
  * Represents programming constructs like functions or constructors in the context
  * of call hierarchy.
  *
- * @since 3.16.0 - Proposed state
+ * @since 3.16.0
  */
 type CallHierarchyItem struct {
 	/**
@@ -111,9 +125,18 @@ type CallHierarchyItem struct {
 }
 
 /**
+ * Call hierarchy options used during static registration.
+ *
+ * @since 3.16.0
+ */
+type CallHierarchyOptions struct {
+	WorkDoneProgressOptions
+}
+
+/**
  * Represents an outgoing call, e.g. calling a getter from a method or a method from a constructor etc.
  *
- * @since 3.16.0 - Proposed state
+ * @since 3.16.0
  */
 type CallHierarchyOutgoingCall struct {
 	/**
@@ -131,7 +154,7 @@ type CallHierarchyOutgoingCall struct {
 /**
  * The parameter of a `callHierarchy/outgoingCalls` request.
  *
- * @since 3.16.0 - Proposed state
+ * @since 3.16.0
  */
 type CallHierarchyOutgoingCallsParams struct {
 	Item CallHierarchyItem `json:"item"`
@@ -142,11 +165,22 @@ type CallHierarchyOutgoingCallsParams struct {
 /**
  * The parameter of a `textDocument/prepareCallHierarchy` request.
  *
- * @since 3.16.0 - Proposed state
+ * @since 3.16.0
  */
 type CallHierarchyPrepareParams struct {
 	TextDocumentPositionParams
 	WorkDoneProgressParams
+}
+
+/**
+ * Call hierarchy options used during static or dynamic registration.
+ *
+ * @since 3.16.0
+ */
+type CallHierarchyRegistrationOptions struct {
+	TextDocumentRegistrationOptions
+	CallHierarchyOptions
+	StaticRegistrationOptions
 }
 
 type CancelParams struct {
@@ -164,10 +198,14 @@ type ClientCapabilities = struct {
 		WorkspaceClientCapabilities
 		/**
 		 * The client has support for workspace folders
+		 *
+		 * @since 3.6.0
 		 */
 		WorkspaceFolders bool `json:"workspaceFolders,omitempty"`
 		/**
-		* The client supports `workspace/configuration` requests.
+		 * The client supports `workspace/configuration` requests.
+		 *
+		 * @since 3.6.0
 		 */
 		Configuration bool `json:"configuration,omitempty"`
 	}
@@ -246,8 +284,9 @@ type CodeActionClientCapabilities struct {
 	 */
 	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
 	/**
-	 * The client support code action literals as a valid
-	 * response of the `textDocument/codeAction` request.
+	 * The client support code action literals of type `CodeAction` as a valid
+	 * response of the `textDocument/codeAction` request. If the property is not
+	 * set the request can only return `Command` literals.
 	 *
 	 * @since 3.8.0
 	 */
@@ -486,7 +525,7 @@ type Command struct {
 	 * Arguments that the command handler should be
 	 * invoked with.
 	 */
-	Arguments []interface{} `json:"arguments,omitempty"`
+	Arguments []json.RawMessage `json:"arguments,omitempty"`
 }
 
 /**
@@ -542,6 +581,13 @@ type CompletionClientCapabilities struct {
 			 */
 			ValueSet []CompletionItemTag `json:"valueSet"`
 		} `json:"tagSupport,omitempty"`
+		/**
+		 * Client support insert replace edit to control different behavior if a
+		 * completion item is inserted in the text or should replace text.
+		 *
+		 * @since 3.16.0 - Proposed state
+		 */
+		InsertReplaceSupport bool `json:"insertReplaceSupport,omitempty"`
 	} `json:"completionItem,omitempty"`
 	CompletionItemKind struct {
 		/**
@@ -658,10 +704,20 @@ type CompletionItem struct {
 	 * this completion. When an edit is provided the value of
 	 * [insertText](#CompletionItem.insertText) is ignored.
 	 *
-	 * *Note:* The text edit's range must be a [single line] and it must contain the position
-	 * at which completion has been requested.
+	 * Most editors support two different operation when accepting a completion item. One is to insert a
+	 * completion text and the other is to replace an existing text with a competion text. Since this can
+	 * usually not predetermend by a server it can report both ranges. Clients need to signal support for
+	 * `InsertReplaceEdits` via the `textDocument.completion.insertReplaceSupport` client capability
+	 * property.
+	 *
+	 * *Note 1:* The text edit's range as well as both ranges from a insert replace edit must be a
+	 * [single line] and they must contain the position at which completion has been requested.
+	 * *Note 2:* If an `InsertReplaceEdit` is returned the edit's insert range must be a prefix of
+	 * the edit's replace range, that means it must be contained and starting at the same position.
+	 *
+	 * @since 3.16.0 additional type `InsertReplaceEdit` - Proposed state
 	 */
-	TextEdit *TextEdit `json:"textEdit,omitempty"`
+	TextEdit *TextEdit/*TextEdit | InsertReplaceEdit*/ `json:"textEdit,omitempty"`
 	/**
 	 * An optional array of additional [text edits](#TextEdit) that are applied when
 	 * selecting this completion. Edits must not overlap (including the same insert position)
@@ -978,8 +1034,10 @@ type Diagnostic struct {
 	Severity DiagnosticSeverity `json:"severity,omitempty"`
 	/**
 	 * The diagnostic's code, which usually appear in the user interface.
+	 *
+	 * @since 3.16.0 Support for `DiagnosticCode` - Proposed state
 	 */
-	Code interface{}/*number | string*/ `json:"code,omitempty"`
+	Code interface{}/* float64 | string | DiagnosticCode*/ `json:"code,omitempty"`
 	/**
 	 * A human-readable string describing the source of this
 	 * diagnostic, e.g. 'typescript' or 'super lint'. It usually
@@ -992,6 +1050,8 @@ type Diagnostic struct {
 	Message string `json:"message"`
 	/**
 	 * Additional metadata about the diagnostic.
+	 *
+	 * @since 3.15.0
 	 */
 	Tags []DiagnosticTag `json:"tags,omitempty"`
 	/**
@@ -999,6 +1059,22 @@ type Diagnostic struct {
 	 * a scope collide all definitions can be marked via this property.
 	 */
 	RelatedInformation []DiagnosticRelatedInformation `json:"relatedInformation,omitempty"`
+}
+
+/**
+ * Structure to capture more complex diagnostic codes.
+ *
+ * @since 3.16.0 - Proposed state
+ */
+type DiagnosticCode struct {
+	/**
+	 * The actual code
+	 */
+	Value string/*string | number*/ `json:"value"`
+	/**
+	 * A target URI to open with more information about the diagnostic error.
+	 */
+	Target URI `json:"target"`
 }
 
 /**
@@ -1460,7 +1536,15 @@ type DocumentSymbol struct {
 	 */
 	Kind SymbolKind `json:"kind"`
 	/**
+	 * Tags for this completion item.
+	 *
+	 * @since 3.16.0 - Proposed state
+	 */
+	Tags []SymbolTag `json:"tags,omitempty"`
+	/**
 	 * Indicates if this symbol is deprecated.
+	 *
+	 * @deprecated Use tags instead
 	 */
 	Deprecated bool `json:"deprecated,omitempty"`
 	/**
@@ -1508,6 +1592,19 @@ type DocumentSymbolClientCapabilities struct {
 	 * The client support hierarchical document symbols.
 	 */
 	HierarchicalDocumentSymbolSupport bool `json:"hierarchicalDocumentSymbolSupport,omitempty"`
+	/**
+	 * The client supports tags on `SymbolInformation`. Tags are supported on
+	 * `DocumentSymbol` if `hierarchicalDocumentSymbolSupport` is set tot true.
+	 * Clients supporting tags have to handle unknown tags gracefully.
+	 *
+	 * @since 3.16.0 - Proposed state
+	 */
+	TagSupport struct {
+		/**
+		 * The tags supported by the client.
+		 */
+		ValueSet []SymbolTag `json:"valueSet"`
+	} `json:"tagSupport,omitempty"`
 }
 
 /**
@@ -1530,7 +1627,7 @@ type DocumentSymbolParams struct {
 }
 
 /**
- * A tagging type for string properties that are actually URIs.
+ * A tagging type for string properties that are actually document URIs.
  */
 type DocumentURI string
 
@@ -1566,7 +1663,7 @@ type ExecuteCommandParams struct {
 	/**
 	 * Arguments that the command should be invoked with.
 	 */
-	Arguments []interface{} `json:"arguments,omitempty"`
+	Arguments []json.RawMessage `json:"arguments,omitempty"`
 	WorkDoneProgressParams
 }
 
@@ -2008,9 +2105,33 @@ type InnerServerCapabilities struct {
 	 */
 	ExecuteCommandProvider ExecuteCommandOptions `json:"executeCommandProvider,omitempty"`
 	/**
+	 * The server provides Call Hierarchy support.
+	 */
+	CallHierarchyProvider interface{}/* bool | CallHierarchyOptions | CallHierarchyRegistrationOptions*/ `json:"callHierarchyProvider,omitempty"`
+	/**
 	 * Experimental server capabilities.
 	 */
 	Experimental interface{} `json:"experimental,omitempty"`
+}
+
+/**
+ * A special text edit to provide an insert and a replace operation.
+ *
+ * @since 3.16.0 - Proposed state
+ */
+type InsertReplaceEdit struct {
+	/**
+	 * The string to be inserted.
+	 */
+	NewText string `json:"newText"`
+	/**
+	 * The range if the insert is requested
+	 */
+	Insert Range `json:"insert"`
+	/**
+	 * The range if the replace is requested.
+	 */
+	Replace Range `json:"replace"`
 }
 
 /**
@@ -2253,6 +2374,12 @@ type PublishDiagnosticsClientCapabilities struct {
 	 * @since 3.15.0
 	 */
 	VersionSupport bool `json:"versionSupport,omitempty"`
+	/**
+	 * Clients support complex diagnostic codes (e.g. code and target URI).
+	 *
+	 * @since 3.16.0 - Proposed state
+	 */
+	ComplexDiagnosticCodeSupport bool `json:"complexDiagnosticCodeSupport,omitempty"`
 }
 
 /**
@@ -2518,7 +2645,7 @@ type SemanticTokens struct {
 	/**
 	 * An optional result id. If provided and clients support delta updating
 	 * the client will include the result id in the next semantic token request.
-	 * A server can then instead of computing all sematic tokens again simply
+	 * A server can then instead of computing all semantic tokens again simply
 	 * send a delta.
 	 */
 	ResultID string `json:"resultId,omitempty"`
@@ -2534,9 +2661,18 @@ type SemanticTokens struct {
  * @since 3.16.0 - Proposed state
  */
 type SemanticTokensEdit struct {
-	Start       float64   `json:"start"`
-	DeleteCount float64   `json:"deleteCount"`
-	Data        []float64 `json:"data,omitempty"`
+	/**
+	 * The start offset of the edit.
+	 */
+	Start float64 `json:"start"`
+	/**
+	 * The count of elements to remove.
+	 */
+	DeleteCount float64 `json:"deleteCount"`
+	/**
+	 * The elements to insert.
+	 */
+	Data []float64 `json:"data,omitempty"`
 }
 
 /**
@@ -2694,6 +2830,10 @@ type ServerCapabilities = struct {
 	 */
 	ExecuteCommandProvider ExecuteCommandOptions `json:"executeCommandProvider,omitempty"`
 	/**
+	 * The server provides Call Hierarchy support.
+	 */
+	CallHierarchyProvider interface{}/* bool | CallHierarchyOptions | CallHierarchyRegistrationOptions*/ `json:"callHierarchyProvider,omitempty"`
+	/**
 	 * Experimental server capabilities.
 	 */
 	Experimental interface{} `json:"experimental,omitempty"`
@@ -2788,6 +2928,13 @@ type SignatureHelpClientCapabilities struct {
 			 */
 			LabelOffsetSupport bool `json:"labelOffsetSupport,omitempty"`
 		} `json:"parameterInformation,omitempty"`
+		/**
+		 * The client support the `activeParameter` property on `SignatureInformation`
+		 * literal.
+		 *
+		 * @since 3.16.0 - proposed state
+		 */
+		ActiveParameterSupport bool `json:"activeParameterSupport,omitempty"`
 	} `json:"signatureInformation,omitempty"`
 	/**
 	 * The client supports to send additional context information for a
@@ -2894,6 +3041,14 @@ type SignatureInformation struct {
 	 * The parameters of this signature.
 	 */
 	Parameters []ParameterInformation `json:"parameters,omitempty"`
+	/**
+	 * The index of the active parameter.
+	 *
+	 * If provided, this is used in place of `SignatureHelp.activeParameter`.
+	 *
+	 * @since 3.16.0 - proposed state
+	 */
+	ActiveParameter float64 `json:"activeParameter,omitempty"`
 }
 
 /**
@@ -2922,7 +3077,15 @@ type SymbolInformation struct {
 	 */
 	Kind SymbolKind `json:"kind"`
 	/**
+	 * Tags for this completion item.
+	 *
+	 * @since 3.16.0 - Proposed state
+	 */
+	Tags []SymbolTag `json:"tags,omitempty"`
+	/**
 	 * Indicates if this symbol is deprecated.
+	 *
+	 * @deprecated Use tags instead
 	 */
 	Deprecated bool `json:"deprecated,omitempty"`
 	/**
@@ -3059,6 +3222,12 @@ type TextDocumentClientCapabilities struct {
 	 * Capabilities specific to `textDocument/publishDiagnostics`.
 	 */
 	PublishDiagnostics PublishDiagnosticsClientCapabilities `json:"publishDiagnostics,omitempty"`
+	/**
+	 * Capabilities specific to the `textDocument/callHierarchy`.
+	 *
+	 * @since 3.16.0
+	 */
+	CallHierarchy CallHierarchyClientCapabilities `json:"callHierarchy,omitempty"`
 }
 
 /**
@@ -3216,7 +3385,7 @@ type TextDocumentSyncOptions struct {
 	 * If present save notifications are sent to the server. If omitted the notification should not be
 	 * sent.
 	 */
-	Save SaveOptions `json:"save,omitempty"`
+	Save SaveOptions/*boolean | SaveOptions*/ `json:"save,omitempty"`
 }
 
 /**
@@ -3272,6 +3441,13 @@ type TypeDefinitionRegistrationOptions struct {
 }
 
 /**
+ * A tagging type for string properties that are actually URIs
+ *
+ * @since 3.16.0 - Proposed state
+ */
+type URI = string
+
+/**
  * General parameters to unregister a request or notification.
  */
 type Unregistration struct {
@@ -3321,6 +3497,40 @@ type WillSaveTextDocumentParams struct {
 	Reason TextDocumentSaveReason `json:"reason"`
 }
 
+type WorkDoneProgressBegin struct {
+	Kind string `json:"kind"`
+	/**
+	 * Mandatory title of the progress operation. Used to briefly inform about
+	 * the kind of operation being performed.
+	 *
+	 * Examples: "Indexing" or "Linking dependencies".
+	 */
+	Title string `json:"title"`
+	/**
+	 * Controls if a cancel button should show to allow the user to cancel the
+	 * long running operation. Clients that don't support cancellation are allowed
+	 * to ignore the setting.
+	 */
+	Cancellable bool `json:"cancellable,omitempty"`
+	/**
+	 * Optional, more detailed associated progress message. Contains
+	 * complementary information to the `title`.
+	 *
+	 * Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
+	 * If unset, the previous progress message (if any) is still valid.
+	 */
+	Message string `json:"message,omitempty"`
+	/**
+	 * Optional progress percentage to display (value 100 is considered 100%).
+	 * If not provided infinite progress is assumed and clients are allowed
+	 * to ignore the `percentage` value in subsequent in report notifications.
+	 *
+	 * The value should be steadily rising. Clients are free to ignore values
+	 * that are not following this rule.
+	 */
+	Percentage float64 `json:"percentage,omitempty"`
+}
+
 type WorkDoneProgressCancelParams struct {
 	/**
 	 * The token to be used to report progress.
@@ -3350,6 +3560,15 @@ type WorkDoneProgressCreateParams struct {
 	Token ProgressToken `json:"token"`
 }
 
+type WorkDoneProgressEnd struct {
+	Kind string `json:"kind"`
+	/**
+	 * Optional, a final message indicating to for example indicate the outcome
+	 * of the operation.
+	 */
+	Message string `json:"message,omitempty"`
+}
+
 type WorkDoneProgressOptions struct {
 	WorkDoneProgress bool `json:"workDoneProgress,omitempty"`
 }
@@ -3359,6 +3578,34 @@ type WorkDoneProgressParams struct {
 	 * An optional token that a server can use to report work done progress.
 	 */
 	WorkDoneToken ProgressToken `json:"workDoneToken,omitempty"`
+}
+
+type WorkDoneProgressReport struct {
+	Kind string `json:"kind"`
+	/**
+	 * Controls enablement state of a cancel button.
+	 *
+	 * Clients that don't support cancellation or don't support controlling the button's
+	 * enablement state are allowed to ignore the property.
+	 */
+	Cancellable bool `json:"cancellable,omitempty"`
+	/**
+	 * Optional, more detailed associated progress message. Contains
+	 * complementary information to the `title`.
+	 *
+	 * Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
+	 * If unset, the previous progress message (if any) is still valid.
+	 */
+	Message string `json:"message,omitempty"`
+	/**
+	 * Optional progress percentage to display (value 100 is considered 100%).
+	 * If not provided infinite progress is assumed and clients are allowed
+	 * to ignore the `percentage` value in subsequent in report notifications.
+	 *
+	 * The value should be steadily rising. Clients are free to ignore values
+	 * that are not following this rule.
+	 */
+	Percentage float64 `json:"percentage,omitempty"`
 }
 
 /**
@@ -3510,6 +3757,18 @@ type WorkspaceSymbolClientCapabilities struct {
 		 */
 		ValueSet []SymbolKind `json:"valueSet,omitempty"`
 	} `json:"symbolKind,omitempty"`
+	/**
+	 * The client supports tags on `SymbolInformation`.
+	 * Clients supporting tags have to handle unknown tags gracefully.
+	 *
+	 * @since 3.16.0 - Proposed state
+	 */
+	TagSupport struct {
+		/**
+		 * The tags supported by the client.
+		 */
+		ValueSet []SymbolTag `json:"valueSet"`
+	} `json:"tagSupport,omitempty"`
 }
 
 /**
@@ -3778,7 +4037,7 @@ const (
 	 * the end of the snippet. Placeholders with equal identifiers are linked,
 	 * that is typing in one will update others too.
 	 *
-	 * See also: https://github.com/Microsoft/vscode/blob/master/src/vs/editor/contrib/snippet/common/snippet.md
+	 * See also: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#snippet_syntax
 	 */
 
 	SnippetTextFormat InsertTextFormat = 2

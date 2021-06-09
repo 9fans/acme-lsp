@@ -6,12 +6,14 @@ package jsonrpc2
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
+	"io"
 	"net"
 	"os"
 	"time"
+
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/event"
+	errors "golang.org/x/xerrors"
 )
 
 // NOTE: This file provides an experimental API for serving multiple remote
@@ -20,27 +22,27 @@ import (
 // semantics.
 
 // A StreamServer is used to serve incoming jsonrpc2 clients communicating over
-// a newly created stream.
+// a newly created connection.
 type StreamServer interface {
-	ServeStream(context.Context, Stream) error
+	ServeStream(context.Context, Conn) error
 }
 
 // The ServerFunc type is an adapter that implements the StreamServer interface
 // using an ordinary function.
-type ServerFunc func(context.Context, Stream) error
+type ServerFunc func(context.Context, Conn) error
 
 // ServeStream calls f(ctx, s).
-func (f ServerFunc) ServeStream(ctx context.Context, s Stream) error {
-	return f(ctx, s)
+func (f ServerFunc) ServeStream(ctx context.Context, c Conn) error {
+	return f(ctx, c)
 }
 
 // HandlerServer returns a StreamServer that handles incoming streams using the
 // provided handler.
 func HandlerServer(h Handler) StreamServer {
-	return ServerFunc(func(ctx context.Context, s Stream) error {
-		conn := NewConn(s)
-		conn.AddHandler(h)
-		return conn.Run(ctx)
+	return ServerFunc(func(ctx context.Context, conn Conn) error {
+		conn.Go(ctx, h)
+		<-conn.Done()
+		return conn.Err()
 	})
 }
 
@@ -59,13 +61,12 @@ func ListenAndServe(ctx context.Context, network, addr string, server StreamServ
 	return Serve(ctx, ln, server, idleTimeout)
 }
 
-// ErrIdleTimeout is returned when serving timed out waiting for new connections.
-var ErrIdleTimeout = errors.New("timed out waiting for new connections")
-
 // Serve accepts incoming connections from the network, and handles them using
 // the provided server. If idleTimeout is non-zero, ListenAndServe exits after
 // there are no clients for this duration, otherwise it exits only on error.
 func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeout time.Duration) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	// Max duration: ~290 years; surely that's long enough.
 	const forever = 1<<63 - 1
 	if idleTimeout <= 0 {
@@ -81,7 +82,10 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 		for {
 			nc, err := ln.Accept()
 			if err != nil {
-				doneListening <- fmt.Errorf("Accept(): %v", err)
+				select {
+				case doneListening <- fmt.Errorf("Accept(): %w", err):
+				case <-ctx.Done():
+				}
 				return
 			}
 			newConns <- nc
@@ -94,14 +98,18 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 		case netConn := <-newConns:
 			activeConns++
 			connTimer.Stop()
-			stream := NewHeaderStream(netConn, netConn)
+			stream := NewHeaderStream(netConn)
 			go func() {
-				closedConns <- server.ServeStream(ctx, stream)
+				conn := NewConn(stream)
+				closedConns <- server.ServeStream(ctx, conn)
+				stream.Close()
 			}()
 		case err := <-doneListening:
 			return err
 		case err := <-closedConns:
-			log.Printf("closed a connection with error: %v", err)
+			if !isClosingError(err) {
+				event.Error(ctx, "closed a connection", err)
+			}
 			activeConns--
 			if activeConns == 0 {
 				connTimer.Reset(idleTimeout)
@@ -112,4 +120,20 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 			return ctx.Err()
 		}
 	}
+}
+
+// isClosingError reports if the error occurs normally during the process of
+// closing a network connection. It uses imperfect heuristics that err on the
+// side of false negatives, and should not be used for anything critical.
+func isClosingError(err error) bool {
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	// Per https://github.com/golang/go/issues/4373, this error string should not
+	// change. This is not ideal, but since the worst that could happen here is
+	// some superfluous logging, it is acceptable.
+	if err.Error() == "use of closed network connection" {
+		return true
+	}
+	return false
 }

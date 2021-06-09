@@ -5,8 +5,8 @@ set -ex
 DIR=golang_org_x_tools
 REPO=https://go.googlesource.com/tools
 
-# golang.org/x/tools version that gopls/v0.3.4 depends on
-COMMIT=fafb6e2e8a4a
+# golang.org/x/tools version that gopls/v0.4.4 depends on
+COMMIT=64cdafbe085c
 
 rm -rf $DIR
 git clone $REPO
@@ -19,10 +19,12 @@ mkdir $DIR
 mv tools/LICENSE $DIR/LICENSE
 mv tools/internal/jsonrpc2 $DIR/jsonrpc2
 mv tools/internal/span $DIR/span
-mv tools/internal/telemetry $DIR/telemetry
+mv tools/internal/event $DIR/event
 mv tools/internal/xcontext $DIR/xcontext
 mkdir $DIR/lsp
 mv tools/internal/lsp/protocol $DIR/lsp
+mkdir $DIR/lsp/debug
+mv tools/internal/lsp/debug/tag $DIR/lsp/debug
 rm -rf $DIR/lsp/protocol/typescript
 
 (

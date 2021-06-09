@@ -12,28 +12,21 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 )
 
-type fakeHandler struct {
-	jsonrpc2.EmptyHandler
-}
-
 type msg struct {
 	Msg string
 }
 
-func (fakeHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
-	if err := r.Reply(ctx, &msg{"pong"}, nil); err != nil {
-		panic(err)
-	}
-	return true
+func fakeHandler(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	return reply(ctx, &msg{"pong"}, nil)
 }
 
 func TestTestServer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server := jsonrpc2.HandlerServer(fakeHandler{})
-	tcpTS := NewTCPServer(ctx, server)
+	server := jsonrpc2.HandlerServer(fakeHandler)
+	tcpTS := NewTCPServer(ctx, server, nil)
 	defer tcpTS.Close()
-	pipeTS := NewPipeServer(ctx, server)
+	pipeTS := NewPipeServer(ctx, server, nil)
 	defer pipeTS.Close()
 
 	tests := []struct {
@@ -47,8 +40,9 @@ func TestTestServer(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			conn := test.connector.Connect(ctx)
+			conn.Go(ctx, jsonrpc2.MethodNotFound)
 			var got msg
-			if err := conn.Call(ctx, "ping", &msg{"ping"}, &got); err != nil {
+			if _, err := conn.Call(ctx, "ping", &msg{"ping"}, &got); err != nil {
 				t.Fatal(err)
 			}
 			if want := "pong"; got.Msg != want {

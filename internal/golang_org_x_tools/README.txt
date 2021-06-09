@@ -1,1 +1,1 @@
-Packages in this directory is copied from golang.org/x/tools/internal (commit fafb6e2e8a4a).
+Packages in this directory is copied from golang.org/x/tools/internal (commit 64cdafbe085c).

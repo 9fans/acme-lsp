@@ -10,13 +10,16 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/stack/stacktest"
 )
 
 func TestIdleTimeout(t *testing.T) {
+	stacktest.NoLeak(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ln, err := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +33,7 @@ func TestIdleTimeout(t *testing.T) {
 		return conn
 	}
 
-	server := HandlerServer(EmptyHandler{})
+	server := HandlerServer(MethodNotFound)
 	// connTimer := &fakeTimer{c: make(chan time.Time, 1)}
 	var (
 		runErr error

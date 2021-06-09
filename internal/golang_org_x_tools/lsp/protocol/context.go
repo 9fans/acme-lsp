@@ -1,10 +1,13 @@
 package protocol
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/event"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/event/core"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/event/export"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/event/label"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
 )
 
@@ -18,14 +21,21 @@ func WithClient(ctx context.Context, client Client) context.Context {
 	return context.WithValue(ctx, clientKey, client)
 }
 
-func LogEvent(ctx context.Context, event telemetry.Event) {
+func LogEvent(ctx context.Context, ev core.Event, tags label.Map) context.Context {
+	if !event.IsLog(ev) {
+		return ctx
+	}
 	client, ok := ctx.Value(clientKey).(Client)
 	if !ok {
-		return
+		return ctx
 	}
-	msg := &LogMessageParams{Type: Info, Message: fmt.Sprint(event)}
-	if event.Error != nil {
+	buf := &bytes.Buffer{}
+	p := export.Printer{}
+	p.WriteEvent(buf, ev, tags)
+	msg := &LogMessageParams{Type: Info, Message: buf.String()}
+	if event.IsError(ev) {
 		msg.Type = Error
 	}
 	go client.LogMessage(xcontext.Detach(ctx), msg)
+	return ctx
 }
