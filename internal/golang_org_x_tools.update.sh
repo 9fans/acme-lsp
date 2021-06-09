@@ -26,6 +26,7 @@ mv tools/internal/lsp/protocol $DIR/lsp
 mkdir $DIR/lsp/debug
 mv tools/internal/lsp/debug/tag $DIR/lsp/debug
 rm -rf $DIR/lsp/protocol/typescript
+mv tools/internal/stack $DIR/stack
 
 (
 	cd tools
