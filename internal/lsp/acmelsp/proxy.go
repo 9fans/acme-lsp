@@ -125,7 +125,7 @@ func (s *proxyServer) SignatureHelp(ctx context.Context, params *protocol.Signat
 	return srv.Client.SignatureHelp(ctx, params)
 }
 
-func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error) {
+func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) ([]interface{}, error) {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
 		return nil, fmt.Errorf("DocumentSymbol: %v", err)

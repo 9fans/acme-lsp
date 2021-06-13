@@ -266,7 +266,8 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 		fmt.Fprintf(rc.Stderr, "No symbols found.\n")
 		return nil
 	}
-	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
+
+	printSym := func(s *protocol.DocumentSymbol, depth int) {
 		loc := &protocol.Location{
 			URI:   uri,
 			Range: s.SelectionRange,
@@ -274,7 +275,13 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 		indent := strings.Repeat(" ", depth)
 		fmt.Fprintf(rc.Stdout, "%v%v %v %v\n", indent, s.Kind, s.Name, s.Detail)
 		fmt.Fprintf(rc.Stdout, "%v %v\n", indent, lsp.LocationLink(loc))
-	})
+	}
+	for _, sym := range syms {
+		if ds, ok := sym.(protocol.DocumentSymbol); ok {
+			printSym(&ds, 0)
+			walkDocumentSymbols(ds.Children, 1, printSym)
+		}
+	}
 	return nil
 }
 

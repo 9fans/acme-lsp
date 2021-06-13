@@ -133,7 +133,7 @@ func run(cfg *config.Config, args []string) error {
 
 	ver, err := server.Version(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get server version: %v", err)
 	}
 	if ver != proxy.Version {
 		return fmt.Errorf("acme-lsp speaks protocol version %v but L speaks version %v (make sure they come from the same release)", ver, proxy.Version)

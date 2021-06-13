@@ -6,48 +6,52 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/trace"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
 )
 
 type DocumentUri = string
 
-type canceller struct{ jsonrpc2.EmptyHandler }
-
-type clientHandler struct {
-	canceller
-	client Client
-}
-
-type serverHandler struct {
-	canceller
-	server Server
-}
-
-func (canceller) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID, cancelled bool) bool {
-	if cancelled {
-		return false
+func ClientHandler(client Client, handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+		if ctx.Err() != nil {
+			ctx := xcontext.Detach(ctx)
+			return reply(ctx, nil, protocol.RequestCancelledError)
+		}
+		handled, err := clientDispatch(ctx, client, reply, req)
+		if handled || err != nil {
+			return err
+		}
+		return handler(ctx, reply, req)
 	}
-	ctx = xcontext.Detach(ctx)
-	ctx, done := trace.StartSpan(ctx, "protocol.canceller")
-	defer done()
-	conn.Notify(ctx, "$/cancelRequest", &CancelParams{ID: id})
-	return true
 }
 
-func ServerDispatcher(conn *jsonrpc2.Conn, server protocol.Server) Server {
+func ServerHandler(server Server, handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+		if ctx.Err() != nil {
+			ctx := xcontext.Detach(ctx)
+			return reply(ctx, nil, protocol.RequestCancelledError)
+		}
+		handled, err := serverDispatch(ctx, server, reply, req)
+		if handled || err != nil {
+			return err
+		}
+		return fmt.Errorf("non-standard request")
+	}
+}
+
+func ServerDispatcher(conn jsonrpc2.Conn, server protocol.Server) Server {
 	return &serverDispatcher{
 		Conn:   conn,
 		Server: server,
 	}
 }
 
-func ClientDispatcher(conn *jsonrpc2.Conn, client protocol.Client) Client {
+func ClientDispatcher(conn jsonrpc2.Conn, client protocol.Client) Client {
 	return &clientDispatcher{
 		Conn:   conn,
 		Client: client,
@@ -55,13 +59,13 @@ func ClientDispatcher(conn *jsonrpc2.Conn, client protocol.Client) Client {
 }
 
 func NewClient(ctx context.Context, conn net.Conn, client Client) Server {
-	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	stream := jsonrpc2.NewHeaderStream(conn)
 	cc := jsonrpc2.NewConn(stream)
 	server := ServerDispatcher(cc, protocol.ServerDispatcher(cc))
-	cc.AddHandler(protocol.ClientHandler(&lspClientDispatcher{Client: client}))
-	cc.AddHandler(protocol.Canceller{})
-	cc.AddHandler(&clientHandler{client: client})
-	go cc.Run(ctx)
+	cc.Go(ctx, protocol.Handlers(
+		ClientHandler(client,
+			protocol.ClientHandler(&lspClientDispatcher{Client: client},
+				jsonrpc2.MethodNotFound))))
 	return server
 }
 
@@ -75,23 +79,20 @@ func NewStreamServer(server Server) jsonrpc2.StreamServer {
 	}
 }
 
-func (s *streamServer) ServeStream(ctx context.Context, stream jsonrpc2.Stream) error {
-	cc := jsonrpc2.NewConn(stream)
+func (s *streamServer) ServeStream(ctx context.Context, conn jsonrpc2.Conn) error {
 	// The proxy server doesn't need to make calls to the client.
 	//client := ClientDispatcher(cc, protocol.ClientDispatcher(cc))
-	cc.AddHandler(protocol.ServerHandler(&lspServerDispatcher{Server: s.server}))
-	cc.AddHandler(protocol.Canceller{})
-	cc.AddHandler(&serverHandler{server: s.server})
-	return cc.Run(ctx)
+	conn.Go(ctx,
+		protocol.Handlers(
+			ServerHandler(s.server,
+				protocol.ServerHandler(&lspServerDispatcher{Server: s.server},
+					jsonrpc2.MethodNotFound))))
+	<-conn.Done()
+	return conn.Err()
 }
 
-func sendParseError(ctx context.Context, req *jsonrpc2.Request, err error) {
-	if _, ok := err.(*jsonrpc2.Error); !ok {
-		err = jsonrpc2.NewErrorf(jsonrpc2.CodeParseError, "%v", err)
-	}
-	if err := req.Reply(ctx, nil, err); err != nil {
-		log.Error(ctx, "", err)
-	}
+func sendParseError(ctx context.Context, reply jsonrpc2.Replier, err error) error {
+	return reply(ctx, nil, fmt.Errorf("%w: %s", jsonrpc2.ErrParse, err))
 }
 
 type ExecuteCommandOnDocumentParams struct {

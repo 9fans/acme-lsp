@@ -14,8 +14,12 @@ const Debug = false
 type Client interface{}
 
 type clientDispatcher struct {
-	*jsonrpc2.Conn
+	jsonrpc2.Conn
 	protocol.Client
+}
+
+func clientDispatch(ctx context.Context, client Client, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
+	return false, nil
 }
 
 var _ Client = (*lspClientDispatcher)(nil)
@@ -44,12 +48,20 @@ func (c *lspClientDispatcher) PublishDiagnostics(context.Context, *protocol.Publ
 	return fmt.Errorf("PublishDiagnostics not implemented")
 }
 
+func (s *lspClientDispatcher) Progress(ctx context.Context, params *protocol.ProgressParams) error {
+	return fmt.Errorf("Progress not implemented")
+}
+
 func (c *lspClientDispatcher) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	return nil, fmt.Errorf("WorkspaceFolders not implemented")
 }
 
 func (c *lspClientDispatcher) Configuration(context.Context, *protocol.ParamConfiguration) ([]interface{}, error) {
 	return nil, fmt.Errorf("Configuration not implemented")
+}
+
+func (s *lspClientDispatcher) WorkDoneProgressCreate(ctx context.Context, params *protocol.WorkDoneProgressCreateParams) error {
+	return fmt.Errorf("WorkDoneProgressCreate not implemented")
 }
 
 func (c *lspClientDispatcher) RegisterCapability(context.Context, *protocol.RegistrationParams) error {

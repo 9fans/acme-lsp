@@ -7,7 +7,6 @@ import (
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/lsp/protocol"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
 )
 
 // Version is used to detect if acme-lsp and L are speaking the same protocol.
@@ -46,83 +45,57 @@ type Server interface {
 	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
 	Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error)
 	SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
-	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error)
+	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]interface{}, error)
 	TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error)
 }
 
-func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
-	if delivered {
-		return false
-	}
-	switch r.Method {
-	case "$/cancelRequest":
-		var params CancelParams
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		r.Conn().Cancel(params.ID)
-		return true
-
+func serverDispatch(ctx context.Context, server Server, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
+	switch r.Method() {
 	case "acme-lsp/version": // req
-		resp, err := h.server.Version(ctx)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.Version(ctx)
+		return true, reply(ctx, resp, err)
 
 	case "acme-lsp/workspaceFolders": // req
-		resp, err := h.server.WorkspaceFolders(ctx)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.WorkspaceFolders(ctx)
+		return true, reply(ctx, resp, err)
 
 	case "acme-lsp/initializeResult": // req
 		var params protocol.TextDocumentIdentifier
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
+		if err := json.Unmarshal(r.Params(), &params); err != nil {
+			return true, sendParseError(ctx, reply, err)
 		}
-		resp, err := h.server.InitializeResult(ctx, &params)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.InitializeResult(ctx, &params)
+		return true, reply(ctx, resp, err)
 
 	case "acme-lsp/executeCommandOnDocument": // req
 		var params ExecuteCommandOnDocumentParams
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
+		if err := json.Unmarshal(r.Params(), &params); err != nil {
+			return true, sendParseError(ctx, reply, err)
 		}
-		resp, err := h.server.ExecuteCommandOnDocument(ctx, &params)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.ExecuteCommandOnDocument(ctx, &params)
+		return true, reply(ctx, resp, err)
 
 	default:
-		return false
+		return false, nil
 	}
 }
 
 type serverDispatcher struct {
-	*jsonrpc2.Conn
+	jsonrpc2.Conn
 	protocol.Server
 }
 
 func (s *serverDispatcher) Version(ctx context.Context) (int, error) {
 	var result int
-	if err := s.Conn.Call(ctx, "acme-lsp/version", nil, &result); err != nil {
-		return 0, err
+	if err := protocol.Call(ctx, s.Conn, "acme-lsp/version", nil, &result); err != nil {
+		return 0, fmt.Errorf("acme-lsp/version RPC failed: %v", err)
 	}
 	return result, nil
 }
 
 func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.WorkspaceFolder, error) {
 	var result []protocol.WorkspaceFolder
-	if err := s.Conn.Call(ctx, "acme-lsp/workspaceFolders", nil, &result); err != nil {
+	if err := protocol.Call(ctx, s.Conn, "acme-lsp/workspaceFolders", nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -130,7 +103,7 @@ func (s *serverDispatcher) WorkspaceFolders(ctx context.Context) ([]protocol.Wor
 
 func (s *serverDispatcher) InitializeResult(ctx context.Context, params *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error) {
 	var result protocol.InitializeResult
-	if err := s.Conn.Call(ctx, "acme-lsp/initializeResult", params, &result); err != nil {
+	if err := protocol.Call(ctx, s.Conn, "acme-lsp/initializeResult", params, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -138,17 +111,10 @@ func (s *serverDispatcher) InitializeResult(ctx context.Context, params *protoco
 
 func (s *serverDispatcher) ExecuteCommandOnDocument(ctx context.Context, params *ExecuteCommandOnDocumentParams) (interface{}, error) {
 	var result interface{}
-	if err := s.Conn.Call(ctx, "acme-lsp/executeCommandOnDocument", params, &result); err != nil {
+	if err := protocol.Call(ctx, s.Conn, "acme-lsp/executeCommandOnDocument", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
-}
-
-type CancelParams struct {
-	/**
-	 * The request id to cancel.
-	 */
-	ID jsonrpc2.ID `json:"id"`
 }
 
 type Message struct {

@@ -60,12 +60,20 @@ func (h *clientHandler) PublishDiagnostics(ctx context.Context, params *protocol
 	return nil
 }
 
+func (h *clientHandler) Progress(ctx context.Context, params *protocol.ProgressParams) error {
+	return nil
+}
+
 func (h *clientHandler) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, error) {
 	return nil, nil
 }
 
 func (h *clientHandler) Configuration(context.Context, *protocol.ParamConfiguration) ([]interface{}, error) {
 	return nil, nil
+}
+
+func (h *clientHandler) WorkDoneProgressCreate(ctx context.Context, params *protocol.WorkDoneProgressCreateParams) error {
+	return nil
 }
 
 func (h *clientHandler) RegisterCapability(context.Context, *protocol.RegistrationParams) error {
@@ -117,7 +125,7 @@ func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
 
 func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	ctx := context.Background()
-	stream := jsonrpc2.NewHeaderStream(conn, conn)
+	stream := jsonrpc2.NewHeaderStream(conn)
 	if cfg.RPCTrace {
 		stream = protocol.LoggingStream(stream, os.Stderr)
 	}
@@ -129,10 +137,9 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	}
-	cc.AddHandler(protocol.ClientHandler(client))
-	cc.AddHandler(protocol.Canceller{})
-	ctx = protocol.WithClient(ctx, client)
-	go cc.Run(ctx)
+	cc.Go(ctx, protocol.Handlers(
+		protocol.ClientHandler(client,
+			jsonrpc2.MethodNotFound)))
 
 	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {
