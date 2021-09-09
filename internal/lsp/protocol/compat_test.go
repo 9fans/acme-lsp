@@ -193,11 +193,10 @@ func TestFormattingOptions(t *testing.T) {
 		opt  FormattingOptions
 	}{
 		{
-			data: []byte(`{"tabSize":0,"insertSpaces":false,"key":{}}`),
+			data: []byte(`{"tabSize":0,"insertSpaces":false}`),
 			opt: FormattingOptions{
 				TabSize:      0,
 				InsertSpaces: false,
-				Key:          map[string]bool{},
 			},
 		},
 	}

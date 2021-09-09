@@ -3765,11 +3765,6 @@ type FormattingOptions struct {
 	 * @since 3.15.0
 	 */
 	TrimFinalNewlines bool `json:"trimFinalNewlines,omitempty"`
-
-	/*Key defined:
-	 * Signature for further properties.
-	 */
-	Key map[string]bool `json:"key"` // [key: string]: boolean | number | string | undefined;
 }
 
 /*DocumentLink defined:
