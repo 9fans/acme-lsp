@@ -84,7 +84,6 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 	}
 	result, err := rc.server.Completion(ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
-		Context:                    &protocol.CompletionContext{},
 	})
 	if err != nil {
 		return err
