@@ -2,6 +2,7 @@
 package acmelsp
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -57,6 +58,26 @@ func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, err
 	return NewRemoteCmd(srv.Client, winid), nil
 }
 
+func getLine(p string, l int) string {
+	file, err := os.Open(p)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	currentLine := 0
+	for scanner.Scan() {
+		currentLine++
+		if currentLine == l {
+			return scanner.Text()
+		}
+	}
+
+	return ""
+}
+
 func PrintLocations(w io.Writer, loc []protocol.Location) error {
 	sort.Slice(loc, func(i, j int) bool {
 		a := loc[i]
@@ -72,7 +93,7 @@ func PrintLocations(w io.Writer, loc []protocol.Location) error {
 		return n < 0
 	})
 	for _, l := range loc {
-		fmt.Fprintf(w, "%v\n", lsp.LocationLink(&l))
+		fmt.Fprintf(w, "%v:%s\n", lsp.LocationLink(&l), getLine(text.ToPath(l.URI), int(l.Range.Start.Line+1)))
 	}
 	return nil
 }
