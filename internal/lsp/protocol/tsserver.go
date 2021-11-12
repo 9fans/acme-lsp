@@ -583,7 +583,7 @@ func (s *serverDispatcher) LogTraceNotification(ctx context.Context, params *Log
 	return s.Conn.Notify(ctx, "$/logTraceNotification", params)
 }
 func (s *serverDispatcher) Implementation(ctx context.Context, params *ImplementationParams) ([]Location, error) {
-	var result []Location
+	var result Locations
 	if err := s.Conn.Call(ctx, "textDocument/implementation", params, &result); err != nil {
 		return nil, err
 	}
@@ -591,7 +591,7 @@ func (s *serverDispatcher) Implementation(ctx context.Context, params *Implement
 }
 
 func (s *serverDispatcher) TypeDefinition(ctx context.Context, params *TypeDefinitionParams) ([]Location, error) {
-	var result []Location
+	var result Locations
 	if err := s.Conn.Call(ctx, "textDocument/typeDefinition", params, &result); err != nil {
 		return nil, err
 	}
@@ -691,7 +691,7 @@ func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureH
 }
 
 func (s *serverDispatcher) Definition(ctx context.Context, params *DefinitionParams) ([]Location, error) {
-	var result []Location
+	var result Locations
 	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
 		return nil, err
 	}

@@ -67,3 +67,31 @@ func ToCodeActionOptions(v map[string]interface{}) (*CodeActionOptions, error) {
 	}
 	return &opt, nil
 }
+
+// Locations is a type which represents the union of Location and []Location
+type Locations []Location
+
+func (ls *Locations) UnmarshalJSON(data []byte) error {
+	d := strings.TrimSpace(string(data))
+	if len(d) == 0 && strings.EqualFold(d, "null") {
+		return nil
+	}
+
+	if d[0] == '[' {
+		var locations []Location
+		err := json.Unmarshal(data, &locations)
+		if err != nil {
+			return err
+		}
+		*ls = locations
+	} else {
+		var location Location
+		err := json.Unmarshal(data, &location)
+		if err != nil {
+			return err
+		}
+		*ls = append(*ls, location)
+	}
+
+	return nil
+}
