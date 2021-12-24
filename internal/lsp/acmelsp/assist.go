@@ -220,6 +220,7 @@ func (w *outputWin) Update(fw *focusWin, server proxy.Server, cmd string) {
 	w.Clear()
 	switch cmd {
 	case "comp":
+
 		err := rc.Completion(ctx, false)
 		if err != nil {
 			dprintf("Completion failed: %v\n", err)
@@ -281,6 +282,7 @@ loop:
 				}
 			}
 			w.WriteEvent(ev)
+
 		}
 	}
 	return nil

@@ -57,6 +57,8 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	cfg := cmd.Setup(config.LangServerFlags | config.ProxyFlags)
+	log.SetFlags(log.Llongfile)
+	log.SetPrefix("acme-lsp: ")
 
 	ctx := context.Background()
 	app, err := NewApplication(ctx, cfg, flag.Args())

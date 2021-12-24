@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 
+
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
@@ -659,11 +660,18 @@ func (s *serverDispatcher) WillSaveWaitUntil(ctx context.Context, params *WillSa
 }
 
 func (s *serverDispatcher) Completion(ctx context.Context, params *CompletionParams) (*CompletionList, error) {
-	var result CompletionList
-	if err := s.Conn.Call(ctx, "textDocument/completion", params, &result); err != nil {
+	//var result CompletionList
+
+	var items compList
+	// var items []CompletionItem
+
+
+	if err := s.Conn.Call(ctx, "textDocument/completion", params, &items); err != nil {
 		return nil, err
 	}
-	return &result, nil
+
+	res := CompletionList(items)
+	return &res, nil
 }
 
 func (s *serverDispatcher) Resolve(ctx context.Context, params *CompletionItem) (*CompletionItem, error) {
@@ -676,6 +684,7 @@ func (s *serverDispatcher) Resolve(ctx context.Context, params *CompletionItem) 
 
 func (s *serverDispatcher) Hover(ctx context.Context, params *HoverParams) (*Hover, error) {
 	var result Hover
+
 	if err := s.Conn.Call(ctx, "textDocument/hover", params, &result); err != nil {
 		return nil, err
 	}
@@ -684,6 +693,7 @@ func (s *serverDispatcher) Hover(ctx context.Context, params *HoverParams) (*Hov
 
 func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureHelpParams) (*SignatureHelp, error) {
 	var result SignatureHelp
+
 	if err := s.Conn.Call(ctx, "textDocument/signatureHelp", params, &result); err != nil {
 		return nil, err
 	}
@@ -703,6 +713,7 @@ func (s *serverDispatcher) References(ctx context.Context, params *ReferencePara
 	if err := s.Conn.Call(ctx, "textDocument/references", params, &result); err != nil {
 		return nil, err
 	}
+
 	return result, nil
 }
 

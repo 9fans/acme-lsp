@@ -11,8 +11,8 @@ COMMIT=952e2c076240
 rm -rf $DIR
 git clone $REPO
 (
-	cd tools
-	git checkout $COMMIT
+    cd tools
+    git checkout $COMMIT
 )
 
 mkdir $DIR
@@ -23,9 +23,9 @@ mv tools/internal/telemetry $DIR/telemetry
 mv tools/internal/xcontext $DIR/xcontext
 
 (
-	cd tools
-	echo "Packages in this directory is copied from golang.org/x/tools/internal (commit $COMMIT)."
-	#git show -s --format='(commit %h on %ci).'
+    cd tools
+    echo "Packages in this directory is copied from golang.org/x/tools/internal (commit $COMMIT)."
+    #git show -s --format='(commit %h on %ci).'
 ) > $DIR/README.txt
 
 find $DIR -name '*.go' | xargs sed -i 's!golang.org/x/tools/internal!github.com/fhs/acme-lsp/internal/golang_org_x_tools!'

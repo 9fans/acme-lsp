@@ -192,6 +192,7 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	if len(loc) == 0 {
 		fmt.Fprintf(rc.Stderr, "No references found.\n")
 		return nil

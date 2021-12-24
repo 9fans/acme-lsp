@@ -111,6 +111,9 @@ func main() {
 	flag.Usage = usage
 	cfg := cmd.Setup(config.ProxyFlags)
 
+	log.SetFlags(log.Llongfile)
+	log.SetPrefix("L: ")
+
 	err := run(cfg, flag.Args())
 	if err != nil {
 		log.Fatalf("%v", err)

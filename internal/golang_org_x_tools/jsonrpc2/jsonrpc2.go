@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 )
@@ -139,6 +140,9 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		Method: method,
 		Params: jsonParams,
 	}
+
+	log.Printf("ianzhang Call, method: %#v", method)
+
 	// marshal the request now it is complete
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -177,6 +181,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		for _, h := range c.handlers {
 			ctx = h.Response(ctx, c, Receive, response)
 		}
+
 		// is it an error response?
 		if response.Error != nil {
 			return response.Error
@@ -184,9 +189,11 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		if result == nil || response.Result == nil {
 			return nil
 		}
+
 		if err := json.Unmarshal(*response.Result, result); err != nil {
 			return fmt.Errorf("unmarshalling result: %v", err)
 		}
+
 		return nil
 	case <-ctx.Done():
 		// allow the handler to propagate the cancel
@@ -261,6 +268,7 @@ func (r *Request) Reply(ctx context.Context, result interface{}, err error) erro
 	if err != nil {
 		return err
 	}
+
 	for _, h := range r.conn.handlers {
 		ctx = h.Response(ctx, r.conn, Send, response)
 	}
