@@ -36,6 +36,11 @@ func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMe
 	return nil
 }
 
+func (h *clientHandler) ShowStatus(ctx context.Context, params *protocol.ShowStatusParams) (*protocol.MessageActionItem, error) {
+	log.Printf("LSP %v: %v\n", params.Type, params.Message)
+	return nil, nil
+}
+
 func (h *clientHandler) LogMessage(ctx context.Context, params *protocol.LogMessageParams) error {
 	if h.cfg.Logger != nil {
 		h.cfg.Logger.Printf("%v: %v\n", params.Type, params.Message)

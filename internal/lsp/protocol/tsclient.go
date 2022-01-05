@@ -13,6 +13,7 @@ import (
 
 type Client interface {
 	ShowMessage(context.Context, *ShowMessageParams) error
+	ShowStatus(context.Context, *ShowStatusParams) (*MessageActionItem,error)
 	LogMessage(context.Context, *LogMessageParams) error
 	Event(context.Context, *interface{}) error
 	PublishDiagnostics(context.Context, *PublishDiagnosticsParams) error
@@ -41,6 +42,20 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 		if err := h.client.ShowMessage(ctx, &params); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
+	case "window/showStatus":
+		var params ShowStatusParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
+		resp, err := h.client.ShowStatus(ctx, &params)
+		if err != nil {
+			log.Error(ctx, "", err)
+		}
+		if err := r.Reply(ctx, resp, err); err != nil {
 			log.Error(ctx, "", err)
 		}
 		return true
@@ -151,6 +166,11 @@ type clientDispatcher struct {
 
 func (s *clientDispatcher) ShowMessage(ctx context.Context, params *ShowMessageParams) error {
 	return s.Conn.Notify(ctx, "window/showMessage", params)
+}
+
+func (s *clientDispatcher) ShowStatus(ctx context.Context, params *ShowStatusParams) (*MessageActionItem,error) {
+	var result MessageActionItem
+	return &result, s.Conn.Call(ctx, "window/showStatus", params, &result)
 }
 
 func (s *clientDispatcher) LogMessage(ctx context.Context, params *LogMessageParams) error {

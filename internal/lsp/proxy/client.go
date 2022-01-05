@@ -26,6 +26,10 @@ func (c *lspClientDispatcher) ShowMessage(context.Context, *protocol.ShowMessage
 	return fmt.Errorf("ShowMessage not implemented")
 }
 
+func (c *lspClientDispatcher) ShowStatus(context.Context, *protocol.ShowStatusParams)  (*protocol.MessageActionItem,error) {
+	return nil, fmt.Errorf("ShowStatus not implemented")
+}
+
 func (c *lspClientDispatcher) LogMessage(ctx context.Context, params *protocol.LogMessageParams) error {
 	if Debug {
 		log.Printf("log: proxy %v: %v\n", params.Type, params.Message)
