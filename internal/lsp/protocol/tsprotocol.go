@@ -1361,6 +1361,31 @@ type ShowMessageRequestParams struct {
 	Actions []MessageActionItem `json:"actions,omitempty"`
 }
 
+type ShowStatusParams struct {
+
+	/*Type defined:
+	 * The message type. See {@link MessageType}
+	 */
+	Type MessageType `json:"type"`
+
+	/*Message defined:
+	 * The actual message
+	 */
+	Message string `json:"message"`
+
+	/*Message defined:
+	 * The actual message
+	 */
+	ShortMessage string `json:"shortMessage"`
+
+	/*Actions defined:
+	 * The message action items to present.
+	 */
+	Actions []MessageActionItem `json:"actions,omitempty"`
+}
+
+
+
 /*LogMessageParams defined:
  * The log message parameters.
  */

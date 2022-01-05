@@ -2,8 +2,15 @@
 package text
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/span"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
@@ -29,6 +36,7 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	if len(edits) == 0 {
 		return nil
 	}
+
 	reader, err := f.Reader()
 	if err != nil {
 		return err
@@ -36,6 +44,21 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	off, err := getNewlineOffsets(reader)
 	if err != nil {
 		return fmt.Errorf("failed to obtain newline offsets: %v", err)
+	}
+
+	if span := edits[0].Range; len(edits) == 1 && span.Start.Line == 0 && span.Start.Character == 0 && int(span.End.Line) >= len(off.nl)-1 {
+		reader, err := f.Reader()
+		if err != nil {
+			return err
+		}
+		p, err := ioutil.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		edits, err = diffEdits(p, []byte(edits[0].NewText))
+		if err != nil {
+			return err
+		}
 	}
 
 	f.DisableMark()
@@ -110,4 +133,135 @@ func ToURI(filename string) protocol.DocumentURI {
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
 	return span.NewURI(uri).Filename()
+}
+
+func diffEdits(old, new []byte) ([]protocol.TextEdit, error) {
+	oldTemp, err := tempfile(old)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(oldTemp)
+	newTemp, err := tempfile(new)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(newTemp)
+
+	diff, _ := exec.Command("9", "diff", oldTemp, newTemp).CombinedOutput()
+
+	var diffs []protocol.TextEdit
+
+	// Adapted from acmego.
+	diffLines := strings.Split(string(diff), "\n")
+	for _, line := range diffLines {
+		if line == "" {
+			continue
+		}
+		if line[0] == '<' || line[0] == '-' || line[0] == '>' {
+			continue
+		}
+		j := 0
+		for j < len(line) && line[j] != 'a' && line[j] != 'c' && line[j] != 'd' {
+			j++
+		}
+		if j >= len(line) {
+			return nil, fmt.Errorf("cannot parse diff line: %q", line)
+		}
+		oldStart, oldEnd := parseSpan(line[:j])
+		newStart, newEnd := parseSpan(line[j+1:])
+		if newStart == 0 || (oldStart == 0 && line[j] != 'a') {
+			continue
+		}
+		switch line[j] {
+		case 'a':
+			diffs = append(diffs, protocol.TextEdit{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: float64(oldStart - 1)},
+					End:   protocol.Position{Line: float64(oldStart - 1)},
+				},
+				NewText: string(findLines(new, newStart, newEnd)),
+			})
+		case 'c':
+			diffs = append(diffs, protocol.TextEdit{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: float64(oldStart - 1)},
+					End:   protocol.Position{Line: float64(oldEnd)},
+				},
+				NewText: string(findLines(new, newStart, newEnd)),
+			})
+		case 'd':
+			diffs = append(diffs, protocol.TextEdit{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: float64(oldStart - 1)},
+					End:   protocol.Position{Line: float64(oldEnd - 1)},
+				},
+				NewText: "",
+			})
+		}
+	}
+	if !bytes.HasSuffix(old, nlBytes) && bytes.HasSuffix(new, nlBytes) {
+		numOldLines := bytes.Count(old, nlBytes)
+		diffs = append(diffs, protocol.TextEdit{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: float64(numOldLines + 1)},
+				End:   protocol.Position{Line: float64(numOldLines + 1)},
+			},
+			NewText: "\n",
+		})
+	}
+	return diffs, nil
+}
+
+var nlBytes = []byte("\n")
+
+func parseSpan(text string) (start, end int) {
+	i := strings.Index(text, ",")
+	if i < 0 {
+		n, err := strconv.Atoi(text)
+		if err != nil {
+			log.Printf("cannot parse span %q", text)
+			return 0, 0
+		}
+		return n, n
+	}
+	start, err1 := strconv.Atoi(text[:i])
+	end, err2 := strconv.Atoi(text[i+1:])
+	if err1 != nil || err2 != nil {
+		log.Printf("cannot parse span %q", text)
+		return 0, 0
+	}
+	return start, end
+}
+
+func findLines(text []byte, start, end int) []byte {
+	i := 0
+
+	start--
+	for ; i < len(text) && start > 0; i++ {
+		if text[i] == '\n' {
+			start--
+			end--
+		}
+	}
+	startByte := i
+	for ; i < len(text) && end > 0; i++ {
+		if text[i] == '\n' {
+			end--
+		}
+	}
+	endByte := i
+	return text[startByte:endByte]
+}
+
+func tempfile(body []byte) (string, error) {
+	f, err := ioutil.TempFile("", "acme-lsp")
+	if err != nil {
+		return "", err
+	}
+	if _, err := f.Write(body); err != nil {
+		return "", err
+	}
+	tmp := f.Name()
+	f.Close()
+	return tmp, nil
 }
