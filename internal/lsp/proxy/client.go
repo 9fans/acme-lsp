@@ -16,7 +16,6 @@ type Client interface{}
 type clientDispatcher struct {
 	*jsonrpc2.Conn
 	protocol.Client
-	Log *log.Logger
 }
 
 type lspClientDispatcher struct {

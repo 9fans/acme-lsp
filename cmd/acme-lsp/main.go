@@ -80,7 +80,7 @@ type Application struct {
 }
 
 func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Application, error) {
-	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter(), logger)
+	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create server set: %v", err)
 	}
@@ -103,7 +103,7 @@ func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Ap
 func (app *Application) Run(ctx context.Context) error {
 	go app.fm.Run()
 
-	app.ss.Logger.Print("acmelsp ListenAndServeProxy")
+	log.Print("acmelsp ListenAndServeProxy")
 	err := acmelsp.ListenAndServeProxy(ctx, app.cfg, app.ss, app.fm)
 	if err != nil {
 		return fmt.Errorf("proxy failed: %v", err)

@@ -14,9 +14,8 @@ import (
 )
 
 type proxyServer struct {
-	ss  *ServerSet // client connections to upstream LSP server (e.g. gopls)
-	fm  *FileManager
-	Log *log.Logger
+	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
+	fm *FileManager
 }
 
 func (s *proxyServer) Version(ctx context.Context) (int, error) {
@@ -61,15 +60,15 @@ func (s *proxyServer) Definition(ctx context.Context, params *protocol.Definitio
 		return nil, fmt.Errorf("Definition: %v", err)
 	}
 	conn := srv.Conn()
-	s.Log.Printf("call to lsp server: %v Call Definition, Conn, local: %v, remote: %v", srv.Name, conn.LocalAddr(), conn.RemoteAddr())
+	log.Printf("call to lsp server: %v Call Definition, Conn, local: %v, remote: %v", srv.Name, conn.LocalAddr(), conn.RemoteAddr())
 	return srv.Client.Definition(ctx, params)
 }
 
 func (s *proxyServer) Metadata(ctx context.Context, params *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error) {
 	srv, err := serverForURI(s.ss, "csharp.cs")
-	s.Log.Printf("call to lsp server: %v Call Metadata", srv.Name)
+	log.Printf("call to lsp server: %v Call Metadata", srv.Name)
 	conn := srv.Conn()
-	s.Log.Printf("call to lsp server: %v Call Definition, Conn, local: %v, remote: %v", srv.Name, conn.LocalAddr(), conn.RemoteAddr())
+	log.Printf("call to lsp server: %v Call Definition, Conn, local: %v, remote: %v", srv.Name, conn.LocalAddr(), conn.RemoteAddr())
 	if err != nil {
 		return nil, fmt.Errorf("Definition: %v", err)
 	}
@@ -187,13 +186,12 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 			return err
 		}
 
-		ss.Logger.Printf("proxy conn, local %v, remote: %v", conn.LocalAddr(), conn.RemoteAddr())
+		log.Printf("proxy conn, local %v, remote: %v", conn.LocalAddr(), conn.RemoteAddr())
 		acmlspStream := jsonrpc2.NewHeaderStream(conn, conn)
 		ctx, rpc, _ := proxy.NewServer(ctx, acmlspStream, &proxyServer{
-			ss:  ss,
-			fm:  fm,
-			Log: ss.Logger,
-		}, ss.Logger)
+			ss: ss,
+			fm: fm,
+		})
 
 		go rpc.Run(ctx)
 	}

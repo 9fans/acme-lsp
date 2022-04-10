@@ -141,7 +141,7 @@ func run(cfg *config.Config, args []string) error {
 	}()
 
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	ctx, rpc, server := proxy.NewClient(ctx, stream, nil, logger)
+	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
 	go rpc.Run(ctx)
 
 	logger.Print("started JSONN RPC")
@@ -202,7 +202,7 @@ func run(cfg *config.Config, args []string) error {
 		return err
 	}
 
-	rc := acmelsp.NewRemoteCmd(server, winid, acmelsp.WithLog(logger))
+	rc := acmelsp.NewRemoteCmd(server, winid)
 
 	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
 	err = rc.DidChange(ctx)

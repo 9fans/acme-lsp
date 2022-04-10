@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	dlog "log"
+	"log"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
+
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
@@ -69,14 +69,14 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 	case "acme-lsp/version": // req
 		resp, err := h.server.Version(ctx)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
+			log.Print(err)
 		}
 		return true
 
 	case "acme-lsp/workspaceFolders": // req
 		resp, err := h.server.WorkspaceFolders(ctx)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
+			log.Print(err)
 		}
 		return true
 
@@ -88,7 +88,7 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		resp, err := h.server.InitializeResult(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
+			log.Print(err)
 		}
 		return true
 
@@ -100,7 +100,7 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		resp, err := h.server.ExecuteCommandOnDocument(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
+			log.Print(err)
 		}
 		return true
 	case protocol.MetadataEndpoint: // req csharp/metadata
@@ -110,11 +110,11 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 
-		h.Log.Print("serverHandler deliver csharp/metadata")
+		log.Print("serverHandler deliver csharp/metadata")
 
 		resp, err := h.server.Metadata(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
+			log.Print(err)
 		}
 		return true
 	default:
@@ -125,7 +125,6 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 type serverDispatcher struct {
 	*jsonrpc2.Conn
 	protocol.Server
-	Log *dlog.Logger
 }
 
 func (s *serverDispatcher) Version(ctx context.Context) (int, error) {

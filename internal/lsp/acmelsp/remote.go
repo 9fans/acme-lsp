@@ -19,35 +19,21 @@ import (
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.
 type RemoteCmd struct {
-	server      proxy.Server
-	winid       int
-	Stdout      io.Writer
-	Stderr      io.Writer
-	Log         *log.Logger
+	server proxy.Server
+	winid  int
+	Stdout io.Writer
+	Stderr io.Writer
+
 	metadataSet map[string]string
 }
 
-type Option func(*RemoteCmd)
-
-func WithLog(logger *log.Logger) Option {
-	return func(r *RemoteCmd) {
-		p := logger.Prefix()
-		logger.SetPrefix(fmt.Sprintf("%sRemoteCmd: ", p))
-		r.Log = logger
-	}
-}
-
-func NewRemoteCmd(server proxy.Server, winid int, ops ...Option) *RemoteCmd {
+func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
 	r := &RemoteCmd{
 		server:      server,
 		winid:       winid,
 		Stdout:      os.Stdout,
 		Stderr:      os.Stderr,
 		metadataSet: map[string]string{},
-	}
-
-	for _, op := range ops {
-		op(r)
 	}
 
 	return r
@@ -142,14 +128,14 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 		return fmt.Errorf("bad server response: %v", err)
 	}
 
-	rc.Log.Printf("definition, location0: %v", locations[0].URI)
+	log.Printf("definition, location0: %v", locations[0].URI)
 
 	sufix := ".cs"
 	uri := pos.TextDocument.URI
 
 	if strings.HasSuffix(uri, sufix) {
 		for i, loc := range locations {
-			rc.Log.Printf("defintion checking location: %#v", loc)
+			log.Printf("defintion checking location: %#v", loc)
 
 			if !strings.HasPrefix(loc.URI, "file:///%24metadata%24") {
 				continue
@@ -191,7 +177,7 @@ func (rc *RemoteCmd) localizeMetadata(ctx context.Context, uri string) (string, 
 	}
 
 	path := convertFilePath(key)
-	rc.Log.Printf("key: %v,  filePath: %v", key, path)
+	log.Printf("key: %v,  filePath: %v", key, path)
 
 	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
 		return "", fmt.Errorf("failed to create dir %s for metatdata of uri: %s to disk, with err: %v", filepath.Dir(path), uri, err)

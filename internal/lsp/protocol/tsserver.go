@@ -527,7 +527,6 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 
-		h.Logger.Print("izhang tsserver.go csharp/metadata")
 		resp, err := h.server.Metadata(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
 			log.Print(err)
@@ -713,7 +712,6 @@ func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureH
 func (s *serverDispatcher) Definition(ctx context.Context, params *DefinitionParams) ([]Location, error) {
 	var result Locations
 
-	s.Logger.Print("serverDispatcher textDocument/definition")
 	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
 		return nil, err
 	}
@@ -723,9 +721,9 @@ func (s *serverDispatcher) Definition(ctx context.Context, params *DefinitionPar
 
 func (s *serverDispatcher) Metadata(ctx context.Context, params *MetadataParams) (*MetaSourceRsponse, error) {
 	var result MetaSourceRsponse
-	s.Logger.Print("serverDispatcher csharp/metadata")
+
 	if err := s.Conn.Call(ctx, MetadataEndpoint, params, &result); err != nil {
-		s.Logger.Printf("/protocol/tsserver.go csharp/metadata params: %v. result: %v, err: %v", params, result, err)
+		log.Printf("/protocol/tsserver.go csharp/metadata params: %v. result: %v, err: %v", params, result, err)
 		return nil, err
 	}
 

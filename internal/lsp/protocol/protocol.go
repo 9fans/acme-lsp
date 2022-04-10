@@ -29,13 +29,11 @@ type canceller struct{ jsonrpc2.EmptyHandler }
 type clientHandler struct {
 	canceller
 	client Client
-	Logger *log.Logger
 }
 
 type serverHandler struct {
 	canceller
 	server Server
-	Logger *log.Logger
 }
 
 func (canceller) Request(ctx context.Context, conn *jsonrpc2.Conn, direction jsonrpc2.Direction, r *jsonrpc2.WireRequest) context.Context {
@@ -61,19 +59,19 @@ func (canceller) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID
 	return true
 }
 
-func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client, logger *log.Logger) (context.Context, *jsonrpc2.Conn, Server) {
+func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client) (context.Context, *jsonrpc2.Conn, Server) {
 	ctx = WithClient(ctx, client)
 	conn := jsonrpc2.NewConn(stream)
-	conn.AddHandler(&clientHandler{client: client, Logger: logger})
-	return ctx, conn, &serverDispatcher{Conn: conn, Logger: logger}
+	conn.AddHandler(&clientHandler{client: client})
+	return ctx, conn, &serverDispatcher{Conn: conn}
 }
 
-func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server, logger *log.Logger) (context.Context, *jsonrpc2.Conn, Client) {
-	logger.Print("protocol.go NewServer")
+func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server) (context.Context, *jsonrpc2.Conn, Client) {
+	log.Print("protocol.go NewServer")
 	conn := jsonrpc2.NewConn(stream)
 	client := &clientDispatcher{Conn: conn}
 	ctx = WithClient(ctx, client)
-	conn.AddHandler(&serverHandler{server: server, Logger: logger})
+	conn.AddHandler(&serverHandler{server: server})
 	return ctx, conn, client
 }
 

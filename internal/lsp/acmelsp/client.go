@@ -110,14 +110,10 @@ type Client struct {
 	protocol.Server
 	initializeResult *protocol.InitializeResult
 	cfg              *ClientConfig
-	logger           *log.Logger
 }
 
-func NewClient(conn net.Conn, cfg *ClientConfig, logger *log.Logger) (*Client, error) {
-	p := logger.Prefix()
-
-	logger.SetPrefix(fmt.Sprintf("%s:client: ", p))
-	c := &Client{cfg: cfg, logger: logger}
+func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
+	c := &Client{cfg: cfg}
 	if err := c.init(conn, cfg); err != nil {
 		return nil, err
 	}
@@ -135,14 +131,14 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 		hideDiag:   cfg.HideDiag,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
-	}, c.logger)
+	})
 	go func() {
 		err := rpc.Run(ctx)
 		if err != nil {
 			log.Printf("connection terminated: %v", err)
 		}
 
-		c.logger.Printf("client RCP runs  ")
+		log.Printf("client RCP runs  ")
 	}()
 
 	d, err := filepath.Abs(cfg.RootDirectory)
