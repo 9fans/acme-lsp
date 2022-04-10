@@ -4,6 +4,7 @@ package text
 import (
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/span"
 	"github.com/fhs/acme-lsp/internal/lsp/protocol"
@@ -24,6 +25,18 @@ type File interface {
 	DisableMark() error
 }
 
+type byStart []protocol.TextEdit
+
+func (e byStart) Len() int      { return len(e) }
+func (e byStart) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
+func (e byStart) Less(i, j int) bool {
+	if e[i].Range.Start.Line == e[j].Range.Start.Line {
+		return e[i].Range.Start.Character < e[j].Range.Start.Character
+	}
+
+	return e[i].Range.Start.Line < e[j].Range.Start.Line
+}
+
 // Edit applied edits to file f.
 func Edit(f File, edits []protocol.TextEdit) error {
 	if len(edits) == 0 {
@@ -41,6 +54,8 @@ func Edit(f File, edits []protocol.TextEdit) error {
 	f.DisableMark()
 	f.Mark()
 
+	sort.Sort(byStart(edits))
+
 	// Applying the edits in reverse order gets the job done.
 	// See https://github.com/golang/go/wiki/gopls#textdocumentformatting-response
 	for i := len(edits) - 1; i >= 0; i-- {
@@ -49,6 +64,7 @@ func Edit(f File, edits []protocol.TextEdit) error {
 		q1 := off.LineToOffset(int(e.Range.End.Line), int(e.Range.End.Character))
 		f.WriteAt(q0, q1, []byte(e.NewText))
 	}
+
 	return nil
 }
 

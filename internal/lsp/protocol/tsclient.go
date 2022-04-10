@@ -3,9 +3,9 @@ package protocol
 import (
 	"context"
 	"encoding/json"
-	log "log"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
+	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
 )
 
@@ -39,7 +39,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 		if err := h.client.ShowMessage(ctx, &params); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "window/logMessage": // notif
@@ -49,7 +49,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 		if err := h.client.LogMessage(ctx, &params); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "telemetry/event": // notif
@@ -59,7 +59,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 		if err := h.client.Event(ctx, &params); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "textDocument/publishDiagnostics": // notif
@@ -69,7 +69,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			return true
 		}
 		if err := h.client.PublishDiagnostics(ctx, &params); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "workspace/workspaceFolders": // req
@@ -79,7 +79,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		resp, err := h.client.WorkspaceFolders(ctx)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "workspace/configuration": // req
@@ -90,7 +90,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		resp, err := h.client.Configuration(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "client/registerCapability": // req
@@ -101,7 +101,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		err := h.client.RegisterCapability(ctx, &params)
 		if err := r.Reply(ctx, nil, err); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "client/unregisterCapability": // req
@@ -112,7 +112,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		err := h.client.UnregisterCapability(ctx, &params)
 		if err := r.Reply(ctx, nil, err); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "window/showMessageRequest": // req
@@ -123,7 +123,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		resp, err := h.client.ShowMessageRequest(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 	case "workspace/applyEdit": // req
@@ -134,7 +134,7 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 		}
 		resp, err := h.client.ApplyEdit(ctx, &params)
 		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Print(err)
+			log.Error(ctx, "", err)
 		}
 		return true
 

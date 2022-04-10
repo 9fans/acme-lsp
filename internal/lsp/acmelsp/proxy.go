@@ -59,16 +59,15 @@ func (s *proxyServer) Definition(ctx context.Context, params *protocol.Definitio
 	if err != nil {
 		return nil, fmt.Errorf("Definition: %v", err)
 	}
-	conn := srv.Conn()
-	log.Printf("call to lsp server: %v Call Definition, Conn, local: %v, remote: %v", srv.Name, conn.LocalAddr(), conn.RemoteAddr())
+
 	return srv.Client.Definition(ctx, params)
 }
 
 func (s *proxyServer) Metadata(ctx context.Context, params *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error) {
 	srv, err := serverForURI(s.ss, "csharp.cs")
+
 	log.Printf("call to lsp server: %v Call Metadata", srv.Name)
-	conn := srv.Conn()
-	log.Printf("call to lsp server: %v Call Definition, Conn, local: %v, remote: %v", srv.Name, conn.LocalAddr(), conn.RemoteAddr())
+
 	if err != nil {
 		return nil, fmt.Errorf("Definition: %v", err)
 	}
@@ -186,7 +185,6 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 			return err
 		}
 
-		log.Printf("proxy conn, local %v, remote: %v", conn.LocalAddr(), conn.RemoteAddr())
 		acmlspStream := jsonrpc2.NewHeaderStream(conn, conn)
 		ctx, rpc, _ := proxy.NewServer(ctx, acmlspStream, &proxyServer{
 			ss: ss,

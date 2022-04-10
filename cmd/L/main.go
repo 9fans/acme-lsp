@@ -216,7 +216,6 @@ func run(cfg *config.Config, args []string) error {
 		return rc.Completion(ctx, len(args) > 0 && args[0] == "-e")
 	case "def":
 		args = args[1:]
-		logger.Print("sent to remote with def")
 
 		return rc.Definition(ctx, len(args) > 0 && args[0] == "-p")
 	case "fmt":

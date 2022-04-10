@@ -103,7 +103,7 @@ func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Ap
 func (app *Application) Run(ctx context.Context) error {
 	go app.fm.Run()
 
-	log.Print("acmelsp ListenAndServeProxy")
+	log.Print("start acmelsp ListenAndServeProxy")
 	err := acmelsp.ListenAndServeProxy(ctx, app.cfg, app.ss, app.fm)
 	if err != nil {
 		return fmt.Errorf("proxy failed: %v", err)
