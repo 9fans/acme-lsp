@@ -20,8 +20,11 @@ import (
 )
 
 type Server struct {
-	conn   net.Conn
+	Name string
+	conn net.Conn
+
 	Client *Client
+	Log    *log.Logger
 }
 
 func (s *Server) Close() {
@@ -30,7 +33,11 @@ func (s *Server) Close() {
 	}
 }
 
-func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
+func (s *Server) Conn() net.Conn {
+	return s.conn
+}
+
+func execServer(cs *config.Server, cfg *ClientConfig, logger *log.Logger) (*Server, error) {
 	args := cs.Command
 
 	stderr := os.Stderr
@@ -92,7 +99,7 @@ func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 		}
 	}()
 
-	srv.Client, err = NewClient(p1, cfg)
+	srv.Client, err = NewClient(p1, cfg, logger)
 	if err != nil {
 		cmd.Process.Kill()
 		return nil, fmt.Errorf("failed to connect to language server %q: %v", args, err)
@@ -100,12 +107,12 @@ func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	return srv, nil
 }
 
-func dialServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
+func dialServer(cs *config.Server, cfg *ClientConfig, logger *log.Logger) (*Server, error) {
 	conn, err := net.Dial("tcp", cs.Address)
 	if err != nil {
 		return nil, err
 	}
-	c, err := NewClient(conn, cfg)
+	c, err := NewClient(conn, cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to language server at %v: %v", cs.Address, err)
 	}
@@ -125,19 +132,19 @@ type ServerInfo struct {
 	srv    *Server        // running server instance
 }
 
-func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
+func (info *ServerInfo) start(cfg *ClientConfig, logger *log.Logger) (*Server, error) {
 	if info.srv != nil {
 		return info.srv, nil
 	}
 
 	if len(info.Address) > 0 {
-		srv, err := dialServer(info.Server, cfg)
+		srv, err := dialServer(info.Server, cfg, logger)
 		if err != nil {
 			return nil, err
 		}
 		info.srv = srv
 	} else {
-		srv, err := execServer(info.Server, cfg)
+		srv, err := execServer(info.Server, cfg, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -153,10 +160,11 @@ type ServerSet struct {
 	diagWriter DiagnosticsWriter
 	workspaces map[protocol.DocumentURI]*protocol.WorkspaceFolder // set of workspace folders
 	cfg        *config.Config
+	Logger     *log.Logger
 }
 
 // NewServerSet creates a new server set from config.
-func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet, error) {
+func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter, inLogger *log.Logger) (*ServerSet, error) {
 	workspaces := make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
 	if len(cfg.WorkspaceDirectories) > 0 {
 		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
@@ -190,18 +198,23 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 			}
 			logger = log.New(f, "", log.LstdFlags)
 		}
+
 		data = append(data, &ServerInfo{
 			Server:          cs,
 			FilenameHandler: &cfg.FilenameHandlers[i],
 			Re:              re,
 			Logger:          logger,
 		})
+
+		inLogger.Printf("Add %#v server to serverSet  ", cs)
 	}
+
 	return &ServerSet{
 		Data:       data,
 		diagWriter: diagWriter,
 		workspaces: workspaces,
 		cfg:        cfg,
+		Logger:     inLogger,
 	}, nil
 }
 
@@ -232,10 +245,14 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if info == nil {
 		return nil, false, nil // unknown language server
 	}
-	srv, err := info.start(ss.ClientConfig(info))
+	srv, err := info.start(ss.ClientConfig(info), ss.Logger)
 	if err != nil {
 		return nil, false, err
 	}
+
+	srv.Name = info.Name
+	srv.Log = info.Logger
+
 	return srv, true, err
 }
 
@@ -265,7 +282,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 
 func (ss *ServerSet) forEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
-		srv, err := info.start(ss.ClientConfig(info))
+		srv, err := info.start(ss.ClientConfig(info), ss.Logger)
 		if err != nil {
 			return err
 		}

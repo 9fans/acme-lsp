@@ -54,11 +54,13 @@ func usage() {
 	os.Exit(2)
 }
 
+var logger = log.Default()
+
 func main() {
 	flag.Usage = usage
 	cfg := cmd.Setup(config.LangServerFlags | config.ProxyFlags)
-	log.SetFlags(log.Llongfile)
-	log.SetPrefix("acme-lsp: ")
+	logger.SetFlags(log.Llongfile)
+	logger.SetPrefix("acme-lsp: ")
 
 	ctx := context.Background()
 	app, err := NewApplication(ctx, cfg, flag.Args())
@@ -78,7 +80,7 @@ type Application struct {
 }
 
 func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Application, error) {
-	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
+	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter(), logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create server set: %v", err)
 	}
@@ -101,6 +103,7 @@ func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Ap
 func (app *Application) Run(ctx context.Context) error {
 	go app.fm.Run()
 
+	app.ss.Logger.Print("acmelsp ListenAndServeProxy")
 	err := acmelsp.ListenAndServeProxy(ctx, app.cfg, app.ss, app.fm)
 	if err != nil {
 		return fmt.Errorf("proxy failed: %v", err)

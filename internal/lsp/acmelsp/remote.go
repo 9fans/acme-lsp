@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
@@ -16,19 +19,38 @@ import (
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.
 type RemoteCmd struct {
-	server proxy.Server
-	winid  int
-	Stdout io.Writer
-	Stderr io.Writer
+	server      proxy.Server
+	winid       int
+	Stdout      io.Writer
+	Stderr      io.Writer
+	Log         *log.Logger
+	metadataSet map[string]string
 }
 
-func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
-	return &RemoteCmd{
-		server: server,
-		winid:  winid,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+type Option func(*RemoteCmd)
+
+func WithLog(logger *log.Logger) Option {
+	return func(r *RemoteCmd) {
+		p := logger.Prefix()
+		logger.SetPrefix(fmt.Sprintf("%sRemoteCmd: ", p))
+		r.Log = logger
 	}
+}
+
+func NewRemoteCmd(server proxy.Server, winid int, ops ...Option) *RemoteCmd {
+	r := &RemoteCmd{
+		server:      server,
+		winid:       winid,
+		Stdout:      os.Stdout,
+		Stderr:      os.Stderr,
+		metadataSet: map[string]string{},
+	}
+
+	for _, op := range ops {
+		op(r)
+	}
+
+	return r
 }
 
 func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, filename string, err error) {
@@ -119,10 +141,112 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	if err != nil {
 		return fmt.Errorf("bad server response: %v", err)
 	}
+
+	rc.Log.Printf("definition, location0: %v", locations[0].URI)
+
+	sufix := ".cs"
+	uri := pos.TextDocument.URI
+
+	if strings.HasSuffix(uri, sufix) {
+		for i, loc := range locations {
+			rc.Log.Printf("defintion checking location: %#v", loc)
+
+			if !strings.HasPrefix(loc.URI, "file:///%24metadata%24") {
+				continue
+			}
+
+			path, err := rc.localizeMetadata(ctx, loc.URI)
+			if err != nil {
+				return fmt.Errorf("can't localize metadata: %v", err)
+			}
+
+			locations[i].URI = protocol.DocumentURI(path)
+
+		}
+	}
+
 	if print {
 		return PrintLocations(rc.Stdout, locations)
 	}
+
 	return PlumbLocations(locations)
+}
+
+func (rc *RemoteCmd) localizeMetadata(ctx context.Context, uri string) (string, error) {
+	p, ok := GetMetaParas(uri)
+	if !ok {
+		return "", fmt.Errorf("failed to parse URI to MetaParas")
+	}
+	// server over here is the acme-lsp server
+	src, err := rc.server.Metadata(ctx, p)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to retrive metatdata of uri: %s, with err: %w", uri, err)
+	}
+
+	key := src.SourceName
+
+	if v, ok := rc.metadataSet[key]; ok {
+		return v, nil
+	}
+
+	path := convertFilePath(key)
+	rc.Log.Printf("key: %v,  filePath: %v", key, path)
+
+	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
+		return "", fmt.Errorf("failed to create dir %s for metatdata of uri: %s to disk, with err: %v", filepath.Dir(path), uri, err)
+	}
+
+	f, err := os.Create(path) // creates a file at current directory
+	if err != nil {
+		return "", fmt.Errorf("failed to create file for metatdata of uri: %s to disk, with err: %v", uri, err)
+	}
+
+	defer f.Close()
+
+	if err := ioutil.WriteFile(path, []byte(src.Source), 0644); err != nil {
+		return "", fmt.Errorf("failed to write metatdata of uri: %s to disk, with err: %v", uri, err)
+	}
+
+	rc.metadataSet[key] = path
+	return path, nil
+
+}
+
+func convertFilePath(p string) (path string) {
+	fmt.Println(os.TempDir())
+	path = strings.Replace(p, "$metadata$", fmt.Sprintf("%s/csharp-metadata/", os.TempDir()), 1) //os.TempDir
+	return
+}
+
+func GetMetaParas(s string) (*protocol.MetadataParams, bool) { //
+	out := &protocol.MetadataParams{TimeOut: 5000}
+	parts := strings.Split(s, "/Assembly/")
+
+	if len(parts) < 2 {
+		return nil, false
+	}
+
+	pName := strings.TrimPrefix(parts[0], "file:///%24metadata%24/Project/")
+
+	out.ProjectName = pName
+
+	parts = strings.Split(parts[1], "/Symbol/")
+
+	if len(parts) != 2 {
+		return nil, false
+	}
+
+	assemblyName := strings.Replace(parts[0], "/", ".", -1)
+
+	out.AssemblyName = assemblyName
+
+	typeName := strings.Replace(strings.TrimSuffix(parts[1], ".cs"), "/", ".", -1)
+
+	out.TypeName = typeName
+
+	return out, true
+
 }
 
 func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {

@@ -1,4 +1,5 @@
 cmd/acme-lsp/acme-lsp
 cmd/L/L
 cmd/Lone/Lone
+bin/*
 guide

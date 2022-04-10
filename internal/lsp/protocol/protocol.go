@@ -7,9 +7,10 @@ package protocol
 import (
 	"context"
 	"encoding/json"
+	log "log"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
+
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/trace"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
 )
@@ -17,6 +18,8 @@ import (
 const (
 	// RequestCancelledError should be used when a request is cancelled early.
 	RequestCancelledError = -32800
+	MetadataEndpoint      = "o#/metadata"
+	// MetadataEndpoint = "csharp/metadata"
 )
 
 type DocumentUri = string
@@ -26,18 +29,20 @@ type canceller struct{ jsonrpc2.EmptyHandler }
 type clientHandler struct {
 	canceller
 	client Client
+	Logger *log.Logger
 }
 
 type serverHandler struct {
 	canceller
 	server Server
+	Logger *log.Logger
 }
 
 func (canceller) Request(ctx context.Context, conn *jsonrpc2.Conn, direction jsonrpc2.Direction, r *jsonrpc2.WireRequest) context.Context {
 	if direction == jsonrpc2.Receive && r.Method == "$/cancelRequest" {
 		var params CancelParams
 		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			log.Error(ctx, "", err)
+			log.Print(err)
 		} else {
 			conn.Cancel(params.ID)
 		}
@@ -56,18 +61,19 @@ func (canceller) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID
 	return true
 }
 
-func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client) (context.Context, *jsonrpc2.Conn, Server) {
+func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client, logger *log.Logger) (context.Context, *jsonrpc2.Conn, Server) {
 	ctx = WithClient(ctx, client)
 	conn := jsonrpc2.NewConn(stream)
-	conn.AddHandler(&clientHandler{client: client})
-	return ctx, conn, &serverDispatcher{Conn: conn}
+	conn.AddHandler(&clientHandler{client: client, Logger: logger})
+	return ctx, conn, &serverDispatcher{Conn: conn, Logger: logger}
 }
 
-func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server) (context.Context, *jsonrpc2.Conn, Client) {
+func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server, logger *log.Logger) (context.Context, *jsonrpc2.Conn, Client) {
+	logger.Print("protocol.go NewServer")
 	conn := jsonrpc2.NewConn(stream)
 	client := &clientDispatcher{Conn: conn}
 	ctx = WithClient(ctx, client)
-	conn.AddHandler(&serverHandler{server: server})
+	conn.AddHandler(&serverHandler{server: server, Logger: logger})
 	return ctx, conn, client
 }
 
@@ -76,6 +82,6 @@ func sendParseError(ctx context.Context, req *jsonrpc2.Request, err error) {
 		err = jsonrpc2.NewErrorf(jsonrpc2.CodeParseError, "%v", err)
 	}
 	if err := req.Reply(ctx, nil, err); err != nil {
-		log.Error(ctx, "", err)
+		log.Print(err)
 	}
 }

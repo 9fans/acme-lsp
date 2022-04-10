@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	dlog "log"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
@@ -48,6 +49,7 @@ type Server interface {
 	SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
 	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error)
 	TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error)
+	Metadata(context.Context, *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error)
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -101,7 +103,20 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			log.Error(ctx, "", err)
 		}
 		return true
+	case protocol.MetadataEndpoint: // req csharp/metadata
+		var params protocol.MetadataParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
 
+		h.Log.Print("serverHandler deliver csharp/metadata")
+
+		resp, err := h.server.Metadata(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
 	default:
 		return false
 	}
@@ -110,6 +125,7 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 type serverDispatcher struct {
 	*jsonrpc2.Conn
 	protocol.Server
+	Log *dlog.Logger
 }
 
 func (s *serverDispatcher) Version(ctx context.Context) (int, error) {
@@ -162,6 +178,10 @@ type lspServerDispatcher struct {
 
 func (s *lspServerDispatcher) Initialized(context.Context, *protocol.InitializedParams) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) Metadata(context.Context, *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *lspServerDispatcher) Exit(context.Context) error {

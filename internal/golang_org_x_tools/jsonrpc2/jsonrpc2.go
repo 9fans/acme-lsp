@@ -11,7 +11,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 )
@@ -141,8 +140,6 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		Params: jsonParams,
 	}
 
-	log.Printf("ianzhang Call, method: %#v", method)
-
 	// marshal the request now it is complete
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -151,6 +148,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 	for _, h := range c.handlers {
 		ctx = h.Request(ctx, c, Send, request)
 	}
+
 	// we have to add ourselves to the pending map before we send, otherwise we
 	// are racing the response
 	rchan := make(chan *WireResponse)

@@ -36,6 +36,11 @@ func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMe
 	return nil
 }
 
+func (h *clientHandler) Metadata(ctx context.Context, params *protocol.MetadataParams) error {
+	log.Printf("LSP Metadata, params: %v\n", params)
+	return nil
+}
+
 func (h *clientHandler) LogMessage(ctx context.Context, params *protocol.LogMessageParams) error {
 	if h.cfg.Logger != nil {
 		h.cfg.Logger.Printf("%v: %v\n", params.Type, params.Message)
@@ -105,10 +110,14 @@ type Client struct {
 	protocol.Server
 	initializeResult *protocol.InitializeResult
 	cfg              *ClientConfig
+	logger           *log.Logger
 }
 
-func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
-	c := &Client{cfg: cfg}
+func NewClient(conn net.Conn, cfg *ClientConfig, logger *log.Logger) (*Client, error) {
+	p := logger.Prefix()
+
+	logger.SetPrefix(fmt.Sprintf("%s:client: ", p))
+	c := &Client{cfg: cfg, logger: logger}
 	if err := c.init(conn, cfg); err != nil {
 		return nil, err
 	}
@@ -121,17 +130,19 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if cfg.RPCTrace {
 		stream = protocol.LoggingStream(stream, os.Stderr)
 	}
-	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
+	ctx, rpc, serverDispatcher := protocol.NewClient(ctx, stream, &clientHandler{
 		cfg:        cfg,
 		hideDiag:   cfg.HideDiag,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
-	})
+	}, c.logger)
 	go func() {
 		err := rpc.Run(ctx)
 		if err != nil {
 			log.Printf("connection terminated: %v", err)
 		}
+
+		c.logger.Printf("client RCP runs  ")
 	}()
 
 	d, err := filepath.Abs(cfg.RootDirectory)
@@ -168,7 +179,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialized failed: %v", err)
 	}
-	c.Server = server
+	c.Server = serverDispatcher
 	c.initializeResult = &result
 	return nil
 }
