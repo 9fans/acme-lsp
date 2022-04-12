@@ -9,7 +9,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
 )
 
-type Server interface {
+type server interface {
 	DidChangeWorkspaceFolders(context.Context, *DidChangeWorkspaceFoldersParams) error
 	Initialized(context.Context, *InitializedParams) error
 	Exit(context.Context) error
@@ -53,7 +53,15 @@ type Server interface {
 	Rename(context.Context, *RenameParams) (*WorkspaceEdit, error)
 	PrepareRename(context.Context, *PrepareRenameParams) (*Range, error)
 	ExecuteCommand(context.Context, *ExecuteCommandParams) (interface{}, error)
+}
+
+type ExtendServer interface {
 	Metadata(context.Context, *MetadataParams) (*MetaSourceRsponse, error)
+}
+
+type Server interface {
+	server
+	ExtendServer
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {

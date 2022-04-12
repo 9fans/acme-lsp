@@ -15,7 +15,6 @@ import (
 //metdata is implemented due to the https://github.com/OmniSharp/omnisharp-roslyn/issues/2238
 
 func convertFilePath(p string) (path string) {
-	fmt.Println(os.TempDir())
 	path = strings.Replace(p, "$metadata$", fmt.Sprintf("%s/csharp-metadata/", os.TempDir()), 1) //os.TempDir
 	return
 }

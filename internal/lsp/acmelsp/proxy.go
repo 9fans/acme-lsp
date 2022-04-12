@@ -18,6 +18,8 @@ type proxyServer struct {
 	fm *FileManager
 }
 
+var _ proxy.Server = (*proxyServer)(nil)
+
 func (s *proxyServer) Version(ctx context.Context) (int, error) {
 	return proxy.Version, nil
 }

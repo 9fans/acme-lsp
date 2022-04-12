@@ -15,7 +15,7 @@ const Version = 1
 
 // Server implements a subset of an LSP protocol server as defined by protocol.Server and
 // some custom acme-lsp specific methods.
-type Server interface {
+type subLspServer interface {
 	// Version returns the protocol version.
 	Version(context.Context) (int, error)
 
@@ -48,7 +48,15 @@ type Server interface {
 	SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
 	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error)
 	TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error)
+}
+
+type ExtendServer interface {
 	Metadata(context.Context, *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error)
+}
+
+type Server interface {
+	subLspServer
+	ExtendServer
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
