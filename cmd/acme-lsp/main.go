@@ -54,9 +54,13 @@ func usage() {
 	os.Exit(2)
 }
 
+var logger = log.Default()
+
 func main() {
 	flag.Usage = usage
 	cfg := cmd.Setup(config.LangServerFlags | config.ProxyFlags)
+	logger.SetFlags(log.Llongfile)
+	logger.SetPrefix("acme-lsp: ")
 
 	ctx := context.Background()
 	app, err := NewApplication(ctx, cfg, flag.Args())
@@ -99,6 +103,7 @@ func NewApplication(ctx context.Context, cfg *config.Config, args []string) (*Ap
 func (app *Application) Run(ctx context.Context) error {
 	go app.fm.Run()
 
+	log.Print("start acmelsp ListenAndServeProxy")
 	err := acmelsp.ListenAndServeProxy(ctx, app.cfg, app.ss, app.fm)
 	if err != nil {
 		return fmt.Errorf("proxy failed: %v", err)

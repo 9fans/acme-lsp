@@ -1,7 +1,5 @@
 package protocol
 
-// Code generated (see typescript/README.md) DO NOT EDIT.
-
 import (
 	"context"
 	"encoding/json"

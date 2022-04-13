@@ -139,6 +139,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		Method: method,
 		Params: jsonParams,
 	}
+
 	// marshal the request now it is complete
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -147,6 +148,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 	for _, h := range c.handlers {
 		ctx = h.Request(ctx, c, Send, request)
 	}
+
 	// we have to add ourselves to the pending map before we send, otherwise we
 	// are racing the response
 	rchan := make(chan *WireResponse)
@@ -177,6 +179,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		for _, h := range c.handlers {
 			ctx = h.Response(ctx, c, Receive, response)
 		}
+
 		// is it an error response?
 		if response.Error != nil {
 			return response.Error
@@ -184,9 +187,11 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		if result == nil || response.Result == nil {
 			return nil
 		}
+
 		if err := json.Unmarshal(*response.Result, result); err != nil {
 			return fmt.Errorf("unmarshalling result: %v", err)
 		}
+
 		return nil
 	case <-ctx.Done():
 		// allow the handler to propagate the cancel
@@ -261,6 +266,7 @@ func (r *Request) Reply(ctx context.Context, result interface{}, err error) erro
 	if err != nil {
 		return err
 	}
+
 	for _, h := range r.conn.handlers {
 		ctx = h.Response(ctx, r.conn, Send, response)
 	}

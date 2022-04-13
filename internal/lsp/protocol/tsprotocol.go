@@ -4,8 +4,6 @@
 // last fetched Tue Sep 24 2019 17:44:28 GMT-0400 (Eastern Daylight Time)
 package protocol
 
-// Code generated (see typescript/README.md) DO NOT EDIT.
-
 /*ImplementationClientCapabilities defined:
  * Since 3.6.0
  */
@@ -986,7 +984,7 @@ type ServerCapabilities struct {
 	/*HoverProvider defined:
 	 * The server provides hover support.
 	 */
-	HoverProvider bool `json:"hoverProvider,omitempty"` // boolean | HoverOptions
+	HoverProvider interface{} `json:"hoverProvider,omitempty"` // boolean | HoverOptions
 
 	/*SignatureHelpProvider defined:
 	 * The server provides signature help support.
@@ -996,37 +994,37 @@ type ServerCapabilities struct {
 	/*DeclarationProvider defined:
 	 * The server provides Goto Declaration support.
 	 */
-	DeclarationProvider bool `json:"declarationProvider,omitempty"` // boolean | DeclarationOptions | DeclarationRegistrationOptions
+	DeclarationProvider interface{} `json:"declarationProvider,omitempty"` // boolean | DeclarationOptions | DeclarationRegistrationOptions
 
 	/*DefinitionProvider defined:
 	 * The server provides goto definition support.
 	 */
-	DefinitionProvider bool `json:"definitionProvider,omitempty"` // boolean | DefinitionOptions
+	DefinitionProvider interface{} `json:"definitionProvider,omitempty"` // boolean | DefinitionOptions
 
 	/*TypeDefinitionProvider defined:
 	 * The server provides Goto Type Definition support.
 	 */
-	TypeDefinitionProvider bool `json:"typeDefinitionProvider,omitempty"` // boolean | TypeDefinitionOptions | TypeDefinitionRegistrationOptions
+	TypeDefinitionProvider interface{} `json:"typeDefinitionProvider,omitempty"` // boolean | TypeDefinitionOptions | TypeDefinitionRegistrationOptions
 
 	/*ImplementationProvider defined:
 	 * The server provides Goto Implementation support.
 	 */
-	ImplementationProvider bool `json:"implementationProvider,omitempty"` // boolean | ImplementationOptions | ImplementationRegistrationOptions
+	ImplementationProvider interface{} `json:"implementationProvider,omitempty"` // boolean | ImplementationOptions | ImplementationRegistrationOptions
 
 	/*ReferencesProvider defined:
 	 * The server provides find references support.
 	 */
-	ReferencesProvider bool `json:"referencesProvider,omitempty"` // boolean | ReferenceOptions
+	ReferencesProvider interface{} `json:"referencesProvider,omitempty"` // boolean | ReferenceOptions
 
 	/*DocumentHighlightProvider defined:
 	 * The server provides document highlight support.
 	 */
-	DocumentHighlightProvider bool `json:"documentHighlightProvider,omitempty"` // boolean | DocumentHighlightOptions
+	DocumentHighlightProvider interface{} `json:"documentHighlightProvider,omitempty"` // boolean | DocumentHighlightOptions
 
 	/*DocumentSymbolProvider defined:
 	 * The server provides document symbol support.
 	 */
-	DocumentSymbolProvider bool `json:"documentSymbolProvider,omitempty"` // boolean | DocumentSymbolOptions
+	DocumentSymbolProvider interface{} `json:"documentSymbolProvider,omitempty"` // boolean | DocumentSymbolOptions
 
 	/*CodeActionProvider defined:
 	 * The server provides code actions. CodeActionOptions may only be
@@ -1048,22 +1046,22 @@ type ServerCapabilities struct {
 	/*ColorProvider defined:
 	 * The server provides color provider support.
 	 */
-	ColorProvider bool `json:"colorProvider,omitempty"` // boolean | DocumentColorOptions | DocumentColorRegistrationOptions
+	ColorProvider interface{} `json:"colorProvider,omitempty"` // boolean | DocumentColorOptions | DocumentColorRegistrationOptions
 
 	/*WorkspaceSymbolProvider defined:
 	 * The server provides workspace symbol support.
 	 */
-	WorkspaceSymbolProvider bool `json:"workspaceSymbolProvider,omitempty"` // boolean | WorkspaceSymbolOptions
+	WorkspaceSymbolProvider interface{} `json:"workspaceSymbolProvider,omitempty"` // boolean | WorkspaceSymbolOptions
 
 	/*DocumentFormattingProvider defined:
 	 * The server provides document formatting.
 	 */
-	DocumentFormattingProvider bool `json:"documentFormattingProvider,omitempty"` // boolean | DocumentFormattingOptions
+	DocumentFormattingProvider interface{} `json:"documentFormattingProvider,omitempty"` // boolean | DocumentFormattingOptions
 
 	/*DocumentRangeFormattingProvider defined:
 	 * The server provides document range formatting.
 	 */
-	DocumentRangeFormattingProvider bool `json:"documentRangeFormattingProvider,omitempty"` // boolean | DocumentRangeFormattingOptions
+	DocumentRangeFormattingProvider interface{} `json:"documentRangeFormattingProvider,omitempty"` // boolean | DocumentRangeFormattingOptions
 
 	/*DocumentOnTypeFormattingProvider defined:
 	 * The server provides document formatting on typing.
@@ -1080,12 +1078,12 @@ type ServerCapabilities struct {
 	/*FoldingRangeProvider defined:
 	 * The server provides folding provider support.
 	 */
-	FoldingRangeProvider bool `json:"foldingRangeProvider,omitempty"` // boolean | FoldingRangeOptions | FoldingRangeRegistrationOptions
+	FoldingRangeProvider interface{} `json:"foldingRangeProvider,omitempty"` // boolean | FoldingRangeOptions | FoldingRangeRegistrationOptions
 
 	/*SelectionRangeProvider defined:
 	 * The server provides selection range support.
 	 */
-	SelectionRangeProvider bool `json:"selectionRangeProvider,omitempty"` // boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions
+	SelectionRangeProvider interface{} `json:"selectionRangeProvider,omitempty"` // boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions
 
 	/*ExecuteCommandProvider defined:
 	 * The server provides execute command support.
@@ -3307,7 +3305,7 @@ type CompletionItem struct {
 	/*Documentation defined:
 	 * A human-readable string that represents a doc-comment.
 	 */
-	Documentation MarkupContent `json:"documentation,omitempty"` // string | MarkupContent
+	Documentation interface{} `json:"documentation,omitempty"` // string | MarkupContent
 
 	/*Deprecated defined:
 	 * Indicates if this item is deprecated.

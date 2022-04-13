@@ -15,7 +15,7 @@ const Version = 1
 
 // Server implements a subset of an LSP protocol server as defined by protocol.Server and
 // some custom acme-lsp specific methods.
-type Server interface {
+type subLspServer interface {
 	// Version returns the protocol version.
 	Version(context.Context) (int, error)
 
@@ -48,6 +48,15 @@ type Server interface {
 	SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
 	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error)
 	TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error)
+}
+
+type ExtendServer interface {
+	Metadata(context.Context, *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error)
+}
+
+type Server interface {
+	subLspServer
+	ExtendServer
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -101,7 +110,18 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			log.Error(ctx, "", err)
 		}
 		return true
+	case protocol.MetadataEndpoint: // req csharp/metadata
+		var params protocol.MetadataParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
 
+		resp, err := h.server.Metadata(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
 	default:
 		return false
 	}
@@ -162,6 +182,10 @@ type lspServerDispatcher struct {
 
 func (s *lspServerDispatcher) Initialized(context.Context, *protocol.InitializedParams) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (s *lspServerDispatcher) Metadata(context.Context, *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *lspServerDispatcher) Exit(context.Context) error {

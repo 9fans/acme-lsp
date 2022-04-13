@@ -1,7 +1,5 @@
 package protocol
 
-// Code generated (see typescript/README.md) DO NOT EDIT.
-
 import (
 	"context"
 	"encoding/json"
@@ -11,7 +9,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/xcontext"
 )
 
-type Server interface {
+type server interface {
 	DidChangeWorkspaceFolders(context.Context, *DidChangeWorkspaceFoldersParams) error
 	Initialized(context.Context, *InitializedParams) error
 	Exit(context.Context) error
@@ -55,6 +53,15 @@ type Server interface {
 	Rename(context.Context, *RenameParams) (*WorkspaceEdit, error)
 	PrepareRename(context.Context, *PrepareRenameParams) (*Range, error)
 	ExecuteCommand(context.Context, *ExecuteCommandParams) (interface{}, error)
+}
+
+type ExtendServer interface {
+	Metadata(context.Context, *MetadataParams) (*MetaSourceRsponse, error)
+}
+
+type Server interface {
+	server
+	ExtendServer
 }
 
 func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
@@ -521,7 +528,18 @@ func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			log.Error(ctx, "", err)
 		}
 		return true
+	case MetadataEndpoint: // req csharp/metadata
+		var params MetadataParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			sendParseError(ctx, r, err)
+			return true
+		}
 
+		resp, err := h.server.Metadata(ctx, &params)
+		if err := r.Reply(ctx, resp, err); err != nil {
+			log.Error(ctx, "", err)
+		}
+		return true
 	default:
 		return false
 	}
@@ -659,11 +677,17 @@ func (s *serverDispatcher) WillSaveWaitUntil(ctx context.Context, params *WillSa
 }
 
 func (s *serverDispatcher) Completion(ctx context.Context, params *CompletionParams) (*CompletionList, error) {
-	var result CompletionList
-	if err := s.Conn.Call(ctx, "textDocument/completion", params, &result); err != nil {
+	//var result CompletionList
+
+	var items compList
+	// var items []CompletionItem
+
+	if err := s.Conn.Call(ctx, "textDocument/completion", params, &items); err != nil {
 		return nil, err
 	}
-	return &result, nil
+
+	res := CompletionList(items)
+	return &res, nil
 }
 
 func (s *serverDispatcher) Resolve(ctx context.Context, params *CompletionItem) (*CompletionItem, error) {
@@ -676,6 +700,7 @@ func (s *serverDispatcher) Resolve(ctx context.Context, params *CompletionItem) 
 
 func (s *serverDispatcher) Hover(ctx context.Context, params *HoverParams) (*Hover, error) {
 	var result Hover
+
 	if err := s.Conn.Call(ctx, "textDocument/hover", params, &result); err != nil {
 		return nil, err
 	}
@@ -684,6 +709,7 @@ func (s *serverDispatcher) Hover(ctx context.Context, params *HoverParams) (*Hov
 
 func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureHelpParams) (*SignatureHelp, error) {
 	var result SignatureHelp
+
 	if err := s.Conn.Call(ctx, "textDocument/signatureHelp", params, &result); err != nil {
 		return nil, err
 	}
@@ -692,10 +718,22 @@ func (s *serverDispatcher) SignatureHelp(ctx context.Context, params *SignatureH
 
 func (s *serverDispatcher) Definition(ctx context.Context, params *DefinitionParams) ([]Location, error) {
 	var result Locations
+
 	if err := s.Conn.Call(ctx, "textDocument/definition", params, &result); err != nil {
 		return nil, err
 	}
+
 	return result, nil
+}
+
+func (s *serverDispatcher) Metadata(ctx context.Context, params *MetadataParams) (*MetaSourceRsponse, error) {
+	var result MetaSourceRsponse
+
+	if err := s.Conn.Call(ctx, MetadataEndpoint, params, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 func (s *serverDispatcher) References(ctx context.Context, params *ReferenceParams) ([]Location, error) {
@@ -703,6 +741,7 @@ func (s *serverDispatcher) References(ctx context.Context, params *ReferencePara
 	if err := s.Conn.Call(ctx, "textDocument/references", params, &result); err != nil {
 		return nil, err
 	}
+
 	return result, nil
 }
 

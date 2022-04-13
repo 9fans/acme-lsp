@@ -80,6 +80,7 @@ type Config struct {
 
 // Server describes a LSP server.
 type Server struct {
+	Name string
 	// Command that speaks LSP on stdin/stdout.
 	// Can be empty if Address is given.
 	Command []string

@@ -36,6 +36,11 @@ func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMe
 	return nil
 }
 
+func (h *clientHandler) Metadata(ctx context.Context, params *protocol.MetadataParams) error {
+	log.Printf("LSP Metadata, params: %v\n", params)
+	return nil
+}
+
 func (h *clientHandler) LogMessage(ctx context.Context, params *protocol.LogMessageParams) error {
 	if h.cfg.Logger != nil {
 		h.cfg.Logger.Printf("%v: %v\n", params.Type, params.Message)
@@ -121,7 +126,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if cfg.RPCTrace {
 		stream = protocol.LoggingStream(stream, os.Stderr)
 	}
-	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
+	ctx, rpc, serverDispatcher := protocol.NewClient(ctx, stream, &clientHandler{
 		cfg:        cfg,
 		hideDiag:   cfg.HideDiag,
 		diagWriter: cfg.DiagWriter,
@@ -132,6 +137,8 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 		if err != nil {
 			log.Printf("connection terminated: %v", err)
 		}
+
+		log.Printf("client RCP runs  ")
 	}()
 
 	d, err := filepath.Abs(cfg.RootDirectory)
@@ -168,7 +175,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialized failed: %v", err)
 	}
-	c.Server = server
+	c.Server = serverDispatcher
 	c.initializeResult = &result
 	return nil
 }

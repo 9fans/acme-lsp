@@ -20,15 +20,20 @@ type RemoteCmd struct {
 	winid  int
 	Stdout io.Writer
 	Stderr io.Writer
+
+	metadataSet map[string]string
 }
 
 func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
-	return &RemoteCmd{
-		server: server,
-		winid:  winid,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+	r := &RemoteCmd{
+		server:      server,
+		winid:       winid,
+		Stdout:      os.Stdout,
+		Stderr:      os.Stderr,
+		metadataSet: map[string]string{},
 	}
+
+	return r
 }
 
 func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, filename string, err error) {
@@ -119,9 +124,30 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	if err != nil {
 		return fmt.Errorf("bad server response: %v", err)
 	}
+
+	sufix := ".cs"
+	uri := pos.TextDocument.URI
+
+	if strings.HasSuffix(uri, sufix) {
+		for i, loc := range locations {
+			if !strings.HasPrefix(loc.URI, "file:///%24metadata%24") {
+				continue
+			}
+
+			path, err := rc.localizeMetadata(ctx, loc.URI)
+			if err != nil {
+				return fmt.Errorf("can't localize metadata: %v", err)
+			}
+
+			locations[i].URI = protocol.DocumentURI(path)
+
+		}
+	}
+
 	if print {
 		return PrintLocations(rc.Stdout, locations)
 	}
+
 	return PlumbLocations(locations)
 }
 
@@ -192,6 +218,7 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	if len(loc) == 0 {
 		fmt.Fprintf(rc.Stderr, "No references found.\n")
 		return nil

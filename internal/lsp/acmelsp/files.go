@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+
 	"sync"
 
 	"github.com/fhs/acme-lsp/internal/acme"
@@ -82,6 +83,7 @@ func (fm *FileManager) Run() {
 			if err := fm.didSave(ev.ID, ev.Name); err != nil {
 				log.Printf("didSave failed in file manager: %v", err)
 			}
+
 			if fm.cfg.FormatOnPut {
 				if err := fm.format(ev.ID, ev.Name); err != nil && Verbose {
 					log.Printf("Format failed in file manager: %v", err)
@@ -193,6 +195,7 @@ func (fm *FileManager) didSave(winid int, name string) error {
 		if err != nil {
 			return err
 		}
+
 		return lsp.DidSave(context.Background(), c, name)
 	})
 }

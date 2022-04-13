@@ -107,9 +107,14 @@ func usage() {
 	os.Exit(2)
 }
 
+var logger = log.Default()
+
 func main() {
 	flag.Usage = usage
 	cfg := cmd.Setup(config.ProxyFlags)
+
+	logger.SetFlags(log.Llongfile)
+	logger.SetPrefix("L: ")
 
 	err := run(cfg, flag.Args())
 	if err != nil {
@@ -128,11 +133,18 @@ func run(cfg *config.Config, args []string) error {
 	if err != nil {
 		return fmt.Errorf("dial failed: %v", err)
 	}
-	defer conn.Close()
+
+	logger.Print(fmt.Sprintf("net.Dial: %s, %s", cfg.ProxyNetwork, cfg.ProxyAddress))
+	defer func() {
+		conn.Close()
+		logger.Print("L connection closed")
+	}()
 
 	stream := jsonrpc2.NewHeaderStream(conn, conn)
 	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
 	go rpc.Run(ctx)
+
+	logger.Print("started JSONN RPC")
 
 	ver, err := server.Version(ctx)
 	if err != nil {
@@ -204,6 +216,7 @@ func run(cfg *config.Config, args []string) error {
 		return rc.Completion(ctx, len(args) > 0 && args[0] == "-e")
 	case "def":
 		args = args[1:]
+
 		return rc.Definition(ctx, len(args) > 0 && args[0] == "-p")
 	case "fmt":
 		return rc.OrganizeImportsAndFormat(ctx)

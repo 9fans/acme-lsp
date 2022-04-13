@@ -20,7 +20,9 @@ import (
 )
 
 type Server struct {
-	conn   net.Conn
+	Name string
+	conn net.Conn
+
 	Client *Client
 }
 
@@ -28,6 +30,10 @@ func (s *Server) Close() {
 	if s != nil {
 		s.conn.Close()
 	}
+}
+
+func (s *Server) Conn() net.Conn {
+	return s.conn
 }
 
 func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
@@ -190,13 +196,17 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 			}
 			logger = log.New(f, "", log.LstdFlags)
 		}
+
 		data = append(data, &ServerInfo{
 			Server:          cs,
 			FilenameHandler: &cfg.FilenameHandlers[i],
 			Re:              re,
 			Logger:          logger,
 		})
+
+		log.Printf("Add %#v server to serverSet  ", cs)
 	}
+
 	return &ServerSet{
 		Data:       data,
 		diagWriter: diagWriter,
@@ -236,6 +246,9 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
+
+	srv.Name = info.Name
+
 	return srv, true, err
 }
 

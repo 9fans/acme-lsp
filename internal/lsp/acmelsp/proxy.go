@@ -3,6 +3,7 @@ package acmelsp
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
@@ -16,6 +17,8 @@ type proxyServer struct {
 	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
 	fm *FileManager
 }
+
+var _ proxy.Server = (*proxyServer)(nil)
 
 func (s *proxyServer) Version(ctx context.Context) (int, error) {
 	return proxy.Version, nil
@@ -58,7 +61,20 @@ func (s *proxyServer) Definition(ctx context.Context, params *protocol.Definitio
 	if err != nil {
 		return nil, fmt.Errorf("Definition: %v", err)
 	}
+
 	return srv.Client.Definition(ctx, params)
+}
+
+func (s *proxyServer) Metadata(ctx context.Context, params *protocol.MetadataParams) (*protocol.MetaSourceRsponse, error) {
+	srv, err := serverForURI(s.ss, "csharp.cs")
+
+	log.Printf("call to lsp server: %v Call Metadata", srv.Name)
+
+	if err != nil {
+		return nil, fmt.Errorf("Definition: %v", err)
+	}
+
+	return srv.Client.Metadata(ctx, params)
 }
 
 func (s *proxyServer) Formatting(ctx context.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
@@ -170,11 +186,13 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 		if err != nil {
 			return err
 		}
-		stream := jsonrpc2.NewHeaderStream(conn, conn)
-		ctx, rpc, _ := proxy.NewServer(ctx, stream, &proxyServer{
+
+		acmlspStream := jsonrpc2.NewHeaderStream(conn, conn)
+		ctx, rpc, _ := proxy.NewServer(ctx, acmlspStream, &proxyServer{
 			ss: ss,
 			fm: fm,
 		})
+
 		go rpc.Run(ctx)
 	}
 }
