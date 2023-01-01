@@ -956,7 +956,7 @@ type InnerServerCapabilities struct {
 	/*SelectionRangeProvider defined:
 	 * The server provides selection range support.
 	 */
-	SelectionRangeProvider bool `json:"selectionRangeProvider,omitempty"` // boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions
+	SelectionRangeProvider *SelectionRangeRegistrationOptions `json:"selectionRangeProvider,omitempty"` // boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions
 
 	/*ExecuteCommandProvider defined:
 	 * The server provides execute command support.
@@ -1085,7 +1085,7 @@ type ServerCapabilities struct {
 	/*SelectionRangeProvider defined:
 	 * The server provides selection range support.
 	 */
-	SelectionRangeProvider bool `json:"selectionRangeProvider,omitempty"` // boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions
+	SelectionRangeProvider *SelectionRangeRegistrationOptions `json:"selectionRangeProvider,omitempty"` // boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions
 
 	/*ExecuteCommandProvider defined:
 	 * The server provides execute command support.
