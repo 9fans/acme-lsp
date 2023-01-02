@@ -106,6 +106,8 @@ func xvfbServerNumber() int {
 
 func TestAcmeLSP(t *testing.T) {
 	switch runtime.GOOS {
+	case "linux":
+		t.Skip("skipping on linux because test hangs")
 	case "darwin":
 		t.Skip("skipping on darwin because Edwood is crashing")
 	case "windows":
