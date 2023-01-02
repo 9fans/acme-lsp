@@ -18,11 +18,18 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Go environment
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with:
+          python-version: '3.10'
+
+    - name: Go and Python environment
       run: |
         go version
         go env
         echo PATH is $PATH
+        python --version
+        python3 --version
       shell: bash
 
     - name: Checkout code
