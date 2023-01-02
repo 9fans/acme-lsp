@@ -40,10 +40,6 @@ jobs:
       run: go install golang.org/x/tools/gopls@latest
       working-directory: /
 
-    - name: Install go-langserver
-      run: go install github.com/sourcegraph/go-langserver@latest
-      working-directory: /
-
     - name: Install Edwood
       run: go install -tags 'duitdraw mux9p' github.com/rjkroege/edwood@v0.2.1-0.20191103164119-87ca479e7ef7
       working-directory: /
