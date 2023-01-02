@@ -130,7 +130,7 @@ func TestGoHover(t *testing.T) {
 		name string
 		want string
 	}{
-		{"gopls", "func fmt.Println(a ...interface{}) (n int, err error)"},
+		{"gopls", "```go\nfunc fmt.Println(a ...any) (n int, err error)\n```\n\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.\n\n\n[`fmt.Println` on pkg.go.dev](https://pkg.go.dev/fmt#Println)"},
 	} {
 		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			pos := &protocol.TextDocumentPositionParams{
