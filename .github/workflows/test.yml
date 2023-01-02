@@ -41,7 +41,7 @@ jobs:
       working-directory: /
 
     - name: Install go-langserver
-      run: go install github.com/sourcegraph/go-langserver
+      run: go install github.com/sourcegraph/go-langserver@latest
       working-directory: /
 
     - name: Install Edwood
