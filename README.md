@@ -27,14 +27,14 @@ incompatibilities with those or other servers.
 
 Install the latest release:
 
-	GO111MODULE=on go get github.com/fhs/acme-lsp/cmd/acme-lsp@latest
-	GO111MODULE=on go get github.com/fhs/acme-lsp/cmd/L@latest
+	GO111MODULE=on go install github.com/fhs/acme-lsp/cmd/acme-lsp@latest
+	GO111MODULE=on go install github.com/fhs/acme-lsp/cmd/L@latest
 
 ## gopls
 
 First install the latest release of gopls:
 
-	GO111MODULE=on go get golang.org/x/tools/gopls@latest
+	GO111MODULE=on go install golang.org/x/tools/gopls@latest
 
 Start acme-lsp like this:
 

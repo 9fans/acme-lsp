@@ -41,8 +41,7 @@ const goMod = `module github.com/fhs/acme-lsp/internal/lsp/acmelsp/client_test
 
 func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, c *Client, uri protocol.DocumentURI)) {
 	serverArgs := map[string][]string{
-		"gopls":         {"gopls"},
-		"go-langserver": {"go-langserver"},
+		"gopls": {"gopls"},
 	}
 
 	// Create the module
@@ -102,7 +101,6 @@ func TestGoFormat(t *testing.T) {
 
 	for _, server := range []string{
 		"gopls",
-		"go-langserver",
 	} {
 		testGoModule(t, server, goSourceUnfmt, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			edits, err := c.Formatting(ctx, &protocol.DocumentFormattingParams{
@@ -132,8 +130,7 @@ func TestGoHover(t *testing.T) {
 		name string
 		want string
 	}{
-		{"gopls", "func fmt.Println(a ...interface{}) (n int, err error)"},
-		{"go-langserver", "func Println(a ...interface{}) (n int, err error)\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered. \n\n"},
+		{"gopls", "```go\nfunc fmt.Println(a ...any) (n int, err error)\n```\n\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.\n\n\n[`fmt.Println` on pkg.go.dev](https://pkg.go.dev/fmt#Println)"},
 	} {
 		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			pos := &protocol.TextDocumentPositionParams{
@@ -175,7 +172,6 @@ func main() {
 
 	for _, srv := range []string{
 		"gopls",
-		"go-langserver",
 	} {
 		testGoModule(t, srv, src, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			params := &protocol.DefinitionParams{
@@ -231,7 +227,6 @@ func main() {
 
 	for _, srv := range []string{
 		"gopls",
-		//"go-langserver", 	// failing
 	} {
 		testGoModule(t, srv, src, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			pos := &protocol.TextDocumentPositionParams{

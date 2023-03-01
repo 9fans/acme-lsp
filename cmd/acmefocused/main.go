@@ -8,12 +8,12 @@
 // run outside of acme.
 //
 // Usage:
+//
 //	$ acme &
 //	$ acmefocused &
 //	$ dial $(namespace)/acmefocused
 //	1
 //	$
-//
 package main
 
 import (

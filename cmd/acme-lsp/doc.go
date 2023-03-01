@@ -29,28 +29,28 @@ Also, when Put is executed in an acme window, acme-lsp will organize
 import paths in the window and format it by default. This behavior can
 be changed by the FormatOnPut and CodeActionsOnPut configuration options.
 
-	Usage: acme-lsp [flags]
+		Usage: acme-lsp [flags]
 
-  -acme.addr string
-    	address where acme is serving 9P file system (default "/tmp/ns.fhs.:0/acme")
-  -acme.net string
-    	network where acme is serving 9P file system (default "unix")
-  -debug
-    	turn on debugging prints (deprecated: use -v)
-  -dial value
-    	language server address for filename match (e.g. '\.go$:localhost:4389')
-  -proxy.addr string
-    	address used for communication between acme-lsp and L (default "/tmp/ns.fhs.:0/acme-lsp.rpc")
-  -proxy.net string
-    	network used for communication between acme-lsp and L (default "unix")
-  -rootdir string
-    	root directory used for LSP initialization. (default "/")
-  -server value
-    	language server command for filename match (e.g. '\.go$:gopls')
-  -showconfig
-    	show configuration values and exit
-  -v	Verbose output
-  -workspaces string
-    	colon-separated list of initial workspace directories
+	  -acme.addr string
+	    	address where acme is serving 9P file system (default "/tmp/ns.fhs.:0/acme")
+	  -acme.net string
+	    	network where acme is serving 9P file system (default "unix")
+	  -debug
+	    	turn on debugging prints (deprecated: use -v)
+	  -dial value
+	    	language server address for filename match (e.g. '\.go$:localhost:4389')
+	  -proxy.addr string
+	    	address used for communication between acme-lsp and L (default "/tmp/ns.fhs.:0/acme-lsp.rpc")
+	  -proxy.net string
+	    	network used for communication between acme-lsp and L (default "unix")
+	  -rootdir string
+	    	root directory used for LSP initialization. (default "/")
+	  -server value
+	    	language server command for filename match (e.g. '\.go$:gopls')
+	  -showconfig
+	    	show configuration values and exit
+	  -v	Verbose output
+	  -workspaces string
+	    	colon-separated list of initial workspace directories
 */
 package main
