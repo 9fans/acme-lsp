@@ -7,7 +7,6 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 )
 

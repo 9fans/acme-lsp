@@ -4,10 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/jsonrpc2"
-	"github.com/fhs/acme-lsp/internal/golang_org_x_tools/telemetry/log"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
 )
 
 // Version is used to detect if acme-lsp and L are speaking the same protocol.
