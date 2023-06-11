@@ -7,6 +7,7 @@ import (
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 )
 
 // diagWin implements client.DiagnosticsWriter.

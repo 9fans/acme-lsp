@@ -12,7 +12,7 @@ import (
 
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
 

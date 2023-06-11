@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
+
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 )
 
 // File represents an open file in text editor.
@@ -109,18 +112,19 @@ func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, file
 			URI: ToURI(name),
 		},
 		Position: protocol.Position{
-			Line:      float64(line),
-			Character: float64(col),
+			Line:      uint32(line),
+			Character: uint32(col),
 		},
 	}, name, nil
 }
 
 // ToURI converts filename to URI.
 func ToURI(filename string) protocol.DocumentURI {
-	return protocol.DocumentURI(span.NewURI(filename))
+	return protocol.DocumentURI("file://" + filename)
 }
 
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
-	return span.NewURI(uri).Filename()
+	filename, _ := strings.CutPrefix(string(uri), "file://")
+	return filename
 }

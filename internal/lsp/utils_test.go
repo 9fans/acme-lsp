@@ -3,7 +3,7 @@ package lsp
 import (
 	"testing"
 
-	"github.com/fhs/acme-lsp/internal/lsp/protocol"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
 

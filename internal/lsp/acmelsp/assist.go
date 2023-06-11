@@ -13,6 +13,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/acmeutil"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 )
 
 func watchLog(ch chan<- *acme.LogEvent) {

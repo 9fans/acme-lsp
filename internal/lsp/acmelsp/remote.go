@@ -11,6 +11,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 )
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.
@@ -293,9 +294,18 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 	return PlumbLocations(locations)
 }
 
-func walkDocumentSymbols(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
+func walkDocumentSymbols1(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
 	for _, s := range syms {
 		f(&s, depth)
-		walkDocumentSymbols(s.Children, depth+1, f)
+		walkDocumentSymbols1(s.Children, depth+1, f)
+	}
+}
+
+func walkDocumentSymbols(syms []interface{}, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
+	for _, s := range syms {
+		if s, ok := s.(protocol.DocumentSymbol); ok {
+			f(&s, depth)
+			walkDocumentSymbols1(s.Children, depth+1, f)
+		}
 	}
 }

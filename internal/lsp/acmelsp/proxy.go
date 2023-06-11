@@ -8,11 +8,14 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/fhs/acme-lsp/internal/p9service"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"github.com/sourcegraph/jsonrpc2"
 )
 
 type proxyServer struct {
 	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
 	fm *FileManager
+	proxy.NotImplementedServer
 }
 
 func (s *proxyServer) Version(ctx context.Context) (int, error) {
@@ -123,7 +126,7 @@ func (s *proxyServer) SignatureHelp(ctx context.Context, params *protocol.Signat
 	return srv.Client.SignatureHelp(ctx, params)
 }
 
-func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error) {
+func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) ([]interface{}, error) {
 	srv, err := serverForURI(s.ss, params.TextDocument.URI)
 	if err != nil {
 		return nil, fmt.Errorf("DocumentSymbol: %v", err)
@@ -168,11 +171,11 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 		if err != nil {
 			return err
 		}
-		stream := jsonrpc2.NewHeaderStream(conn, conn)
-		ctx, rpc, _ := proxy.NewServer(ctx, stream, &proxyServer{
+		stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
+		handler := proxy.NewServerHandler(&proxyServer{
 			ss: ss,
 			fm: fm,
 		})
-		go rpc.Run(ctx)
+		jsonrpc2.NewConn(ctx, stream, handler)
 	}
 }

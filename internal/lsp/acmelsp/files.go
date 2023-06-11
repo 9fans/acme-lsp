@@ -11,6 +11,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 )
 
 // FileManager keeps track of open files in acme.

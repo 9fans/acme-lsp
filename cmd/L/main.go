@@ -18,6 +18,8 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/cmd"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"github.com/sourcegraph/jsonrpc2"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -128,9 +130,8 @@ func run(cfg *config.Config, args []string) error {
 	}
 	defer conn.Close()
 
-	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	ctx, rpc, server := proxy.NewClient(ctx, stream, nil)
-	go rpc.Run(ctx)
+	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
+	server := proxy.NewServer(jsonrpc2.NewConn(ctx, stream, nil))
 
 	ver, err := server.Version(ctx)
 	if err != nil {

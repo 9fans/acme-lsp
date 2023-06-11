@@ -6,66 +6,89 @@ package proxy
 
 import (
 	"context"
+	"log"
+
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"github.com/sourcegraph/jsonrpc2"
 )
 
 type DocumentUri = string
 
-type canceller struct{ jsonrpc2.EmptyHandler }
-
 type clientHandler struct {
-	canceller
-	client Client
+	client    Client
+	lspClient jsonrpc2.Handler
+}
+
+func (h *clientHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *jsonrpc2.Request) {
+	ok, err := clientDispatch(ctx, h.client, conn, r)
+	if !ok {
+		h.lspClient.Handle(ctx, conn, r)
+		return
+	}
+	if err != nil {
+		log.Printf("rpc reply failed: %v", err)
+	}
+}
+
+func NewClientHandler(client Client) jsonrpc2.Handler {
+	return &clientHandler{
+		client:    client,
+		lspClient: protocol.NewClientHandler(client),
+	}
 }
 
 type serverHandler struct {
-	canceller
-	server Server
+	server    Server
+	lspServer jsonrpc2.Handler
 }
 
-func (canceller) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID, cancelled bool) bool {
-	if cancelled {
-		return false
+func (h *serverHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *jsonrpc2.Request) {
+	ok, err := serverDispatch(ctx, h.server, conn, r)
+	if !ok {
+		h.lspServer.Handle(ctx, conn, r)
+		return
 	}
-	ctx = xcontext.Detach(ctx)
-	ctx, done := trace.StartSpan(ctx, "protocol.canceller")
-	defer done()
-	conn.Notify(ctx, "$/cancelRequest", &CancelParams{ID: id})
-	return true
+	if err != nil {
+		log.Printf("rpc reply failed: %v", err)
+	}
 }
 
-func NewClient(ctx context.Context, stream jsonrpc2.Stream, client Client) (context.Context, *jsonrpc2.Conn, Server) {
-	c := &lspClientDispatcher{
-		Client: client,
+func NewServerHandler(server Server) jsonrpc2.Handler {
+	return &serverHandler{
+		server:    server,
+		lspServer: protocol.NewServerHandler(server),
 	}
-	ctx, conn, server := protocol.NewClient(ctx, stream, c)
-	conn.AddHandler(&clientHandler{client: client})
-	s := &serverDispatcher{
-		Conn:   conn,
-		Server: server,
-	}
-	return ctx, conn, s
 }
 
-func NewServer(ctx context.Context, stream jsonrpc2.Stream, server Server) (context.Context, *jsonrpc2.Conn, Client) {
-	s := &lspServerDispatcher{
-		Server: server,
+func NewClient(conn *jsonrpc2.Conn) Client {
+	return &clientDispatcher{
+		Conn: conn,
 	}
-	ctx, conn, client := protocol.NewServer(ctx, stream, s)
-	conn.AddHandler(&serverHandler{server: server})
-	c := &clientDispatcher{
-		Conn:   conn,
-		Client: client,
-	}
-	return ctx, conn, c
 }
 
-func sendParseError(ctx context.Context, req *jsonrpc2.Request, err error) {
-	if _, ok := err.(*jsonrpc2.Error); !ok {
-		err = jsonrpc2.NewErrorf(jsonrpc2.CodeParseError, "%v", err)
+func NewServer(conn *jsonrpc2.Conn) Server {
+	return &serverDispatcher{
+		Conn: conn,
 	}
-	if err := req.Reply(ctx, nil, err); err != nil {
-		log.Error(ctx, "", err)
+}
+
+func reply(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID, result interface{}, err error) error {
+	if err != nil {
+		rpcerr := &jsonrpc2.Error{
+			Code:    jsonrpc2.CodeInternalError,
+			Message: err.Error(),
+		}
+		return conn.ReplyWithError(ctx, id, rpcerr)
 	}
+	return conn.Reply(ctx, id, result)
+}
+
+func sendParseError(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID, err error) error {
+	rpcerr := &jsonrpc2.Error{
+		Code:    jsonrpc2.CodeParseError,
+		Message: err.Error(),
+	}
+	return conn.ReplyWithError(ctx, id, rpcerr)
 }
 
 type ExecuteCommandOnDocumentParams struct {

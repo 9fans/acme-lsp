@@ -19,6 +19,7 @@ import (
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
 )
 
 func CurrentWindowRemoteCmd(ss *ServerSet, fm *FileManager) (*RemoteCmd, error) {
@@ -226,11 +227,13 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		// gopls version >= 0.3.1 sends versioned document edits
 		// for organizeImports code action even when we don't
 		// support it. Convert versioned edits to non-versioned.
-		changes := make(map[string][]protocol.TextEdit)
+		changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
 		for _, dc := range we.DocumentChanges {
-			changes[dc.TextDocument.TextDocumentIdentifier.URI] = dc.Edits
+			if tde := dc.TextDocumentEdit; tde != nil {
+				changes[tde.TextDocument.TextDocumentIdentifier.URI] = tde.Edits
+			}
 		}
-		we.Changes = &changes
+		we.Changes = changes
 	}
 	if we.Changes == nil {
 		return nil // no changes to apply
@@ -245,13 +248,13 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		winid[info.Name] = info.ID
 	}
 
-	for uri := range *we.Changes {
+	for uri := range we.Changes {
 		fname := text.ToPath(uri)
 		if _, ok := winid[fname]; !ok {
 			return fmt.Errorf("%v: not open in acme", fname)
 		}
 	}
-	for uri, edits := range *we.Changes {
+	for uri, edits := range we.Changes {
 		fname := text.ToPath(uri)
 		id := winid[fname]
 		w, err := acmeutil.OpenWin(id)

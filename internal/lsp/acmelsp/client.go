@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"github.com/sourcegraph/jsonrpc2"
 
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
@@ -27,6 +29,7 @@ type clientHandler struct {
 	diagWriter DiagnosticsWriter
 	diag       map[protocol.DocumentURI][]protocol.Diagnostic
 	mu         sync.Mutex
+	proxy.NotImplementedClient
 }
 
 func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMessageParams) error {
@@ -62,7 +65,7 @@ func (h *clientHandler) WorkspaceFolders(context.Context) ([]protocol.WorkspaceF
 	return nil, nil
 }
 
-func (h *clientHandler) Configuration(context.Context, *protocol.ParamConfig) ([]interface{}, error) {
+func (h *clientHandler) Configuration(context.Context, *protocol.ParamConfiguration) ([]interface{}, error) {
 	return nil, nil
 }
 
@@ -78,12 +81,12 @@ func (h *clientHandler) ShowMessageRequest(context.Context, *protocol.ShowMessag
 	return nil, nil
 }
 
-func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResponse, error) {
+func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResult, error) {
 	err := editWorkspace(&params.Edit)
 	if err != nil {
-		return &protocol.ApplyWorkspaceEditResponse{Applied: false, FailureReason: err.Error()}, nil
+		return &protocol.ApplyWorkspaceEditResult{Applied: false, FailureReason: err.Error()}, nil
 	}
-	return &protocol.ApplyWorkspaceEditResponse{Applied: true}, nil
+	return &protocol.ApplyWorkspaceEditResult{Applied: true}, nil
 }
 
 // ClientConfig contains LSP client configuration values.
@@ -115,59 +118,60 @@ func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
 
 func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	ctx := context.Background()
-	stream := jsonrpc2.NewHeaderStream(conn, conn)
-	if cfg.RPCTrace {
-		stream = protocol.LoggingStream(stream, os.Stderr)
-	}
-	ctx, rpc, server := protocol.NewClient(ctx, stream, &clientHandler{
+	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
+	handler := proxy.NewClientHandler(&clientHandler{
 		cfg:        cfg,
 		hideDiag:   cfg.HideDiag,
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
-	go func() {
-		err := rpc.Run(ctx)
-		if err != nil {
-			log.Printf("connection terminated: %v", err)
-		}
-	}()
+	// if cfg.RPCTrace {
+	// 	stream = protocol.LoggingStream(stream, os.Stderr)
+	// }
+	server := protocol.NewServer(jsonrpc2.NewConn(ctx, stream, handler))
 
 	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {
 		return err
 	}
-	params := &protocol.InitializeParams{
-		RootURI: text.ToURI(d),
-		Capabilities: protocol.ClientCapabilities{
-			// Workspace: ..., (struct literal)
-			TextDocument: protocol.TextDocumentClientCapabilities{
-				CodeAction: &protocol.CodeActionClientCapabilities{
-					CodeActionLiteralSupport: &protocol.CodeActionLiteralSupport{
-						// CodeActionKind: ..., (struct literal)
+	params := &protocol.ParamInitialize{
+		XInitializeParams: protocol.XInitializeParams{
+			RootURI: text.ToURI(d),
+			Capabilities: protocol.ClientCapabilities{
+				// Workspace: ..., (struct literal)
+				TextDocument: protocol.TextDocumentClientCapabilities{
+					CodeAction: protocol.CodeActionClientCapabilities{
+						CodeActionLiteralSupport: protocol.PCodeActionLiteralSupportPCodeAction{
+							CodeActionKind: protocol.FCodeActionKindPCodeActionLiteralSupport{
+								// ValueSet: ...
+							},
+						},
+					},
+					DocumentSymbol: protocol.DocumentSymbolClientCapabilities{
+						HierarchicalDocumentSymbolSupport: true,
 					},
 				},
-				DocumentSymbol: &protocol.DocumentSymbolClientCapabilities{
-					HierarchicalDocumentSymbolSupport: true,
-				},
 			},
+			InitializationOptions: cfg.Options,
 		},
-		WorkspaceFolders:      cfg.Workspaces,
-		InitializationOptions: cfg.Options,
+		WorkspaceFoldersInitializeParams: protocol.WorkspaceFoldersInitializeParams{
+			WorkspaceFolders: cfg.Workspaces,
+		},
 	}
 	params.Capabilities.Workspace.WorkspaceFolders = true
 	params.Capabilities.Workspace.ApplyEdit = true
 	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
 		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 
-	var result protocol.InitializeResult
-	if err := rpc.Call(ctx, "initialize", params, &result); err != nil {
+	result, err := server.Initialize(ctx, params)
+	if err != nil {
 		return fmt.Errorf("initialize failed: %v", err)
 	}
-	if err := rpc.Notify(ctx, "initialized", &protocol.InitializedParams{}); err != nil {
+	if err := server.Initialized(ctx, &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialized failed: %v", err)
 	}
 	c.Server = server
-	c.initializeResult = &result
+	c.initializeResult = result
 	return nil
 }
 

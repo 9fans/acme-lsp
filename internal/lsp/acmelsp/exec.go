@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
+
 	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
@@ -150,13 +152,13 @@ func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
 type ServerSet struct {
 	Data       []*ServerInfo
 	diagWriter DiagnosticsWriter
-	workspaces map[protocol.DocumentURI]*protocol.WorkspaceFolder // set of workspace folders
+	workspaces map[string]*protocol.WorkspaceFolder // set of workspace folders
 	cfg        *config.Config
 }
 
 // NewServerSet creates a new server set from config.
 func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet, error) {
-	workspaces := make(map[protocol.DocumentURI]*protocol.WorkspaceFolder)
+	workspaces := make(map[string]*protocol.WorkspaceFolder)
 	if len(cfg.WorkspaceDirectories) > 0 {
 		folders, err := lsp.DirsToWorkspaceFolders(cfg.WorkspaceDirectories)
 		if err != nil {

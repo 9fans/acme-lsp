@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"github.com/sourcegraph/jsonrpc2"
 )
 
 // Version is used to detect if acme-lsp and L are speaking the same protocol.
@@ -31,78 +34,56 @@ type Server interface {
 	// ExecuteCommand request to the right server.
 	ExecuteCommandOnDocument(context.Context, *ExecuteCommandOnDocumentParams) (interface{}, error)
 
-	DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
-	DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
-	Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
-	Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
-	Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
-	CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
-	Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error)
-	Implementation(context.Context, *protocol.ImplementationParams) ([]protocol.Location, error)
-	References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
-	Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error)
-	SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
-	DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]protocol.DocumentSymbol, error)
-	TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error)
+	protocol.Server
+	//DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
+	//DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
+	//Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error)
+	//Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error)
+	//Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
+	//CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
+	//Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error)
+	//Implementation(context.Context, *protocol.ImplementationParams) ([]protocol.Location, error)
+	//References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error)
+	//Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error)
+	//SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error)
+	//DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]interface{}, error)
+	//TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error)
 }
 
-func (h serverHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
-	if delivered {
-		return false
-	}
+func serverDispatch(ctx context.Context, server Server, conn *jsonrpc2.Conn, r *jsonrpc2.Request) (bool, error) {
 	switch r.Method {
-	case "$/cancelRequest":
-		var params CancelParams
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
-		}
-		r.Conn().Cancel(params.ID)
-		return true
-
 	case "acme-lsp/version": // req
-		resp, err := h.server.Version(ctx)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.Version(ctx)
+		return true, reply(ctx, conn, r.ID, resp, err)
 
 	case "acme-lsp/workspaceFolders": // req
-		resp, err := h.server.WorkspaceFolders(ctx)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.WorkspaceFolders(ctx)
+		return true, reply(ctx, conn, r.ID, resp, err)
 
 	case "acme-lsp/initializeResult": // req
 		var params protocol.TextDocumentIdentifier
 		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
+			return true, sendParseError(ctx, conn, r.ID, err)
 		}
-		resp, err := h.server.InitializeResult(ctx, &params)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.InitializeResult(ctx, &params)
+		return true, reply(ctx, conn, r.ID, resp, err)
 
 	case "acme-lsp/executeCommandOnDocument": // req
 		var params ExecuteCommandOnDocumentParams
 		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			sendParseError(ctx, r, err)
-			return true
+			return true, sendParseError(ctx, conn, r.ID, err)
 		}
-		resp, err := h.server.ExecuteCommandOnDocument(ctx, &params)
-		if err := r.Reply(ctx, resp, err); err != nil {
-			log.Error(ctx, "", err)
-		}
-		return true
+		resp, err := server.ExecuteCommandOnDocument(ctx, &params)
+		return true, reply(ctx, conn, r.ID, resp, err)
 
 	default:
-		return false
+		return false, nil
 	}
 }
 
+var _ Server = (*serverDispatcher)(nil)
+
+// serverDispatcher extends a protocol.Server with our custom messages.
 type serverDispatcher struct {
 	*jsonrpc2.Conn
 	protocol.Server
@@ -152,126 +133,220 @@ type Message struct {
 	Attr map[string]string
 }
 
-type lspServerDispatcher struct {
-	Server
-}
+var _ protocol.Server = (*NotImplementedServer)(nil)
 
-func (s *lspServerDispatcher) Initialized(context.Context, *protocol.InitializedParams) error {
+// NotImplementedServer is a stub implementation of protocol.Server.
+type NotImplementedServer struct{}
+
+func (s *NotImplementedServer) Progress(context.Context, *protocol.ProgressParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Exit(context.Context) error {
+func (s *NotImplementedServer) SetTrace(context.Context, *protocol.SetTraceParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DidChangeConfiguration(context.Context, *protocol.DidChangeConfigurationParams) error {
+func (s *NotImplementedServer) IncomingCalls(context.Context, *protocol.CallHierarchyIncomingCallsParams) ([]protocol.CallHierarchyIncomingCall, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) OutgoingCalls(context.Context, *protocol.CallHierarchyOutgoingCallsParams) ([]protocol.CallHierarchyOutgoingCall, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ResolveCodeAction(context.Context, *protocol.CodeAction) (*protocol.CodeAction, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ResolveCodeLens(context.Context, *protocol.CodeLens) (*protocol.CodeLens, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ResolveCompletionItem(context.Context, *protocol.CompletionItem) (*protocol.CompletionItem, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ResolveDocumentLink(context.Context, *protocol.DocumentLink) (*protocol.DocumentLink, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Exit(context.Context) error { return fmt.Errorf("not implemented") }
+func (s *NotImplementedServer) Initialize(context.Context, *protocol.ParamInitialize) (*protocol.InitializeResult, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Initialized(context.Context, *protocol.InitializedParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DidOpen(context.Context, *protocol.DidOpenTextDocumentParams) error {
+func (s *NotImplementedServer) Resolve(context.Context, *protocol.InlayHint) (*protocol.InlayHint, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidChangeNotebookDocument(context.Context, *protocol.DidChangeNotebookDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DidClose(context.Context, *protocol.DidCloseTextDocumentParams) error {
+func (s *NotImplementedServer) DidCloseNotebookDocument(context.Context, *protocol.DidCloseNotebookDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DidSave(context.Context, *protocol.DidSaveTextDocumentParams) error {
+func (s *NotImplementedServer) DidOpenNotebookDocument(context.Context, *protocol.DidOpenNotebookDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) WillSave(context.Context, *protocol.WillSaveTextDocumentParams) error {
+func (s *NotImplementedServer) DidSaveNotebookDocument(context.Context, *protocol.DidSaveNotebookDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DidChangeWatchedFiles(context.Context, *protocol.DidChangeWatchedFilesParams) error {
+func (s *NotImplementedServer) Shutdown(context.Context) error { return fmt.Errorf("not implemented") }
+func (s *NotImplementedServer) CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) CodeLens(context.Context, *protocol.CodeLensParams) ([]protocol.CodeLens, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ColorPresentation(context.Context, *protocol.ColorPresentationParams) ([]protocol.ColorPresentation, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Declaration(context.Context, *protocol.DeclarationParams) (*protocol.Or_textDocument_declaration, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Diagnostic(context.Context, *string) (*string, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Progress(context.Context, *protocol.ProgressParams) error {
+func (s *NotImplementedServer) DidClose(context.Context, *protocol.DidCloseTextDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) SetTraceNotification(context.Context, *protocol.SetTraceParams) error {
+func (s *NotImplementedServer) DidOpen(context.Context, *protocol.DidOpenTextDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) LogTraceNotification(context.Context, *protocol.LogTraceParams) error {
+func (s *NotImplementedServer) DidSave(context.Context, *protocol.DidSaveTextDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DocumentColor(context.Context, *protocol.DocumentColorParams) ([]protocol.ColorInformation, error) {
+func (s *NotImplementedServer) DocumentColor(context.Context, *protocol.DocumentColorParams) ([]protocol.ColorInformation, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) ColorPresentation(context.Context, *protocol.ColorPresentationParams) ([]protocol.ColorPresentation, error) {
+func (s *NotImplementedServer) DocumentHighlight(context.Context, *protocol.DocumentHighlightParams) ([]protocol.DocumentHighlight, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) FoldingRange(context.Context, *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
+func (s *NotImplementedServer) DocumentLink(context.Context, *protocol.DocumentLinkParams) ([]protocol.DocumentLink, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Declaration(context.Context, *protocol.DeclarationParams) ([]protocol.DeclarationLink, error) {
+func (s *NotImplementedServer) DocumentSymbol(context.Context, *protocol.DocumentSymbolParams) ([]interface{}, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) SelectionRange(context.Context, *protocol.SelectionRangeParams) ([]protocol.SelectionRange, error) {
+func (s *NotImplementedServer) FoldingRange(context.Context, *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Initialize(context.Context, *protocol.ParamInitia) (*protocol.InitializeResult, error) {
+func (s *NotImplementedServer) Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Shutdown(context.Context) error {
+func (s *NotImplementedServer) Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Implementation(context.Context, *protocol.ImplementationParams) ([]protocol.Location, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) InlayHint(context.Context, *protocol.InlayHintParams) ([]protocol.InlayHint, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) InlineValue(context.Context, *protocol.InlineValueParams) ([]protocol.InlineValue, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) LinkedEditingRange(context.Context, *protocol.LinkedEditingRangeParams) (*protocol.LinkedEditingRanges, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Moniker(context.Context, *protocol.MonikerParams) ([]protocol.Moniker, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) OnTypeFormatting(context.Context, *protocol.DocumentOnTypeFormattingParams) ([]protocol.TextEdit, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) PrepareCallHierarchy(context.Context, *protocol.CallHierarchyPrepareParams) ([]protocol.CallHierarchyItem, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) PrepareRename(context.Context, *protocol.PrepareRenameParams) (*protocol.PrepareRename2Gn, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) PrepareTypeHierarchy(context.Context, *protocol.TypeHierarchyPrepareParams) ([]protocol.TypeHierarchyItem, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) RangeFormatting(context.Context, *protocol.DocumentRangeFormattingParams) ([]protocol.TextEdit, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) SelectionRange(context.Context, *protocol.SelectionRangeParams) ([]protocol.SelectionRange, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) SemanticTokensFull(context.Context, *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) SemanticTokensFullDelta(context.Context, *protocol.SemanticTokensDeltaParams) (interface{}, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) SemanticTokensRange(context.Context, *protocol.SemanticTokensRangeParams) (*protocol.SemanticTokens, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) WillSave(context.Context, *protocol.WillSaveTextDocumentParams) error {
 	return fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) WillSaveWaitUntil(context.Context, *protocol.WillSaveTextDocumentParams) ([]protocol.TextEdit, error) {
+func (s *NotImplementedServer) WillSaveWaitUntil(context.Context, *protocol.WillSaveTextDocumentParams) ([]protocol.TextEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Resolve(context.Context, *protocol.CompletionItem) (*protocol.CompletionItem, error) {
+func (s *NotImplementedServer) Subtypes(context.Context, *protocol.TypeHierarchySubtypesParams) ([]protocol.TypeHierarchyItem, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DocumentHighlight(context.Context, *protocol.DocumentHighlightParams) ([]protocol.DocumentHighlight, error) {
+func (s *NotImplementedServer) Supertypes(context.Context, *protocol.TypeHierarchySupertypesParams) ([]protocol.TypeHierarchyItem, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) Symbol(context.Context, *protocol.WorkspaceSymbolParams) ([]protocol.SymbolInformation, error) {
+func (s *NotImplementedServer) WorkDoneProgressCancel(context.Context, *protocol.WorkDoneProgressCancelParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DiagnosticWorkspace(context.Context, *protocol.WorkspaceDiagnosticParams) (*protocol.WorkspaceDiagnosticReport, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) CodeLens(context.Context, *protocol.CodeLensParams) ([]protocol.CodeLens, error) {
+func (s *NotImplementedServer) DidChangeConfiguration(context.Context, *protocol.DidChangeConfigurationParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidChangeWatchedFiles(context.Context, *protocol.DidChangeWatchedFilesParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidCreateFiles(context.Context, *protocol.CreateFilesParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidDeleteFiles(context.Context, *protocol.DeleteFilesParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) DidRenameFiles(context.Context, *protocol.RenameFilesParams) error {
+	return fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ExecuteCommand(context.Context, *protocol.ExecuteCommandParams) (interface{}, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) ResolveCodeLens(context.Context, *protocol.CodeLens) (*protocol.CodeLens, error) {
+func (s *NotImplementedServer) Symbol(context.Context, *protocol.WorkspaceSymbolParams) ([]protocol.SymbolInformation, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) RangeFormatting(context.Context, *protocol.DocumentRangeFormattingParams) ([]protocol.TextEdit, error) {
+func (s *NotImplementedServer) WillCreateFiles(context.Context, *protocol.CreateFilesParams) (*protocol.WorkspaceEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) OnTypeFormatting(context.Context, *protocol.DocumentOnTypeFormattingParams) ([]protocol.TextEdit, error) {
+func (s *NotImplementedServer) WillDeleteFiles(context.Context, *protocol.DeleteFilesParams) (*protocol.WorkspaceEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) PrepareRename(context.Context, *protocol.PrepareRenameParams) (*protocol.Range, error) {
+func (s *NotImplementedServer) WillRenameFiles(context.Context, *protocol.RenameFilesParams) (*protocol.WorkspaceEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) DocumentLink(context.Context, *protocol.DocumentLinkParams) ([]protocol.DocumentLink, error) {
+func (s *NotImplementedServer) ResolveWorkspaceSymbol(context.Context, *protocol.WorkspaceSymbol) (*protocol.WorkspaceSymbol, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-func (s *lspServerDispatcher) ResolveDocumentLink(context.Context, *protocol.DocumentLink) (*protocol.DocumentLink, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *lspServerDispatcher) ExecuteCommand(context.Context, *protocol.ExecuteCommandParams) (interface{}, error) {
+func (s *NotImplementedServer) NonstandardRequest(ctx context.Context, method string, params interface{}) (interface{}, error) {
 	return nil, fmt.Errorf("not implemented")
 }
