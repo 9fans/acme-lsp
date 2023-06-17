@@ -131,7 +131,11 @@ func run(cfg *config.Config, args []string) error {
 	defer conn.Close()
 
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
-	server := proxy.NewServer(jsonrpc2.NewConn(ctx, stream, nil))
+	var opts []jsonrpc2.ConnOpt
+	if cfg.Verbose {
+		opts = append(opts, jsonrpc2.LogMessages(log.Default()))
+	}
+	server := proxy.NewServer(jsonrpc2.NewConn(ctx, stream, nil, opts...))
 
 	ver, err := server.Version(ctx)
 	if err != nil {

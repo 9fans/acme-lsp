@@ -125,10 +125,16 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 		diagWriter: cfg.DiagWriter,
 		diag:       make(map[protocol.DocumentURI][]protocol.Diagnostic),
 	})
-	// if cfg.RPCTrace {
-	// 	stream = protocol.LoggingStream(stream, os.Stderr)
-	// }
-	server := protocol.NewServer(jsonrpc2.NewConn(ctx, stream, handler))
+	var opts []jsonrpc2.ConnOpt
+	if cfg.RPCTrace {
+		opts = append(opts, jsonrpc2.LogMessages(log.Default()))
+	}
+	rpc := jsonrpc2.NewConn(ctx, stream, handler, opts...)
+	server := protocol.NewServer(rpc)
+	go func() {
+		<-rpc.DisconnectNotify()
+		log.Printf("jsonrpc2 connection to LSP sever disconnected\n")
+	}()
 
 	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {

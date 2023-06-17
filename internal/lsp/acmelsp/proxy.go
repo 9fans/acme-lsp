@@ -3,6 +3,7 @@ package acmelsp
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
@@ -176,6 +177,15 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 			ss: ss,
 			fm: fm,
 		})
-		jsonrpc2.NewConn(ctx, stream, handler)
+		var opts []jsonrpc2.ConnOpt
+		if cfg.RPCTrace {
+			opts = append(opts, jsonrpc2.LogMessages(log.Default()))
+
+		}
+		rpc := jsonrpc2.NewConn(ctx, stream, handler, opts...)
+		go func() {
+			<-rpc.DisconnectNotify()
+			log.Printf("proxy: jsonrpc2 connection disconnected\n")
+		}()
 	}
 }

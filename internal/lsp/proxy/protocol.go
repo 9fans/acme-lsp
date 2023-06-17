@@ -62,13 +62,15 @@ func NewServerHandler(server Server) jsonrpc2.Handler {
 
 func NewClient(conn *jsonrpc2.Conn) Client {
 	return &clientDispatcher{
-		Conn: conn,
+		Conn:   conn,
+		Client: protocol.NewClient(conn),
 	}
 }
 
 func NewServer(conn *jsonrpc2.Conn) Server {
 	return &serverDispatcher{
-		Conn: conn,
+		Conn:   conn,
+		Server: protocol.NewServer(conn),
 	}
 }
 
