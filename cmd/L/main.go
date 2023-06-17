@@ -135,7 +135,9 @@ func run(cfg *config.Config, args []string) error {
 	if cfg.Verbose {
 		opts = append(opts, jsonrpc2.LogMessages(log.Default()))
 	}
-	server := proxy.NewServer(jsonrpc2.NewConn(ctx, stream, nil, opts...))
+	rpc := jsonrpc2.NewConn(ctx, stream, nil, opts...)
+	defer rpc.Close()
+	server := proxy.NewServer(rpc)
 
 	ver, err := server.Version(ctx)
 	if err != nil {

@@ -15,48 +15,62 @@ import (
 type DocumentUri = string
 
 type clientHandler struct {
-	client    Client
-	lspClient jsonrpc2.Handler
+	client Client
 }
 
 func (h *clientHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *jsonrpc2.Request) {
+	if Debug {
+		log.Printf("proxy: client handler %v\n", r.Method)
+	}
 	ok, err := clientDispatch(ctx, h.client, conn, r)
 	if !ok {
-		h.lspClient.Handle(ctx, conn, r)
-		return
+		ok, err = protocol.ClientDispatch(ctx, h.client, conn, r)
+	}
+	if !ok {
+		rpcerr := &jsonrpc2.Error{
+			Code:    jsonrpc2.CodeMethodNotFound,
+			Message: "method not implemented",
+		}
+		err = conn.Reply(ctx, r.ID, rpcerr)
 	}
 	if err != nil {
-		log.Printf("rpc reply failed: %v", err)
+		log.Printf("proxy: client rpc reply failed for %v: %v", r.Method, err)
 	}
 }
 
 func NewClientHandler(client Client) jsonrpc2.Handler {
 	return &clientHandler{
-		client:    client,
-		lspClient: protocol.NewClientHandler(client),
+		client: client,
 	}
 }
 
 type serverHandler struct {
-	server    Server
-	lspServer jsonrpc2.Handler
+	server Server
 }
 
 func (h *serverHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *jsonrpc2.Request) {
+	if Debug {
+		log.Printf("proxy: server handler %v\n", r.Method)
+	}
 	ok, err := serverDispatch(ctx, h.server, conn, r)
 	if !ok {
-		h.lspServer.Handle(ctx, conn, r)
-		return
+		ok, err = protocol.ServerDispatch(ctx, h.server, conn, r)
+	}
+	if !ok {
+		rpcerr := &jsonrpc2.Error{
+			Code:    jsonrpc2.CodeMethodNotFound,
+			Message: "method not implemented",
+		}
+		err = conn.Reply(ctx, r.ID, rpcerr)
 	}
 	if err != nil {
-		log.Printf("rpc reply failed: %v", err)
+		log.Printf("proxy: server rpc reply failed for %v: %v", r.Method, err)
 	}
 }
 
 func NewServerHandler(server Server) jsonrpc2.Handler {
 	return &serverHandler{
-		server:    server,
-		lspServer: protocol.NewServerHandler(server),
+		server: server,
 	}
 }
 

@@ -121,18 +121,6 @@ func (s *serverDispatcher) ExecuteCommandOnDocument(ctx context.Context, params 
 	return result, nil
 }
 
-type CancelParams struct {
-	/**
-	 * The request id to cancel.
-	 */
-	ID jsonrpc2.ID `json:"id"`
-}
-
-type Message struct {
-	Data string
-	Attr map[string]string
-}
-
 var _ protocol.Server = (*NotImplementedServer)(nil)
 
 // NotImplementedServer is a stub implementation of protocol.Server.

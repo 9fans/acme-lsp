@@ -4,6 +4,10 @@ github.com/fhs/9fans-go v0.0.0-fhs.20200606 h1:kwqns/76paQLNLDx9I5UFkFG1z1tSqHq8
 github.com/fhs/9fans-go v0.0.0-fhs.20200606/go.mod h1:9PelHyep+qBAEyYdGnqAa66ZGjWE0L8EJP+GIDz8p7M=
 github.com/fhs/go-lsp-internal v0.0.0-20230610234852-c5f2102def33 h1:IOmTt60Dzfdp4NYvkrOB9AotLk7mBYtd+PBsU5jAQeg=
 github.com/fhs/go-lsp-internal v0.0.0-20230610234852-c5f2102def33/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
+github.com/fhs/go-lsp-internal v0.0.0-20230617125605-15c355072be4 h1:3viom14iPcmgEM8hyWJEc7gHAW3HCNUO38bgHYsFaqE=
+github.com/fhs/go-lsp-internal v0.0.0-20230617125605-15c355072be4/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
+github.com/fhs/go-lsp-internal v0.0.0-20230617170009-e3a916438ee1 h1:jeF/D2AKXTooLP6m1DP9Qd9dSRmUt2h5VN+3qyyMlII=
+github.com/fhs/go-lsp-internal v0.0.0-20230617170009-e3a916438ee1/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
 github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

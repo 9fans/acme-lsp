@@ -185,7 +185,9 @@ func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet,
 		rpc := jsonrpc2.NewConn(ctx, stream, handler, opts...)
 		go func() {
 			<-rpc.DisconnectNotify()
-			log.Printf("proxy: jsonrpc2 connection disconnected\n")
+			if cfg.Verbose {
+				log.Printf("proxy: jsonrpc2 connection disconnected\n")
+			}
 		}()
 	}
 }
