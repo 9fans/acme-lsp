@@ -89,6 +89,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
+		srv.Client.Close()
 	}()
 
 	t.Run(server, func(t *testing.T) {
@@ -319,6 +320,7 @@ func main() {
 	if err != nil {
 		t.Fatalf("DidClose failed: %v", err)
 	}
+	srv.Client.Close()
 }
 
 const pySource = `#!/usr/bin/env python
@@ -382,6 +384,7 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 		if err != nil {
 			t.Fatalf("DidClose failed: %v", err)
 		}
+		srv.Client.Close()
 	}()
 
 	f(t, srv.Client, text.ToURI(pyfile))

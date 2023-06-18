@@ -106,6 +106,7 @@ type Client struct {
 	protocol.Server
 	initializeResult *protocol.InitializeResult
 	cfg              *ClientConfig
+	rpc              *jsonrpc2.Conn
 }
 
 func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
@@ -114,6 +115,10 @@ func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
 		return nil, err
 	}
 	return c, nil
+}
+
+func (c *Client) Close() error {
+	return c.rpc.Close()
 }
 
 func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
@@ -129,11 +134,14 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if cfg.RPCTrace {
 		opts = append(opts, jsonrpc2.LogMessages(log.Default()))
 	}
-	rpc := jsonrpc2.NewConn(ctx, stream, handler, opts...)
-	server := protocol.NewServer(rpc)
+	if c.rpc != nil {
+		c.rpc.Close()
+	}
+	c.rpc = jsonrpc2.NewConn(ctx, stream, handler, opts...)
+	server := protocol.NewServer(c.rpc)
 	go func() {
-		<-rpc.DisconnectNotify()
-		log.Printf("jsonrpc2 connection to LSP sever disconnected\n")
+		<-c.rpc.DisconnectNotify()
+		log.Printf("jsonrpc2 client connection to LSP sever disconnected\n")
 	}()
 
 	d, err := filepath.Abs(cfg.RootDirectory)

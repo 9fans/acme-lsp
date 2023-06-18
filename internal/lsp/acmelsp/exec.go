@@ -71,12 +71,12 @@ func execServer(cs *config.Server, cfg *ClientConfig, restartOnExit bool) (*Serv
 			err := cmd.Wait()
 			log.Printf("language server %v exited: %v", args[0], err)
 
-			// TODO(fhs): cancel using context?
-			srv.conn.Close()
 			if !restartOnExit {
 				break
 			}
 
+			// TODO(fhs): cancel using context?
+			srv.conn.Close()
 			log.Printf("restarting language server %v after exit", args[0])
 			cmd, p1, err = startCommand()
 			if err != nil {
