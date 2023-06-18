@@ -125,6 +125,19 @@ func ToURI(filename string) protocol.DocumentURI {
 
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
-	filename, _ := strings.CutPrefix(string(uri), "file://")
+	filename, _ := CutPrefix(string(uri), "file://")
 	return filename
+}
+
+// CutPrefix returns s without the provided leading prefix string
+// and reports whether it found the prefix.
+// If s doesn't start with prefix, CutPrefix returns s, false.
+// If prefix is the empty string, CutPrefix returns s, true.
+//
+// TODO(fhs): remove and use strings.CutPrefix in Go >= 1.20
+func CutPrefix(s, prefix string) (after string, found bool) {
+	if !strings.HasPrefix(s, prefix) {
+		return s, false
+	}
+	return s[len(prefix):], true
 }
