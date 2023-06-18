@@ -28,8 +28,8 @@ func TestCompatibleCodeActions(t *testing.T) {
 		{
 			"AllFound",
 			protocol.ServerCapabilities{
-				CodeActionProvider: map[string]interface{}{
-					"CodeActionKinds": []protocol.CodeActionKind{
+				CodeActionProvider: protocol.CodeActionOptions{
+					CodeActionKinds: []protocol.CodeActionKind{
 						protocol.QuickFix,
 						protocol.SourceOrganizeImports,
 					},
@@ -41,8 +41,8 @@ func TestCompatibleCodeActions(t *testing.T) {
 		{
 			"NoneFound",
 			protocol.ServerCapabilities{
-				CodeActionProvider: map[string]interface{}{
-					"CodeActionKinds": []protocol.CodeActionKind{
+				CodeActionProvider: protocol.CodeActionOptions{
+					CodeActionKinds: []protocol.CodeActionKind{
 						protocol.QuickFix,
 					},
 				},
@@ -51,17 +51,7 @@ func TestCompatibleCodeActions(t *testing.T) {
 			nil,
 		},
 		{
-			"DecodeError",
-			protocol.ServerCapabilities{
-				CodeActionProvider: map[string]interface{}{
-					"CodeActionKinds": []int{0},
-				},
-			},
-			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
-			nil,
-		},
-		{
-			"BadType",
+			"OneFound",
 			protocol.ServerCapabilities{
 				CodeActionProvider: protocol.CodeActionOptions{
 					CodeActionKinds: []protocol.CodeActionKind{
@@ -71,7 +61,7 @@ func TestCompatibleCodeActions(t *testing.T) {
 				},
 			},
 			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
-			nil,
+			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
