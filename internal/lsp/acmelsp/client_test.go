@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -311,9 +312,9 @@ func main() {
 	}
 
 	diag := <-ch
-	want := "s declared and not used"
-	if diag.Message != want {
-		t.Errorf("diagnostics message is %q, want %q", diag.Message, want)
+	pat := regexp.MustCompile("^s declared (and|but) not used$")
+	if !pat.MatchString(diag.Message) {
+		t.Errorf("diagnostics message is %q does not match %q", diag.Message, pat)
 	}
 
 	err = lsp.DidClose(ctx, srv.Client, gofile)
