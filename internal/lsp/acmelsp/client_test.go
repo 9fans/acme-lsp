@@ -73,7 +73,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 		RootDirectory: dir,
 		DiagWriter:    &mockDiagosticsWriter{ioutil.Discard},
 		Workspaces:    nil,
-	})
+	}, false)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -297,7 +297,7 @@ func main() {
 		RootDirectory: dir,
 		DiagWriter:    &chanDiagosticsWriter{ch},
 		Workspaces:    nil,
-	})
+	}, false)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}
@@ -366,7 +366,7 @@ func testPython(t *testing.T, src string, f func(t *testing.T, c *Client, uri pr
 		RootDirectory: dir,
 		DiagWriter:    &mockDiagosticsWriter{ioutil.Discard},
 		Workspaces:    nil,
-	})
+	}, false)
 	if err != nil {
 		t.Fatalf("startServer failed: %v", err)
 	}

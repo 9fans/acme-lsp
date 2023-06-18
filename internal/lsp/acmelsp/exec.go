@@ -31,7 +31,7 @@ func (s *Server) Close() {
 	}
 }
 
-func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
+func execServer(cs *config.Server, cfg *ClientConfig, restartOnExit bool) (*Server, error) {
 	args := cs.Command
 
 	stderr := os.Stderr
@@ -69,11 +69,15 @@ func execServer(cs *config.Server, cfg *ClientConfig) (*Server, error) {
 	go func() {
 		for {
 			err := cmd.Wait()
-			log.Printf("language server %v exited: %v; restarting...", args[0], err)
+			log.Printf("language server %v exited: %v", args[0], err)
 
 			// TODO(fhs): cancel using context?
 			srv.conn.Close()
+			if !restartOnExit {
+				break
+			}
 
+			log.Printf("restarting language server %v after exit", args[0])
 			cmd, p1, err = startCommand()
 			if err != nil {
 				log.Printf("%v", err)
@@ -138,7 +142,7 @@ func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
 		}
 		info.srv = srv
 	} else {
-		srv, err := execServer(info.Server, cfg)
+		srv, err := execServer(info.Server, cfg, true)
 		if err != nil {
 			return nil, err
 		}
