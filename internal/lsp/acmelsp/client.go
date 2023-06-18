@@ -152,18 +152,35 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 		XInitializeParams: protocol.XInitializeParams{
 			RootURI: text.ToURI(d),
 			Capabilities: protocol.ClientCapabilities{
-				// Workspace: ..., (struct literal)
 				TextDocument: protocol.TextDocumentClientCapabilities{
 					CodeAction: protocol.CodeActionClientCapabilities{
 						CodeActionLiteralSupport: protocol.PCodeActionLiteralSupportPCodeAction{
 							CodeActionKind: protocol.FCodeActionKindPCodeActionLiteralSupport{
-								// ValueSet: ...
+								ValueSet: []protocol.CodeActionKind{
+									protocol.SourceOrganizeImports,
+								},
 							},
 						},
 					},
 					DocumentSymbol: protocol.DocumentSymbolClientCapabilities{
 						HierarchicalDocumentSymbolSupport: true,
 					},
+					Completion: protocol.CompletionClientCapabilities{
+						CompletionItem: protocol.PCompletionItemPCompletion{
+							TagSupport: protocol.FTagSupportPCompletionItem{
+								ValueSet: []protocol.CompletionItemTag{},
+							},
+						},
+					},
+					SemanticTokens: protocol.SemanticTokensClientCapabilities{
+						Formats:        []protocol.TokenFormat{},
+						TokenModifiers: []string{},
+						TokenTypes:     []string{},
+					},
+				},
+				Workspace: protocol.WorkspaceClientCapabilities{
+					WorkspaceFolders: true,
+					ApplyEdit:        true,
 				},
 			},
 			InitializationOptions: cfg.Options,
@@ -172,10 +189,6 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 			WorkspaceFolders: cfg.Workspaces,
 		},
 	}
-	params.Capabilities.Workspace.WorkspaceFolders = true
-	params.Capabilities.Workspace.ApplyEdit = true
-	params.Capabilities.TextDocument.CodeAction.CodeActionLiteralSupport.CodeActionKind.ValueSet =
-		[]protocol.CodeActionKind{protocol.SourceOrganizeImports}
 
 	result, err := server.Initialize(ctx, params)
 	if err != nil {
