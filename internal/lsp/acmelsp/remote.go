@@ -227,9 +227,11 @@ func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, sig := range sh.Signatures {
-		fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
-		fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
+	if sh != nil {
+		for _, sig := range sh.Signatures {
+			fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
+			fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
+		}
 	}
 	return nil
 }
