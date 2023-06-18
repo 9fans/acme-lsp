@@ -2,8 +2,10 @@ package acmelsp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -273,7 +275,7 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 			Range: s.SelectionRange,
 		}
 		indent := strings.Repeat(" ", depth)
-		fmt.Fprintf(rc.Stdout, "%v%v %v %v\n", indent, s.Kind, s.Name, s.Detail)
+		fmt.Fprintf(rc.Stdout, "%v%v %v\n", indent, s.Name, s.Detail)
 		fmt.Fprintf(rc.Stdout, "%v %v\n", indent, lsp.LocationLink(loc))
 	})
 	return nil
@@ -305,9 +307,35 @@ func walkDocumentSymbols1(syms []protocol.DocumentSymbol, depth int, f func(s *p
 
 func walkDocumentSymbols(syms []interface{}, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
 	for _, s := range syms {
-		if s, ok := s.(protocol.DocumentSymbol); ok {
-			f(&s, depth)
-			walkDocumentSymbols1(s.Children, depth+1, f)
+		switch val := s.(type) {
+		default:
+			log.Printf("unknown symbol type %T", val)
+
+		case protocol.DocumentSymbol:
+			f(&val, depth)
+			walkDocumentSymbols1(val.Children, depth+1, f)
+
+		// Workaround for the DocumentSymbol not being parsed by the auto-generated LSP definitions.
+		case map[string]interface{}:
+			ds, err := parseDocumentSymbol(val)
+			if err != nil {
+				log.Printf("failed to parse DocumentSymbols: %v\n", err)
+			} else {
+				f(ds, depth)
+				walkDocumentSymbols1(ds.Children, depth+1, f)
+			}
 		}
 	}
+}
+
+func parseDocumentSymbol(data map[string]interface{}) (*protocol.DocumentSymbol, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var ds protocol.DocumentSymbol
+	if err := json.Unmarshal(b, &ds); err != nil {
+		return nil, err
+	}
+	return &ds, nil
 }
