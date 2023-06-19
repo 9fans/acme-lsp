@@ -133,7 +133,7 @@ func run(cfg *config.Config, args []string) error {
 	stream := jsonrpc2.NewBufferedStream(conn, jsonrpc2.VSCodeObjectCodec{})
 	var opts []jsonrpc2.ConnOpt
 	if cfg.Verbose {
-		opts = append(opts, jsonrpc2.LogMessages(log.Default()))
+		opts = append(opts, lsp.LogMessages(log.Default()))
 	}
 	rpc := jsonrpc2.NewConn(ctx, stream, nil, opts...)
 	defer rpc.Close()

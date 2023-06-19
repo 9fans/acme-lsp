@@ -11,6 +11,7 @@ import (
 	"github.com/fhs/go-lsp-internal/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 
+	"github.com/fhs/acme-lsp/internal/lsp"
 	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
 	"github.com/fhs/acme-lsp/internal/lsp/proxy"
 	"github.com/fhs/acme-lsp/internal/lsp/text"
@@ -132,7 +133,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	})
 	var opts []jsonrpc2.ConnOpt
 	if cfg.RPCTrace {
-		opts = append(opts, jsonrpc2.LogMessages(log.Default()))
+		opts = append(opts, lsp.LogMessages(log.Default()))
 	}
 	if c.rpc != nil {
 		c.rpc.Close()

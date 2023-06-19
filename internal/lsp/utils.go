@@ -3,12 +3,15 @@ package lsp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"path/filepath"
+	"sync"
 
 	"github.com/fhs/acme-lsp/internal/lsp/text"
 	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"github.com/sourcegraph/jsonrpc2"
 )
 
 func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.CodeActionKind) bool {
@@ -138,4 +141,80 @@ func DirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {
 		})
 	}
 	return workspaces, nil
+}
+
+// LogMessages causes all messages sent and received on conn to be
+// logged using the provided logger.
+//
+// This works around a bug in jsonrpc2.
+// Upstream PR: https://github.com/sourcegraph/jsonrpc2/pull/71
+func LogMessages(logger jsonrpc2.Logger) jsonrpc2.ConnOpt {
+	return func(c *jsonrpc2.Conn) {
+		// Remember reqs we have received so we can helpfully show the
+		// request method in OnSend for responses.
+		var (
+			mu         sync.Mutex
+			reqMethods = map[jsonrpc2.ID]string{}
+		)
+
+		jsonrpc2.OnRecv(func(req *jsonrpc2.Request, resp *jsonrpc2.Response) {
+			switch {
+			case resp != nil:
+				var method string
+				if req != nil {
+					method = req.Method
+				} else {
+					method = "(no matching request)"
+				}
+				switch {
+				case resp.Result != nil:
+					result, _ := json.Marshal(resp.Result)
+					logger.Printf("jsonrpc2: --> result #%s: %s: %s\n", resp.ID, method, result)
+				case resp.Error != nil:
+					err, _ := json.Marshal(resp.Error)
+					logger.Printf("jsonrpc2: --> error #%s: %s: %s\n", resp.ID, method, err)
+				}
+
+			case req != nil:
+				mu.Lock()
+				reqMethods[req.ID] = req.Method
+				mu.Unlock()
+
+				params, _ := json.Marshal(req.Params)
+				if req.Notif {
+					logger.Printf("jsonrpc2: --> notif: %s: %s\n", req.Method, params)
+				} else {
+					logger.Printf("jsonrpc2: --> request #%s: %s: %s\n", req.ID, req.Method, params)
+				}
+			}
+		})(c)
+		jsonrpc2.OnSend(func(req *jsonrpc2.Request, resp *jsonrpc2.Response) {
+			switch {
+			case resp != nil:
+				mu.Lock()
+				method := reqMethods[resp.ID]
+				delete(reqMethods, resp.ID)
+				mu.Unlock()
+				if method == "" {
+					method = "(no previous request)"
+				}
+
+				if resp.Result != nil {
+					result, _ := json.Marshal(resp.Result)
+					logger.Printf("jsonrpc2: <-- result #%s: %s: %s\n", resp.ID, method, result)
+				} else {
+					err, _ := json.Marshal(resp.Error)
+					logger.Printf("jsonrpc2: <-- error #%s: %s: %s\n", resp.ID, method, err)
+				}
+
+			case req != nil:
+				params, _ := json.Marshal(req.Params)
+				if req.Notif {
+					logger.Printf("jsonrpc2: <-- notif: %s: %s\n", req.Method, params)
+				} else {
+					logger.Printf("jsonrpc2: <-- request #%s: %s: %s\n", req.ID, req.Method, params)
+				}
+			}
+		})(c)
+	}
 }
