@@ -11,7 +11,7 @@
 //
 //	$ acme &
 //	$ acmefocused &
-//	$ dial $(namespace)/acmefocused
+//	$ dial 'unix!'$(namespace)/acmefocused
 //	1
 //	$
 package main
