@@ -8,6 +8,8 @@ github.com/fhs/go-lsp-internal v0.0.0-20230617125605-15c355072be4 h1:3viom14iPcm
 github.com/fhs/go-lsp-internal v0.0.0-20230617125605-15c355072be4/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
 github.com/fhs/go-lsp-internal v0.0.0-20230617170009-e3a916438ee1 h1:jeF/D2AKXTooLP6m1DP9Qd9dSRmUt2h5VN+3qyyMlII=
 github.com/fhs/go-lsp-internal v0.0.0-20230617170009-e3a916438ee1/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
+github.com/fhs/go-lsp-internal v0.0.0-20230619000151-7826e273203a h1:4qLe7eMLgsA82mUUBVmSyOrCE0UV989Oxsqgd+PQcOk=
+github.com/fhs/go-lsp-internal v0.0.0-20230619000151-7826e273203a/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
 github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
