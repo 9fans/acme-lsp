@@ -65,6 +65,7 @@ func Edit(f File, edits []protocol.TextEdit) error {
 		q1 := off.LineToOffset(int(e.Range.End.Line), int(e.Range.End.Character))
 		f.WriteAt(q0, q1, []byte(e.NewText))
 	}
+
 	return nil
 }
 

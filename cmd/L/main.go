@@ -40,10 +40,13 @@ attempt to find the focused window ID by connecting to acmefocused
 
 List of sub-commands:
 
-	comp [-e]
+	comp [-e] [-E]
 		Print candidate completions at the cursor position. If
 		-e (edit) flag is given and there is only one candidate,
-		the completion is applied instead of being printed.
+		the completion is applied instead of being printed. If
+		-E (Edit) flag is given, the first matching candidate is
+		applied, and all matches will be displayed in a dedicated
+		Acme window named /LSP/Completions.
 
 	def [-p]
 		Find where the symbol at the cursor position is defined
@@ -206,7 +209,18 @@ func run(cfg *config.Config, args []string) error {
 	switch args[0] {
 	case "comp":
 		args = args[1:]
-		return rc.Completion(ctx, len(args) > 0 && args[0] == "-e")
+
+		var kind acmelsp.CompletionKind
+		if len(args) > 0 {
+			switch args[0] {
+			case "-e":
+				kind = acmelsp.CompleteInsertOnlyMatch
+			case "-E":
+				kind = acmelsp.CompleteInsertFirstMatch
+			}
+		}
+
+		return rc.Completion(ctx, kind)
 	case "def":
 		args = args[1:]
 		return rc.Definition(ctx, len(args) > 0 && args[0] == "-p")
