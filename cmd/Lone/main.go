@@ -142,7 +142,7 @@ func run(cfg *config.Config, args []string) error {
 
 	switch args[0] {
 	case "comp":
-		err = rc.Completion(ctx, false)
+		err = rc.Completion(ctx, acmelsp.CompleteNoEdit)
 	case "def":
 		err = rc.Definition(ctx, false)
 	case "fmt":

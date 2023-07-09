@@ -73,7 +73,15 @@ func (rc *RemoteCmd) DidChange(ctx context.Context) error {
 	})
 }
 
-func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
+type CompletionKind int
+
+const (
+	CompleteNoEdit CompletionKind = iota
+	CompleteInsertOnlyMatch
+	CompleteInsertFirstMatch
+)
+
+func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error {
 	w, err := acmeutil.OpenWin(rc.winid)
 	if err != nil {
 		return err
@@ -90,7 +98,8 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 	if err != nil {
 		return err
 	}
-	if edit && len(result.Items) == 1 {
+
+	if (kind == CompleteInsertFirstMatch && len(result.Items) >= 1) || (kind == CompleteInsertOnlyMatch && len(result.Items) == 1) {
 		textEdit := result.Items[0].TextEdit
 		if textEdit == nil {
 			// TODO(fhs): Use insertText or label instead.
@@ -99,14 +108,41 @@ func (rc *RemoteCmd) Completion(ctx context.Context, edit bool) error {
 		if err := text.Edit(w, []protocol.TextEdit{*textEdit}); err != nil {
 			return fmt.Errorf("failed to apply completion edit: %v", err)
 		}
-		return nil
+
+		if len(result.Items) == 1 {
+			return nil
+		}
 	}
+
+	var sb strings.Builder
+
 	if len(result.Items) == 0 {
-		fmt.Fprintf(rc.Stderr, "no completion\n")
+		fmt.Fprintf(&sb, "no completion\n")
 	}
+
 	for _, item := range result.Items {
-		fmt.Fprintf(rc.Stdout, "%v %v\n", item.Label, item.Detail)
+		fmt.Fprintf(&sb, "%v\t%v\n", item.Label, item.Detail)
 	}
+
+	if kind == CompleteInsertFirstMatch {
+		cw, err := acmeutil.Hijack("/LSP/Completions")
+		if err != nil {
+			cw, err = acmeutil.NewWin()
+			if err != nil {
+				return err
+			}
+
+			cw.Name("/LSP/Completions")
+		}
+
+		defer cw.Win.Ctl("clean")
+
+		cw.Clear()
+		cw.PrintTabbed(sb.String())
+	} else {
+		fmt.Println(sb.String())
+	}
+
 	return nil
 }
 
