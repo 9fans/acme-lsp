@@ -2,7 +2,10 @@ package acmelsp
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fhs/acme-lsp/internal/acmeutil"
@@ -72,6 +75,9 @@ func (dw *diagWin) restart() error {
 				case "Reload":
 					dw.updateChan <- struct{}{}
 					continue
+
+				case "Restart":
+					restart()
 				}
 			}
 			dw.WriteEvent(ev)
@@ -135,4 +141,13 @@ func NewDiagnosticsWriter() DiagnosticsWriter {
 		}
 	}()
 	return dw
+}
+
+func restart() {
+	exe, err := os.Executable()
+	if err != nil {
+		exe = os.Args[0]
+	}
+	err = syscall.Exec(exe, os.Args, os.Environ())
+	log.Fatalf("exec: %v", err)
 }
