@@ -29,31 +29,45 @@ func ServerProvidesCodeAction(cap *protocol.ServerCapabilities, kind protocol.Co
 }
 
 func CompatibleCodeActions(cap *protocol.ServerCapabilities, kinds []protocol.CodeActionKind) []protocol.CodeActionKind {
+	var allowed []protocol.CodeActionKind
 	switch ap := cap.CodeActionProvider.(type) {
+	default:
+		log.Printf("CompatibleCodeActions: unexpected CodeActionProvider type %T", ap)
 	case bool:
 		if ap {
-			return kinds
+			allowed = kinds
 		}
 		return nil
 	case protocol.CodeActionOptions:
-		var compat []protocol.CodeActionKind
-		for _, k := range kinds {
-			found := false
-			for _, kk := range ap.CodeActionKinds {
-				if k == kk {
-					found = true
-					break
-				}
+		allowed = ap.CodeActionKinds
+	case map[string]any:
+		as, ok := ap["codeActionKinds"].([]any)
+		if !ok {
+			log.Printf("codeActionKinds is %T", ap["codeActionKinds"])
+			break
+		}
+		for i, a := range as {
+			b, ok := a.(string)
+			if !ok {
+				log.Printf("codeActionKinds[%d] is %T", i, b)
 			}
-			if found {
+			allowed = append(allowed, protocol.CodeActionKind(b))
+		}
+	}
+
+	var compat []protocol.CodeActionKind
+Kinds:
+	for _, k := range kinds {
+		for _, allow := range allowed {
+			if k == allow {
 				compat = append(compat, k)
-			} else {
-				log.Printf("code action %v is not compatible with server", k)
+				continue Kinds
 			}
 		}
-		return compat
+		log.Printf("code action %v is not compatible with server kinds %v", k, allowed)
 	}
-	return nil
+	return compat
+
 }
 
 func LocationLink(l *protocol.Location, basedir string) string {
