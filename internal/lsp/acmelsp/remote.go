@@ -281,6 +281,8 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 	}
 	defer win.CloseFiles()
 
+	basedir := "" // TODO
+
 	uri, _, err := text.DocumentURI(win)
 	if err != nil {
 		return err
@@ -312,7 +314,7 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 		}
 		indent := strings.Repeat(" ", depth)
 		fmt.Fprintf(rc.Stdout, "%v%v %v\n", indent, s.Name, s.Detail)
-		fmt.Fprintf(rc.Stdout, "%v %v\n", indent, lsp.LocationLink(loc))
+		fmt.Fprintf(rc.Stdout, "%v %v\n", indent, lsp.LocationLink(loc, basedir))
 	})
 	return nil
 }

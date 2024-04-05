@@ -113,6 +113,6 @@ func (dw *mockDiagosticsWriter) WriteDiagnostics(params *protocol.PublishDiagnos
 			URI:   params.URI,
 			Range: diag.Range,
 		}
-		fmt.Fprintf(dw, "%v: %v\n", lsp.LocationLink(loc), diag.Message)
+		fmt.Fprintf(dw, "%v: %v\n", lsp.LocationLink(loc, ""), diag.Message)
 	}
 }

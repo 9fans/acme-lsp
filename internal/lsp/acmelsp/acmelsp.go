@@ -79,6 +79,10 @@ func getLine(p string, l int) string {
 }
 
 func PrintLocations(w io.Writer, loc []protocol.Location) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = ""
+	}
 	sort.Slice(loc, func(i, j int) bool {
 		a := loc[i]
 		b := loc[j]
@@ -93,7 +97,7 @@ func PrintLocations(w io.Writer, loc []protocol.Location) error {
 		return n < 0
 	})
 	for _, l := range loc {
-		fmt.Fprintf(w, "%v:%s\n", lsp.LocationLink(&l), getLine(text.ToPath(l.URI), int(l.Range.Start.Line+1)))
+		fmt.Fprintf(w, "%v:%s\n", lsp.LocationLink(&l, wd), getLine(text.ToPath(l.URI), int(l.Range.Start.Line+1)))
 	}
 	return nil
 }

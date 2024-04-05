@@ -534,7 +534,7 @@ func TestLocationLink(t *testing.T) {
 			},
 		},
 	}
-	got := lsp.LocationLink(l)
+	got := lsp.LocationLink(l, "")
 	want := "/home/gopher/mod1/main.go:14:10-16:8"
 	if got != want {
 		t.Errorf("LocationLink(%v) returned %q; want %q", l, got, want)

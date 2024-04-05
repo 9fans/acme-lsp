@@ -87,13 +87,14 @@ func (dw *diagWin) update(diags map[protocol.DocumentURI][]protocol.Diagnostic) 
 
 	dw.Clear()
 	body := dw.FileReadWriter("body")
+	basedir := "" // TODO
 	for uri, uriDiag := range diags {
 		for _, diag := range uriDiag {
 			loc := &protocol.Location{
 				URI:   uri,
 				Range: diag.Range,
 			}
-			fmt.Fprintf(body, "%v: %v\n", lsp.LocationLink(loc), diag.Message)
+			fmt.Fprintf(body, "%v: %v\n", lsp.LocationLink(loc, basedir), diag.Message)
 		}
 	}
 	return dw.Ctl("clean")

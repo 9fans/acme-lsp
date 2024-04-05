@@ -56,9 +56,13 @@ func CompatibleCodeActions(cap *protocol.ServerCapabilities, kinds []protocol.Co
 	return nil
 }
 
-func LocationLink(l *protocol.Location) string {
+func LocationLink(l *protocol.Location, basedir string) string {
 	p := text.ToPath(l.URI)
-	return fmt.Sprintf("%s:%v:%v-%v:%v", p,
+	rel, err := filepath.Rel(basedir, p)
+	if err == nil && len(rel) < len(p) {
+		p = rel
+	}
+	return fmt.Sprintf("%s:%v.%v,%v.%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
 }
