@@ -1,6 +1,6 @@
 module github.com/fhs/acme-lsp
 
-go 1.12
+go 1.21.9
 
 require (
 	github.com/BurntSushi/toml v0.3.1
