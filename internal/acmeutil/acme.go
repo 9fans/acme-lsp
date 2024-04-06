@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/fhs/acme-lsp/internal/acme"
+	"9fans.net/acme-lsp/internal/acme"
 )
 
 type Win struct {

@@ -9,7 +9,7 @@ LSP commands.
 
 If L is run outside of acme (therefore $winid is not set), L will
 attempt to find the focused window ID by connecting to acmefocused
-(https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
+(https://godoc.org/9fans.net/acme-lsp/cmd/acmefocused).
 
 	Usage: L <sub-command> [args...]
 

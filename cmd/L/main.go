@@ -13,12 +13,12 @@ import (
 	"strconv"
 
 	p9client "github.com/fhs/9fans-go/plan9/client"
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/cmd"
-	"github.com/fhs/acme-lsp/internal/lsp/proxy"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/acme-lsp/internal/lsp/cmd"
+	"9fans.net/acme-lsp/internal/lsp/proxy"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
@@ -34,7 +34,7 @@ LSP commands.
 
 If L is run outside of acme (therefore $winid is not set), L will
 attempt to find the focused window ID by connecting to acmefocused
-(https://godoc.org/github.com/fhs/acme-lsp/cmd/acmefocused).
+(https://godoc.org/9fans.net/acme-lsp/cmd/acmefocused).
 
 	Usage: L <sub-command> [args...]
 

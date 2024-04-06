@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

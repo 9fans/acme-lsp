@@ -9,11 +9,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/proxy"
-	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/acmeutil"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/proxy"
+	"9fans.net/acme-lsp/internal/lsp/text"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.

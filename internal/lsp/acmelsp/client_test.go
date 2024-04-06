@@ -13,10 +13,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/acme-lsp/internal/lsp/text"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
 const goSource = `package main // import "example.com/test"
@@ -37,7 +37,7 @@ fmt . Println	( "Hello, 世界" )
 }
 `
 
-const goMod = `module github.com/fhs/acme-lsp/internal/lsp/acmelsp/client_test
+const goMod = `module 9fans.net/acme-lsp/internal/lsp/acmelsp/client_test
 `
 
 func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, c *Client, uri protocol.DocumentURI)) {

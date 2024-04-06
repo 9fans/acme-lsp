@@ -13,7 +13,7 @@ Acme-lsp is optionally configured using a TOML-based configuration file
 located at UserConfigDir/acme-lsp/config.toml (the -showconfig flag
 prints the exact location).  The command line flags will override the
 configuration values.  The configuration options are described here:
-https://godoc.org/github.com/fhs/acme-lsp/internal/lsp/acmelsp/config#File
+https://godoc.org/9fans.net/acme-lsp/internal/lsp/acmelsp/config#File
 
 Acme-lsp executes or connects to a set of LSP servers described in the
 configuration file or in the -server or -dial flags. It then listens for

@@ -13,11 +13,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/proxy"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/acme-lsp/internal/lsp/proxy"
 )
 
 type Server struct {

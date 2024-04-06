@@ -1,15 +1,15 @@
-[![GitHub Actions Status](https://github.com/fhs/acme-lsp/workflows/Test/badge.svg)](https://github.com/fhs/acme-lsp/actions?query=branch%3Amaster+event%3Apush)
-[![Go Reference](https://pkg.go.dev/badge/github.com/fhs/acme-lsp/cmd/acme-lsp.svg)](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/acme-lsp)
-[![Go Report Card](https://goreportcard.com/badge/github.com/fhs/acme-lsp)](https://goreportcard.com/report/github.com/fhs/acme-lsp)
+[![GitHub Actions Status](https://9fans.net/acme-lsp/workflows/Test/badge.svg)](https://9fans.net/acme-lsp/actions?query=branch%3Amaster+event%3Apush)
+[![Go Reference](https://pkg.go.dev/badge/9fans.net/acme-lsp/cmd/acme-lsp.svg)](https://pkg.go.dev/9fans.net/acme-lsp/cmd/acme-lsp)
+[![Go Report Card](https://goreportcard.com/badge/9fans.net/acme-lsp)](https://goreportcard.com/report/9fans.net/acme-lsp)
 
 # acme-lsp
 
 [Language Server Protocol](https://langserver.org/) tools for [acme](https://en.wikipedia.org/wiki/Acme_(text_editor)) text editor.
 
 The main tool is
-[acme-lsp](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/acme-lsp),
+[acme-lsp](https://pkg.go.dev/9fans.net/acme-lsp/cmd/acme-lsp),
 which listens for commands from the [L
-command](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/L).
+command](https://pkg.go.dev/9fans.net/acme-lsp/cmd/L).
 It also watches for files created (`New`), loaded (`Get`), saved
 (`Put`), or deleted (`Del`) in acme, and tells the LSP server about
 these changes. The LSP server in turn responds by sending diagnostics
@@ -27,8 +27,8 @@ incompatibilities with those or other servers.
 
 Install the latest release:
 
-	GO111MODULE=on go install github.com/fhs/acme-lsp/cmd/acme-lsp@latest
-	GO111MODULE=on go install github.com/fhs/acme-lsp/cmd/L@latest
+	GO111MODULE=on go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
+	GO111MODULE=on go install 9fans.net/acme-lsp/cmd/L@latest
 
 ## gopls
 
@@ -114,7 +114,7 @@ for(cmd in comp def fmt hov impls refs rn sig syms type assist ws ws+ ws-){
 typing. This can be achieved by using a general keybinding daemon
 (e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
 in X11) and running
-[acmefocused](https://pkg.go.dev/github.com/fhs/acme-lsp/cmd/acmefocused).
+[acmefocused](https://pkg.go.dev/9fans.net/acme-lsp/cmd/acmefocused).
 
 ## See also
 

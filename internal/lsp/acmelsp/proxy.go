@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/proxy"
-	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/fhs/acme-lsp/internal/p9service"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/acme-lsp/internal/lsp/proxy"
+	"9fans.net/acme-lsp/internal/lsp/text"
+	"9fans.net/acme-lsp/internal/p9service"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

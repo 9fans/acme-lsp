@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/acme-lsp/internal/lsp/proxy"
-	"github.com/fhs/acme-lsp/internal/lsp/text"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/acme-lsp/internal/lsp/proxy"
+	"9fans.net/acme-lsp/internal/lsp/text"
 )
 
 var Verbose = false

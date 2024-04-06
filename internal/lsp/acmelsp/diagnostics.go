@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fhs/acme-lsp/internal/acmeutil"
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/acmeutil"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
 // diagWin implements client.DiagnosticsWriter.

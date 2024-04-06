@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/fhs/9fans-go/plumb"
-	"github.com/fhs/acme-lsp/internal/lsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/lsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/google/go-cmp/cmp"
 )
 

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/fhs/acme-lsp/internal/lsp/text"
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/acme-lsp/internal/lsp/text"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

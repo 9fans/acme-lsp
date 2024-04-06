@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fhs/go-lsp-internal/lsp/protocol"
+	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
 // File represents an open file in text editor.

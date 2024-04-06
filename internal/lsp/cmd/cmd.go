@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/fhs/acme-lsp/internal/acme"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp"
-	"github.com/fhs/acme-lsp/internal/lsp/acmelsp/config"
+	"9fans.net/acme-lsp/internal/acme"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp"
+	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 )
 
 func Setup(flags config.Flags) *config.Config {
