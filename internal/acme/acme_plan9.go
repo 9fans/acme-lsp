@@ -1,7 +1,7 @@
 package acme
 
 import (
-	"github.com/fhs/9fans-go/plan9/client"
+	"9fans.net/go/plan9/client"
 )
 
 func mountAcme() {
