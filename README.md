@@ -1,4 +1,4 @@
-[![GitHub Actions Status](https://9fans.net/acme-lsp/workflows/Test/badge.svg)](https://9fans.net/acme-lsp/actions?query=branch%3Amaster+event%3Apush)
+[![GitHub Actions Status](https://github.com/9fans/acme-lsp/workflows/Test/badge.svg)](https://github.com/9fans/acme-lsp/actions?query=branch%3Amaster+event%3Apush)
 [![Go Reference](https://pkg.go.dev/badge/9fans.net/acme-lsp/cmd/acme-lsp.svg)](https://pkg.go.dev/9fans.net/acme-lsp/cmd/acme-lsp)
 [![Go Report Card](https://goreportcard.com/badge/9fans.net/acme-lsp)](https://goreportcard.com/report/9fans.net/acme-lsp)
 
