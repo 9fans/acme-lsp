@@ -12,9 +12,9 @@ import (
 	"runtime"
 	"strings"
 
+	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/BurntSushi/toml"
 	"github.com/fhs/9fans-go/plan9/client"
-	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
 // Flags represent a set of command line flags.
