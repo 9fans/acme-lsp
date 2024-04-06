@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fhs/9fans-go/plumb"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/internal/go-lsp/lsp/protocol"
+	"github.com/fhs/9fans-go/plumb"
 	"github.com/google/go-cmp/cmp"
 )
 

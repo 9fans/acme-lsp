@@ -12,13 +12,13 @@ import (
 	"path/filepath"
 	"strconv"
 
-	p9client "github.com/fhs/9fans-go/plan9/client"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/internal/go-lsp/lsp/protocol"
+	p9client "github.com/fhs/9fans-go/plan9/client"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

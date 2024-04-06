@@ -24,9 +24,9 @@ import (
 	"path/filepath"
 	"sync"
 
+	"9fans.net/acme-lsp/internal/p9service"
 	"github.com/fhs/9fans-go/acme"
 	"github.com/fhs/9fans-go/plan9/client"
-	"9fans.net/acme-lsp/internal/p9service"
 )
 
 func main() {
