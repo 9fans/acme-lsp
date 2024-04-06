@@ -312,7 +312,7 @@ func main() {
 	}
 
 	diag := <-ch
-	pat := regexp.MustCompile("^s declared (and|but) not used$")
+	pat := regexp.MustCompile("^`?s'? declared (and|but) not used$")
 	if !pat.MatchString(diag.Message) {
 		t.Errorf("diagnostics message is %q does not match %q", diag.Message, pat)
 	}
@@ -535,7 +535,7 @@ func TestLocationLink(t *testing.T) {
 		},
 	}
 	got := lsp.LocationLink(l, "")
-	want := "/home/gopher/mod1/main.go:14:10-16:8"
+	want := "/home/gopher/mod1/main.go:14.10,16.8"
 	if got != want {
 		t.Errorf("LocationLink(%v) returned %q; want %q", l, got, want)
 	}
