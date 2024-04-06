@@ -112,8 +112,11 @@ jobs:
         $env:path += ";C:\Users\runneradmin\go\bin"
         go test -race -v ./...
 
-    - name: Cross compile for plan9
-      if: matrix.platform == 'ubuntu-latest'
-      env:
-        GOOS: plan9
-      run: go build ./...
+    # Need this PR to fix plan9 build:
+    # https://github.com/9fans/go/pull/134
+    #
+    # - name: Cross compile for plan9
+    #   if: matrix.platform == 'ubuntu-latest'
+    #   env:
+    #     GOOS: plan9
+    #   run: go build ./...
