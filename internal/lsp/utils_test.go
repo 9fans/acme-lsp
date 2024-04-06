@@ -63,6 +63,19 @@ func TestCompatibleCodeActions(t *testing.T) {
 			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
 			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
 		},
+		{
+			"OneFoundMap",
+			protocol.ServerCapabilities{
+				CodeActionProvider: map[string]any{
+					"codeActionKinds": []any{
+						"quickfix",
+						"source.organizeImports",
+					},
+				},
+			},
+			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
+			[]protocol.CodeActionKind{protocol.SourceOrganizeImports},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := CompatibleCodeActions(&tc.cap, tc.kinds)

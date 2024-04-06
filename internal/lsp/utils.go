@@ -35,7 +35,7 @@ func CompatibleCodeActions(cap *protocol.ServerCapabilities, kinds []protocol.Co
 		log.Printf("CompatibleCodeActions: unexpected CodeActionProvider type %T", ap)
 	case bool:
 		if ap {
-			allowed = kinds
+			return kinds
 		}
 		return nil
 	case protocol.CodeActionOptions:
