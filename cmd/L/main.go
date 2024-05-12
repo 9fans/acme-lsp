@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -280,7 +280,7 @@ func getFocusedWinID(addr string) (string, error) {
 			return "", fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
 		}
 		defer conn.Close()
-		b, err := ioutil.ReadAll(conn)
+		b, err := io.ReadAll(conn)
 		if err != nil {
 			return "", fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
 		}

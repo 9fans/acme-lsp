@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -192,7 +191,7 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 			if err != nil {
 				return err
 			}
-			b, err := ioutil.ReadAll(rd)
+			b, err := io.ReadAll(rd)
 			if err != nil {
 				return err
 			}
@@ -206,9 +205,6 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 					},
 				},
 			})
-			if err != nil {
-				return err
-			}
 		}
 	}
 	edits, err := server.Formatting(ctx, &protocol.DocumentFormattingParams{

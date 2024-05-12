@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -38,7 +37,7 @@ func TestGetFocusedWinIDFromServer(t *testing.T) {
 	os.Unsetenv("winid")
 	want := "321"
 
-	dir, err := ioutil.TempDir("", "acmefocused")
+	dir, err := os.MkdirTemp("", "acmefocused")
 	if err != nil {
 		t.Fatalf("couldn't create temporary directory: %v", err)
 	}

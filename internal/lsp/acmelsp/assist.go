@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"time"
 	"unicode"
@@ -145,7 +144,7 @@ func readLeftRight(id int, q0 int) (left, right rune, err error) {
 		return 0, 0, err
 	}
 
-	b, err := ioutil.ReadAll(w.FileReadWriter("xdata"))
+	b, err := io.ReadAll(w.FileReadWriter("xdata"))
 	if err != nil {
 		return 0, 0, err
 	}
