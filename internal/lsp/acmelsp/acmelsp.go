@@ -17,9 +17,9 @@ import (
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/acme-lsp/internal/lsp/text"
+	"9fans.net/go/plan9"
+	"9fans.net/go/plumb"
 	"9fans.net/internal/go-lsp/lsp/protocol"
-	"github.com/fhs/9fans-go/plan9"
-	"github.com/fhs/9fans-go/plumb"
 )
 
 func CurrentWindowRemoteCmd(ss *ServerSet, fm *FileManager) (*RemoteCmd, error) {
