@@ -188,13 +188,21 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	hov, err := rc.server.Hover(ctx, &protocol.HoverParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
 		return err
 	}
+
+	if hov == nil {
+		fmt.Fprintln(rc.Stdout, "No hover help available.")
+		return nil
+	}
+
 	fmt.Fprintf(rc.Stdout, "%v\n", hov.Contents.Value)
+
 	return nil
 }
 
