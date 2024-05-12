@@ -224,7 +224,7 @@ func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
 	return PrintLocations(rc.Stdout, loc)
 }
 
-func (rc *RemoteCmd) References(ctx context.Context) error {
+func (rc *RemoteCmd) References(ctx context.Context, showReferences bool) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {
 		return err
@@ -241,6 +241,22 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 	if len(loc) == 0 {
 		fmt.Fprintf(rc.Stderr, "No references found.\n")
 		return nil
+	}
+
+	if showReferences {
+		cw, err := acmeutil.Hijack("/LSP/References")
+		if err != nil {
+			cw, err = acmeutil.NewWin()
+			if err != nil {
+				return err
+			}
+
+			cw.Name("/LSP/References")
+		}
+		defer cw.Win.Ctl("clean")
+
+		cw.Clear()
+		return PrintLocations(cw.BodyWriter(), loc, "") // NOTE: uses absolute paths
 	}
 	return PrintLocations(rc.Stdout, loc)
 }

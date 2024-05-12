@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -35,7 +35,7 @@ func TestListenAndServe(t *testing.T) {
 		t.Skip("skipping on windows because unix domain sockets are not supported")
 	}
 
-	dir, err := ioutil.TempDir("", "acmefocused-test")
+	dir, err := os.MkdirTemp("", "acmefocused-test")
 	if err != nil {
 		t.Fatalf("couldn't create temporary directory: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestListenAndServe(t *testing.T) {
 			continue
 		}
 		want := []byte(testWinID + "\n")
-		got, err := ioutil.ReadAll(conn)
+		got, err := io.ReadAll(conn)
 		if err != nil {
 			t.Errorf("read failed: %v", err)
 		}
