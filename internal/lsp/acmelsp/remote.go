@@ -234,7 +234,6 @@ func (rc *RemoteCmd) References(ctx context.Context, showReferences bool) error 
 		fmt.Fprintf(rc.Stderr, "No references found.\n")
 		return nil
 	}
-	dest := rc.Stdout
 
 	if showReferences {
 		cw, err := acmeutil.Hijack("/LSP/References")
@@ -249,9 +248,9 @@ func (rc *RemoteCmd) References(ctx context.Context, showReferences bool) error 
 		defer cw.Win.Ctl("clean")
 
 		cw.Clear()
-		dest = cw.BodyWriter()
+		return PrintLocations(cw.BodyWriter(), loc, "") // NOTE: uses absolute paths
 	}
-	return PrintLocations(dest, loc, "")
+	return PrintLocations(rc.Stdout, loc)
 }
 
 // Rename renames the identifier at cursor position to newname.
