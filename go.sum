@@ -4,6 +4,8 @@
 9fans.net/internal/go-lsp v0.0.0-20240621142652-b2eeae9fa405/go.mod h1:0/rCSlZo+66g+WpzTJuod4f7dHG6Yo8kxehfOhrt9RU=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/cloudspinner/go-lsp-internal v0.0.0-20240109201957-d9537c30fb78 h1:W/QXjKTNneGNXhD+wDd0DBso2NDjl4cAakUa9+8cf2w=
+github.com/cloudspinner/go-lsp-internal v0.0.0-20240109201957-d9537c30fb78/go.mod h1:GF34TbXJNatquGdvhieClRATyP8RFzX+l+rNYqfdTow=
 github.com/fhs/9fans-go v0.0.0-fhs.20200606 h1:kwqns/76paQLNLDx9I5UFkFG1z1tSqHq8a3j/I0kLr4=
 github.com/fhs/9fans-go v0.0.0-fhs.20200606/go.mod h1:9PelHyep+qBAEyYdGnqAa66ZGjWE0L8EJP+GIDz8p7M=
 github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
