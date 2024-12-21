@@ -1,5 +1,7 @@
 9fans.net/internal/go-lsp v0.0.0-20240406143457-bb36aa85881a h1:XAfaMe2Mt0aBSGuG6jfuJv3ZxkFyaV7kmtZzdizJDY4=
 9fans.net/internal/go-lsp v0.0.0-20240406143457-bb36aa85881a/go.mod h1:0/rCSlZo+66g+WpzTJuod4f7dHG6Yo8kxehfOhrt9RU=
+9fans.net/internal/go-lsp v0.0.0-20240621142652-b2eeae9fa405 h1:+pdspglkOl5x1bQLI4TS/hZNTJ3E9BwqXBbuIqkQz5Y=
+9fans.net/internal/go-lsp v0.0.0-20240621142652-b2eeae9fa405/go.mod h1:0/rCSlZo+66g+WpzTJuod4f7dHG6Yo8kxehfOhrt9RU=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/fhs/9fans-go v0.0.0-fhs.20200606 h1:kwqns/76paQLNLDx9I5UFkFG1z1tSqHq8a3j/I0kLr4=
