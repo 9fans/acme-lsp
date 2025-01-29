@@ -123,9 +123,11 @@ type ServerInfo struct {
 	*config.Server
 	*config.FilenameHandler
 
-	Re     *regexp.Regexp // filename regular expression
-	Logger *log.Logger    // Logger for config.Server.LogFile
-	srv    *Server        // running server instance
+	Pattern *regexp.Regexp // filename regular expression
+	Ignore  *regexp.Regexp
+
+	Logger *log.Logger // Logger for config.Server.LogFile
+	srv    *Server     // running server instance
 }
 
 func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
@@ -181,10 +183,20 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 		if len(cs.Command) == 0 && len(cs.Address) == 0 {
 			return nil, fmt.Errorf("invalid server for key %q", h.ServerKey)
 		}
+
 		re, err := regexp.Compile(h.Pattern)
 		if err != nil {
 			return nil, err
 		}
+
+		var ignore *regexp.Regexp
+		if h.Ignore != "" {
+			ignore, err = regexp.Compile(h.Ignore)
+			if err != nil {
+				return nil, fmt.Errorf("compiling \"Ignore\" pattern: %w", err)
+			}
+		}
+
 		var logger *log.Logger
 		if cs.LogFile != "" {
 			f, err := os.Create(cs.LogFile)
@@ -196,7 +208,8 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 		data = append(data, &ServerInfo{
 			Server:          cs,
 			FilenameHandler: &cfg.FilenameHandlers[i],
-			Re:              re,
+			Pattern:         re,
+			Ignore:          ignore,
 			Logger:          logger,
 		})
 	}
@@ -223,7 +236,11 @@ func (ss *ServerSet) FindServerWithCapability(match func(*protocol.InitializeRes
 
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	for _, info := range ss.Data {
-		if info.Re.MatchString(filename) {
+		if info.Ignore != nil && info.Ignore.MatchString(filename) {
+			continue
+		}
+
+		if info.Pattern.MatchString(filename) {
 			return info
 		}
 	}
@@ -272,9 +289,9 @@ func (ss *ServerSet) CloseAll() {
 func (ss *ServerSet) PrintTo(w io.Writer) {
 	for _, info := range ss.Data {
 		if len(info.Address) > 0 {
-			fmt.Fprintf(w, "%v %v\n", info.Re, info.Address)
+			fmt.Fprintf(w, "%v %v %v\n", info.Pattern, info.Ignore, info.Address)
 		} else {
-			fmt.Fprintf(w, "%v %v\n", info.Re, strings.Join(info.Command, " "))
+			fmt.Fprintf(w, "%v %v %v\n", info.Pattern, info.Ignore, strings.Join(info.Command, " "))
 		}
 	}
 }
