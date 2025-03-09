@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -63,9 +63,10 @@ List of sub-commands:
 	impls
 		List implementation location(s) of the symbol under the cursor.
 
-	refs
+	refs [-show]
 		List locations where the symbol under the cursor is used
-		("references").
+		("references"). If -show flag is given, all references are displayed
+		in a dedicated Acme window named /LSP/References (with absolute paths)
 
 	rn <newname>
 		Rename the symbol under the cursor to newname.
@@ -231,7 +232,8 @@ func run(cfg *config.Config, args []string) error {
 	case "impls":
 		return rc.Implementation(ctx, true)
 	case "refs":
-		return rc.References(ctx)
+		args = args[1:]
+		return rc.References(ctx, len(args) > 0 && args[0] == "-show")
 	case "rn":
 		args = args[1:]
 		if len(args) < 1 {
@@ -280,7 +282,7 @@ func getFocusedWinID(addr string) (string, error) {
 			return "", fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
 		}
 		defer conn.Close()
-		b, err := ioutil.ReadAll(conn)
+		b, err := io.ReadAll(conn)
 		if err != nil {
 			return "", fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
 		}

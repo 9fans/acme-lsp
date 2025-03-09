@@ -126,3 +126,23 @@ func Hijack(name string) (*Win, error) {
 	}
 	return nil, fmt.Errorf("hijack %q: window not found", name)
 }
+
+// NOTE: maybe remove and use FileReadWriter instead
+type fileWriter func([]byte) (int, error)
+
+func (wr fileWriter) Write(p []byte) (int, error) {
+	return wr(p)
+}
+
+func (w *Win) fileWriter(name string) io.Writer {
+	var writer fileWriter
+	writer = func(p []byte) (n int, err error) {
+		return w.Write(name, p)
+	}
+	return writer
+}
+
+// returns io.Writer attached to this windows "body"
+func (w *Win) BodyWriter() io.Writer {
+	return w.fileWriter("body")
+}

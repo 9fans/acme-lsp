@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -78,10 +77,17 @@ func getLine(p string, l int) string {
 	return ""
 }
 
-func PrintLocations(w io.Writer, loc []protocol.Location) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = ""
+func PrintLocations(w io.Writer, loc []protocol.Location, wds ...string) error {
+	var wd string
+	if len(wds) == 0 {
+		var err error
+		wd, err = os.Getwd()
+		if err != nil {
+			wd = ""
+		}
+	} else {
+		// workaround to pass "", filepath.Rel then uses absolute paths inside lsp.LocationLink
+		wd = wds[0]
 	}
 	sort.Slice(loc, func(i, j int) bool {
 		a := loc[i]
@@ -192,7 +198,7 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 			if err != nil {
 				return err
 			}
-			b, err := ioutil.ReadAll(rd)
+			b, err := io.ReadAll(rd)
 			if err != nil {
 				return err
 			}
@@ -206,9 +212,6 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 					},
 				},
 			})
-			if err != nil {
-				return err
-			}
 		}
 	}
 	edits, err := server.Formatting(ctx, &protocol.DocumentFormattingParams{

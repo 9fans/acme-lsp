@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -62,7 +61,7 @@ func TestServerSetWorkspaces(t *testing.T) {
 			},
 		},
 	}
-	ss, err := NewServerSet(cfg, &mockDiagosticsWriter{ioutil.Discard})
+	ss, err := NewServerSet(cfg, &mockDiagosticsWriter{io.Discard})
 	if err != nil {
 		t.Fatalf("failed to create server set: %v", err)
 	}
