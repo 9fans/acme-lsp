@@ -9,3 +9,5 @@ require (
 	github.com/google/go-cmp v0.3.0
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 )
+
+replace 9fans.net/internal/go-lsp => ../go-lsp-internal

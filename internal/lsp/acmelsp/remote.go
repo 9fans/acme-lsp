@@ -94,6 +94,10 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	}
 	result, err := rc.server.Completion(ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
+		Context: protocol.CompletionContext{
+			// Completion was triggered by an explicit manual user invocation.
+			TriggerKind: protocol.Invoked,
+		},
 	})
 	if err != nil {
 		return err
@@ -193,7 +197,7 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("getting hover help from LSP: %w", err)
 	}
 
 	if hov == nil {
@@ -201,7 +205,26 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 		return nil
 	}
 
-	fmt.Fprintf(rc.Stdout, "%v\n", hov.Contents.Value)
+	switch c := hov.Contents.Value.(type) {
+	case protocol.MarkedString:
+		switch v := c.Value.(type) {
+		case string:
+			fmt.Fprintln(rc.Stdout, v)
+		case protocol.Msg_MarkedString:
+			fmt.Fprintln(rc.Stdout, v.Value)
+		}
+	case protocol.MarkupContent:
+		fmt.Fprintf(rc.Stdout, "%v\n", c)
+	case []protocol.MarkedString:
+		for _, ms := range c {
+			switch v := ms.Value.(type) {
+			case string:
+				fmt.Fprintln(rc.Stdout, v)
+			case protocol.Msg_MarkedString:
+				fmt.Fprintln(rc.Stdout, v.Value)
+			}
+		}
+	}
 
 	return nil
 }
