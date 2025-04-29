@@ -106,6 +106,9 @@ type FilenameHandler struct {
 	// Pattern is a regular expression that matches filename.
 	Pattern string
 
+	// Ignore is a regular expression that matches file names not to run this LSP for, even if Pattern matches.
+	Ignore string
+
 	// Language identifier (e.g. "go" or "python")
 	// See list of languages here:
 	// https://microsoft.github.io/language-server-protocol/specifications/specification-current/#textDocumentItem

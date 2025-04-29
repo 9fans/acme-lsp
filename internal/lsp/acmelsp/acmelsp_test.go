@@ -78,7 +78,7 @@ func TestParseFlagSet(t *testing.T) {
 					Server: &config.Server{
 						Command: []string{"gopls", "-rpc.trace"},
 					},
-					Re: regexp.MustCompile(`\.go$`),
+					Pattern: regexp.MustCompile(`\.go$`),
 				},
 			},
 			nil,
@@ -93,7 +93,7 @@ func TestParseFlagSet(t *testing.T) {
 					Server: &config.Server{
 						Address: "localhost:4389",
 					},
-					Re: regexp.MustCompile(`\.go$`),
+					Pattern: regexp.MustCompile(`\.go$`),
 				},
 			},
 			nil,
@@ -146,7 +146,7 @@ func TestParseFlagSet(t *testing.T) {
 				}
 				got := tc.serverInfo[0]
 				want := ss.Data[0]
-				if got, want := got.Re.String(), want.Re.String(); got != want {
+				if got, want := got.Pattern.String(), want.Pattern.String(); got != want {
 					t.Errorf("filename pattern for %v is %v; want %v", got, tc.args, want)
 				}
 				if got, want := got.Command, want.Command; !cmp.Equal(got, want) {

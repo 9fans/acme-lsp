@@ -87,6 +87,9 @@ CodeActionsOnPut = ["source.organizeImports"]
 
 [[FilenameHandlers]]
   Pattern = "\\.go$"
+  # Don't run this LSP in files in /projects/example (for instance because that
+  # project needs a gopls with a Bazel packages driver).
+  Ignore = "/projects/example"
   LanguageID = "go"
   ServerKey = "gopls"
 ```
