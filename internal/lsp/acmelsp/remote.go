@@ -163,7 +163,7 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	return PlumbLocations(locations)
 }
 
-func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
+func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context, fopts *protocol.FormattingOptions) error {
 	win, err := acmeutil.OpenWin(rc.winid)
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
 	}
 	return CodeActionAndFormat(ctx, rc.server, doc, win, []protocol.CodeActionKind{
 		protocol.SourceOrganizeImports,
-	})
+	}, fopts)
 }
 
 func (rc *RemoteCmd) Hover(ctx context.Context) error {

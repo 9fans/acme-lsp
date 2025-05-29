@@ -51,6 +51,15 @@ func (w *Win) Filename() (string, error) {
 	return string(tag[:i]), nil
 }
 
+func Filename(id int) (string, error) {
+	w, err := OpenWin(id)
+	if err != nil {
+		return "", fmt.Errorf("failed to open win to read file name: %v", err)
+	}
+	defer w.CloseFiles()
+	return w.Filename()
+}
+
 // CurrentAddr returns the address of current selection.
 func (w *Win) CurrentAddr() (q0, q1 int, err error) {
 	_, _, err = w.ReadAddr() // open addr file

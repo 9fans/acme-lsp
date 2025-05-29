@@ -75,6 +75,23 @@ CodeActionsOnPut = ["source.organizeImports"]
 		[Servers.gopls.Options]
 		hoverKind = "FullDocumentation"
 
+		# These settings gets passed to gopls on format.
+		# Gopls ignores these, but other LSP servers recognize
+		# them.
+		[Servers.gopls.FormattingOptions]
+		# Size of a tab in spaces.
+		TabSize = 0
+		# Prefer spaces over tabs.
+		InsertSpaces = false
+		# Trim trailing whitespace on a line.
+		TrimTrailingWhitespace = true
+		# Insert a newline character at the end of the file
+		# if one does not exist.
+		InsertFinalNewline = true
+		# Trim all newlines after the final newline at the
+		# end of the file.
+		TrimFinalNewlines = true
+
 [[FilenameHandlers]]
   Pattern = "[/\\\\]go\\.mod$"
   LanguageID = "go.mod"

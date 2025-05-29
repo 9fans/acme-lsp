@@ -98,6 +98,9 @@ type Server struct {
 
 	// Options contain server-specific settings that are passed as-is to the LSP server.
 	Options interface{}
+
+	// FormattingOptions are passed on Format
+	FormattingOptions protocol.FormattingOptions
 }
 
 // FilenameHandler contains a regular expression pattern that matches a filename
