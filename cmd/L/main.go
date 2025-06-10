@@ -167,7 +167,8 @@ func run(cfg *config.Config, args []string) error {
 		}
 		return server.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
 			Event: protocol.WorkspaceFoldersChangeEvent{
-				Added: dirs,
+				Added:   dirs,
+				Removed: []protocol.WorkspaceFolder{},
 			},
 		})
 	case "ws-":
@@ -178,6 +179,7 @@ func run(cfg *config.Config, args []string) error {
 		return server.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
 			Event: protocol.WorkspaceFoldersChangeEvent{
 				Removed: dirs,
+				Added:   []protocol.WorkspaceFolder{},
 			},
 		})
 	case "win", "assist": // "win" is deprecated
