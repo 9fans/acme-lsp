@@ -145,7 +145,7 @@ type FormatServer interface {
 }
 
 // CodeActionAndFormat runs the given code actions and then formats the file f.
-func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File, actions []protocol.CodeActionKind) error {
+func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File, actions []protocol.CodeActionKind, formattingOptions *protocol.FormattingOptions) error {
 	initres, err := server.InitializeResult(ctx, doc)
 	if err != nil {
 		return err
@@ -211,8 +211,12 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 			}
 		}
 	}
+	if formattingOptions == nil {
+		formattingOptions = new(protocol.FormattingOptions)
+	}
 	edits, err := server.Formatting(ctx, &protocol.DocumentFormattingParams{
 		TextDocument: *doc,
+		Options:      *formattingOptions,
 	})
 	if err != nil {
 		return err

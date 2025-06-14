@@ -244,6 +244,13 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	return srv, true, err
 }
 
+func (ss *ServerSet) FormatOptionsForFile(filename string) *protocol.FormattingOptions {
+	if srv := ss.MatchFile(filename); srv != nil {
+		return &srv.FormattingOptions
+	}
+	return nil
+}
+
 func (ss *ServerSet) ServerMatch(ctx context.Context, filename string) (proxy.Server, bool, error) {
 	srv, found, err := ss.StartForFile(filename)
 	if err != nil || !found {
