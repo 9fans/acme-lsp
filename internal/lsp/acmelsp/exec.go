@@ -266,7 +266,7 @@ func (ss *ServerSet) PrintTo(w io.Writer) {
 	}
 }
 
-func (ss *ServerSet) forEach(f func(*Client) error) error {
+func (ss *ServerSet) ForEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
 		srv, err := info.start(ss.ClientConfig(info))
 		if err != nil {
@@ -294,7 +294,7 @@ func (ss *ServerSet) Workspaces() []protocol.WorkspaceFolder {
 
 // DidChangeWorkspaceFolders adds and removes given workspace folders.
 func (ss *ServerSet) DidChangeWorkspaceFolders(ctx context.Context, added, removed []protocol.WorkspaceFolder) error {
-	err := ss.forEach(func(c *Client) error {
+	err := ss.ForEach(func(c *Client) error {
 		return c.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
 			Event: protocol.WorkspaceFoldersChangeEvent{
 				Added:   added,

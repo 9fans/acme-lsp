@@ -98,6 +98,9 @@ List of sub-commands:
 	ws- [directories...]
 		Remove given directories to the set of workspace directories.
 		Current working directory is removed if no directory is specified.
+
+	wss query
+		Print workspace symbols matching the query string.
 `
 
 func usage() {
@@ -193,6 +196,12 @@ func run(cfg *config.Config, args []string) error {
 			return acmelsp.Assist(sm, args[0])
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
+	case "wss":
+		args = args[1:]
+		if len(args) == 0 {
+			return fmt.Errorf("missing query")
+		}
+		return acmelsp.Symbol(server, args[0])
 	}
 
 	win, err := acmelsp.OpenFocusedWin(cfg.Headless)

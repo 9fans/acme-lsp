@@ -58,6 +58,10 @@ stdout 'main int \(\)'
 stdout 'hello void \(std::string\)'
 stdout '/hello\.cpp:'
 
+# Query workspace symbols
+L -headless wss WorldGreeter
+stdout 'hello\.cpp:.*:class WorldGreeter : public Greeter {'
+
 # Rename Greeter to BaseGreeter
 env acmeaddr=$WORK/hello.cpp:'#48'
 L -headless rn BaseGreeter

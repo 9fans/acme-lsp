@@ -45,6 +45,10 @@ stdout 'hello'
 stdout 'main'
 stdout '/hello.py:'
 
+# Query workspace symbols
+L -headless wss Greeter
+stdout 'hello\.py:.*:class Greeter:'
+
 # Rename Greeter to WorldGreeter
 env acmeaddr=$WORK/hello.py:'#131'
 L -headless rn WorldGreeter
