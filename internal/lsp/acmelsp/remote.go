@@ -344,6 +344,40 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 	return PlumbLocations(locations)
 }
 
+func (rc *RemoteCmd) Execute(ctx context.Context, command string, args []string) error {
+	win, err := acmeutil.OpenWin(rc.winid)
+	if err != nil {
+		return err
+	}
+	defer win.CloseFiles()
+
+	uri, _, err := text.DocumentURI(win)
+	if err != nil {
+		return err
+	}
+
+	jargs := []json.RawMessage{}
+	for _, arg := range args {
+		var r json.RawMessage
+		err := json.NewDecoder(strings.NewReader(arg)).Decode(&r)
+		if err != nil {
+			return err
+		}
+		jargs = append(jargs, r)
+	}
+
+	resp, err := rc.server.ExecuteCommandOnDocument(ctx, &proxy.ExecuteCommandOnDocumentParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: uri,
+		},
+		ExecuteCommandParams: protocol.ExecuteCommandParams{
+			Command:   command,
+			Arguments: jargs,
+		},
+	})
+	return json.NewEncoder(rc.Stdout).Encode(resp)
+}
+
 func walkDocumentSymbols1(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
 	for _, s := range syms {
 		f(&s, depth)

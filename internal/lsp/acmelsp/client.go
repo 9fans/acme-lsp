@@ -198,6 +198,7 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if err := server.Initialized(ctx, &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialized failed: %v", err)
 	}
+
 	c.Server = server
 	c.initializeResult = result
 	return nil

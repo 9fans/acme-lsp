@@ -101,6 +101,10 @@ List of sub-commands:
 	ws- [directories...]
 		Remove given directories to the set of workspace directories.
 		Current working directory is removed if no directory is specified.
+
+	exec command [args...]
+		Execute a command against the language server, args must be valid
+		JSON of any type.
 `
 
 func usage() {
@@ -245,6 +249,12 @@ func run(cfg *config.Config, args []string) error {
 	case "type":
 		args = args[1:]
 		return rc.TypeDefinition(ctx, len(args) > 0 && args[0] == "-p")
+	case "exec":
+		args = args[1:]
+		if len(args) < 1 {
+			usage()
+		}
+		return rc.Execute(ctx, args[0], args[1:])
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }
