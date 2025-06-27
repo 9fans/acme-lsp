@@ -88,6 +88,14 @@ func (s *proxyServer) ExecuteCommandOnDocument(ctx context.Context, params *prox
 	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
 }
 
+func (s *proxyServer) ExecuteCommandOnServer(ctx context.Context, params *proxy.ExecuteCommandOnServerParams) (interface{}, error) {
+	srv, err := serverForID(s.ss, params.Server.ID)
+	if err != nil {
+		return nil, fmt.Errorf("ExecuteCommandOnServer: %v", err)
+	}
+	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+}
+
 func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
@@ -149,6 +157,17 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 	srv, found, err := ss.StartForFile(filename)
 	if !found {
 		return nil, fmt.Errorf("unknown language server for URI %q", uri)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cound not start language server: %v", err)
+	}
+	return srv, nil
+}
+
+func serverForID(ss *ServerSet, id string) (*Server, error) {
+	srv, found, err := ss.StartForID(id)
+	if !found {
+		return nil, fmt.Errorf("unknown language server for ID %s", id)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cound not start language server: %v", err)

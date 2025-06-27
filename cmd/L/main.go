@@ -195,6 +195,11 @@ func run(cfg *config.Config, args []string) error {
 			return acmelsp.Assist(sm, args[0])
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
+	case "exec":
+		// exec -s serverID command args...
+		if len(args) >= 4 && args[1] == "-s" {
+			return acmelsp.Execute(server, args[2], args[3], args[4:])
+		}
 	}
 
 	winid, err := getWinID()

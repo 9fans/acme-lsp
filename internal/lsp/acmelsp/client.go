@@ -223,3 +223,8 @@ func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, 
 func (s *Client) ExecuteCommandOnDocument(ctx context.Context, params *proxy.ExecuteCommandOnDocumentParams) (interface{}, error) {
 	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
 }
+
+// ExecuteCommandOnServer implements proxy.Server.
+func (s *Client) ExecuteCommandOnServer(ctx context.Context, params *proxy.ExecuteCommandOnServerParams) (interface{}, error) {
+	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+}
