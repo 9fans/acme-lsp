@@ -206,6 +206,11 @@ func run(cfg *config.Config, args []string) error {
 			return fmt.Errorf("missing query")
 		}
 		return acmelsp.Symbol(server, args[0])
+	case "exec":
+		// exec -s serverID command args...
+		if len(args) >= 4 && args[1] == "-s" {
+			return acmelsp.Execute(server, args[2], args[3], args[4:])
+		}
 	}
 
 	win, err := acmelsp.OpenFocusedWin(cfg.Headless)

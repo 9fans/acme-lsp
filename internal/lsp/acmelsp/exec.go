@@ -123,6 +123,7 @@ type ServerInfo struct {
 	*config.Server
 	*config.FilenameHandler
 
+	ID     string         // name of the server
 	Re     *regexp.Regexp // filename regular expression
 	Logger *log.Logger    // Logger for config.Server.LogFile
 	srv    *Server        // running server instance
@@ -194,6 +195,7 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 			logger = log.New(f, "", log.LstdFlags)
 		}
 		data = append(data, &ServerInfo{
+			ID:              h.ServerKey,
 			Server:          cs,
 			FilenameHandler: &cfg.FilenameHandlers[i],
 			Re:              re,
@@ -209,9 +211,18 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 }
 
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
-	for i, info := range ss.Data {
+	for _, info := range ss.Data {
 		if info.Re.MatchString(filename) {
-			return ss.Data[i]
+			return info
+		}
+	}
+	return nil
+}
+
+func (ss *ServerSet) FindID(id string) *ServerInfo {
+	for _, info := range ss.Data {
+		if info.ID == id {
+			return info
 		}
 	}
 	return nil
@@ -238,6 +249,18 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	srv, err := info.start(ss.ClientConfig(info))
 	if err != nil {
 		return nil, true, err
+	}
+	return srv, true, err
+}
+
+func (ss *ServerSet) StartForID(filename string) (*Server, bool, error) {
+	info := ss.FindID(filename)
+	if info == nil {
+		return nil, false, nil // unknown language server
+	}
+	srv, err := info.start(ss.ClientConfig(info))
+	if err != nil {
+		return nil, false, err
 	}
 	return srv, true, err
 }
