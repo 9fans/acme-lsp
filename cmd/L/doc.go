@@ -15,10 +15,13 @@ attempt to find the focused window ID by connecting to acmefocused
 
 List of sub-commands:
 
-		comp [-e]
+		comp [-e] [-E]
 			Print candidate completions at the cursor position. If
 			-e (edit) flag is given and there is only one candidate,
-			the completion is applied instead of being printed.
+			the completion is applied instead of being printed. If
+			-E (Edit) flag is given, the first matching candidate is
+			applied, and all matches will be displayed in a dedicated
+			Acme window named /LSP/Completions.
 
 		def [-p]
 			Find where the symbol at the cursor position is defined
@@ -35,9 +38,10 @@ List of sub-commands:
 		impls
 			List implementation location(s) of the symbol under the cursor.
 
-		refs
+		refs [-show]
 			List locations where the symbol under the cursor is used
-			("references").
+			("references"). If -show flag is given, all references are displayed
+			in a dedicated Acme window named /LSP/References (with absolute paths)
 
 		rn <newname>
 			Rename the symbol under the cursor to newname.
@@ -75,11 +79,11 @@ List of sub-commands:
 			Current working directory is removed if no directory is specified.
 
 	  -acme.addr string
-	    	address where acme is serving 9P file system (default "/tmp/ns.fhs.:0/acme")
+	    	address where acme is serving 9P file system (default "/tmp/ns.username.:0/acme")
 	  -acme.net string
 	    	network where acme is serving 9P file system (default "unix")
 	  -proxy.addr string
-	    	address used for communication between acme-lsp and L (default "/tmp/ns.fhs.:0/acme-lsp.rpc")
+	    	address used for communication between acme-lsp and L (default "/tmp/ns.username.:0/acme-lsp.rpc")
 	  -proxy.net string
 	    	network used for communication between acme-lsp and L (default "unix")
 	  -showconfig

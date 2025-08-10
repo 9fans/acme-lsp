@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -160,7 +159,7 @@ func Windows() ([]WinInfo, error) {
 		return nil, err
 	}
 	defer index.Close()
-	data, err := ioutil.ReadAll(index)
+	data, err := io.ReadAll(index)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +327,7 @@ func (w *Win) ReadAll(file string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(f)
+	return io.ReadAll(f)
 }
 
 func (w *Win) ID() int {
@@ -782,7 +781,7 @@ type EventHandler interface {
 	Look(arg string) bool
 }
 
-func (w *Win) loadText(e *Event, h EventHandler) {
+func (w *Win) loadText(e *Event, _ EventHandler) {
 	if len(e.Text) == 0 && e.Q0 < e.Q1 {
 		w.Addr("#%d,#%d", e.Q0, e.Q1)
 		data, err := w.ReadAll("xdata")

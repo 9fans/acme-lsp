@@ -62,17 +62,27 @@ List of sub-commands:
 			be very useful in practice.
 
 	  -acme.addr string
-	    	address where acme is serving 9P file system (default "/tmp/ns.fhs.:0/acme")
+	    	address where acme is serving 9P file system (default "/tmp/ns.username.:0/acme")
 	  -acme.net string
 	    	network where acme is serving 9P file system (default "unix")
 	  -debug
 	    	turn on debugging prints (deprecated: use -v)
 	  -dial value
-	    	language server address for filename match (e.g. '\.go$:localhost:4389')
+	    	map filename to language server address. The format is
+	    	'handlers:host:port'. See -server flag for format of
+	    	handlers. (e.g. '\.go$:localhost:4389')
+	  -hidediag
+	    	hide diagnostics sent by LSP server
 	  -rootdir string
-	    	root directory used for LSP initialization. (default "/")
+	    	root directory used for LSP initialization (default "/")
+	  -rpc.trace
+	    	print the full rpc trace in lsp inspector format
 	  -server value
-	    	language server command for filename match (e.g. '\.go$:gopls')
+	    	map filename to language server command. The format is
+	    	'handlers:cmd' where cmd is the LSP server command and handlers is
+	    	a comma separated list of 'regexp[@lang]'. The regexp matches the
+	    	filename and lang is a language identifier. (e.g. '\.go$:gopls' or
+	    	'go.mod$@go.mod,go.sum$@go.sum,\.go$@go:gopls')
 	  -showconfig
 	    	show configuration values and exit
 	  -v	Verbose output
