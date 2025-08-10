@@ -140,7 +140,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 		cw.Clear()
 		cw.PrintTabbed(sb.String())
 	} else {
-		fmt.Println(sb.String())
+		fmt.Fprintln(rc.Stdout, sb.String())
 	}
 
 	return nil
