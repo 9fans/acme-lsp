@@ -11,7 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
+	"9fans.net/acme-lsp/internal/acme"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
@@ -193,12 +195,12 @@ func run(cfg *config.Config, args []string) error {
 		return fmt.Errorf("unknown assist command %q", args[0])
 	}
 
-	winid, err := getWinID()
+	winid, q0, err := getWinID()
 	if err != nil {
 		return err
 	}
 
-	rc := acmelsp.NewRemoteCmd(server, winid)
+	rc := acmelsp.NewRemoteCmd(server, winid, q0)
 
 	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
 	err = rc.DidChange(ctx)
@@ -249,16 +251,52 @@ func run(cfg *config.Config, args []string) error {
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
-func getWinID() (int, error) {
+func parseAcmeAddr(addr string) (filename string, q0 int, err error) {
+	f := strings.Split(addr, ":")
+	if len(f) < 2 {
+		return "", -1, fmt.Errorf("invalid $acmeaddr %q", addr)
+	}
+	filename = f[0]
+	f = strings.Split(f[1], ",")
+	q0, err = strconv.Atoi(strings.TrimPrefix(f[0], "#"))
+	if err != nil {
+		return "", -1, fmt.Errorf("failed to parse q0 in $acmdaddr %q: %v", addr, err)
+	}
+	return filename, q0, err
+}
+
+func getWinID() (id int, q0 int, err error) {
+	// First, check for a chord command
+	acmeaddr := os.Getenv("acmeaddr")
+	if acmeaddr != "" {
+		if err != nil {
+			return -1, -1, fmt.Errorf("failed to to parse $acmeaddr %q: %v", acmeaddr, err)
+		}
+		filename, q0, err := parseAcmeAddr(string(acmeaddr))
+		if err != nil {
+			return -1, -1, err
+		}
+		// Find the filename in the index
+		windows, err := acme.Windows()
+		if err != nil {
+			return -1, -1, err
+		}
+		for _, w := range windows {
+			if w.Name == filename {
+				return w.ID, q0, nil
+			}
+		}
+		return -1, -1, fmt.Errorf("failed to find window for $acmeaddr %q", acmeaddr)
+	}
 	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
 	if err != nil {
-		return 0, fmt.Errorf("could not get focused window ID: %v", err)
+		return 0, -1, fmt.Errorf("could not get focused window ID: %v", err)
 	}
 	n, err := strconv.Atoi(winid)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse $winid: %v", err)
+		return 0, -1, fmt.Errorf("failed to parse $winid: %v", err)
 	}
-	return n, nil
+	return n, -1, nil
 }
 
 func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {

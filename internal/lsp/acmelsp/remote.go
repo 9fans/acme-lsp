@@ -20,14 +20,16 @@ import (
 type RemoteCmd struct {
 	server proxy.Server
 	winid  int
+	q0     int // if $acmeaddr is defined
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
-func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
+func NewRemoteCmd(server proxy.Server, winid int, q0 int) *RemoteCmd {
 	return &RemoteCmd{
 		server: server,
 		winid:  winid,
+		q0:     q0,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -39,7 +41,9 @@ func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, fi
 		return nil, "", fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
 	}
 	defer w.CloseFiles()
-
+	if rc.q0 != -1 {
+		return text.PositionQ0(w, rc.q0)
+	}
 	return text.Position(w)
 }
 
