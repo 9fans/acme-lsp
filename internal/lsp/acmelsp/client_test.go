@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -132,7 +131,7 @@ func TestGoHover(t *testing.T) {
 		name string
 		want string
 	}{
-		{"gopls", "```go\nfunc fmt.Println(a ...any) (n int, err error)\n```\n\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.\n\n\n[`fmt.Println` on pkg.go.dev](https://pkg.go.dev/fmt#Println)"},
+		{"gopls", "```go\nfunc fmt.Println(a ...any) (n int, err error)\n```\n\n---\n\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.\n\n\n---\n\n[`fmt.Println` on pkg.go.dev](https://pkg.go.dev/fmt#Println)"},
 	} {
 		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			pos := &protocol.TextDocumentPositionParams{
@@ -312,9 +311,9 @@ func main() {
 	}
 
 	diag := <-ch
-	pat := regexp.MustCompile("^`?s'? declared (and|but) not used$")
-	if !pat.MatchString(diag.Message) {
-		t.Errorf("diagnostics message is %q does not match %q", diag.Message, pat)
+	wantMessage := "declared and not used: s"
+	if diag.Message != wantMessage {
+		t.Errorf("diagnostics message is %q; expected %q", diag.Message, wantMessage)
 	}
 
 	err = lsp.DidClose(ctx, srv.Client, gofile)
