@@ -6,7 +6,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        go-version: [1.21.x, 1.22.x]
+        go-version: ['1.24.x', '1.25.x']
         platform: [ubuntu-latest]
       fail-fast: false
     runs-on: ${{ matrix.platform }}
@@ -14,10 +14,14 @@ jobs:
       GO111MODULE: on
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
+        check-latest: true
 
     - name: Go environment
       run: |
@@ -25,11 +29,6 @@ jobs:
         go env
         echo PATH is $PATH
       shell: bash
-
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        go-version: ${{ matrix.go-version }}
 
     - name: Check gofmt
       run: |
