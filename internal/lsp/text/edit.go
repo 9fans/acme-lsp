@@ -4,6 +4,7 @@ package text
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -125,13 +126,20 @@ func Position(f AddressableFile) (pos *protocol.TextDocumentPositionParams, file
 
 // ToURI converts filename to URI.
 func ToURI(filename string) protocol.DocumentURI {
-	return protocol.DocumentURI("file://" + filename)
+	u := &url.URL{
+		Scheme: "file",
+		Path:   filename,
+	}
+	return protocol.DocumentURI(u.String())
 }
 
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
-	filename, _ := CutPrefix(string(uri), "file://")
-	return filename
+	u, err  := url.Parse(string(uri))
+	if err != nil {
+		return string(uri)
+	}
+	return u.Path
 }
 
 // CutPrefix returns s without the provided leading prefix string
