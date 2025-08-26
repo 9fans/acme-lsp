@@ -27,7 +27,6 @@ func TestToURI(t *testing.T) {
 	}
 }
 
-
 func TestToPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("TODO: failing on windows due to file path issues")

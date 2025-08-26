@@ -135,7 +135,7 @@ func ToURI(filename string) protocol.DocumentURI {
 
 // ToPath converts URI to filename.
 func ToPath(uri protocol.DocumentURI) string {
-	u, err  := url.Parse(string(uri))
+	u, err := url.Parse(string(uri))
 	if err != nil {
 		return string(uri)
 	}
