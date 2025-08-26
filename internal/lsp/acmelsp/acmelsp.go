@@ -157,7 +157,7 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 			TextDocument: *doc,
 			Range:        protocol.Range{},
 			Context: protocol.CodeActionContext{
-				Diagnostics: nil,
+				Diagnostics: []protocol.Diagnostic{},
 				Only:        actions,
 			},
 		})
