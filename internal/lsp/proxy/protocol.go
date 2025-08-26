@@ -111,3 +111,12 @@ type ExecuteCommandOnDocumentParams struct {
 	TextDocument         protocol.TextDocumentIdentifier
 	ExecuteCommandParams protocol.ExecuteCommandParams
 }
+
+type ServerIdentifier struct {
+	ID string `json:"id"`
+}
+
+type ExecuteCommandOnServerParams struct {
+	Server               ServerIdentifier
+	ExecuteCommandParams protocol.ExecuteCommandParams
+}
