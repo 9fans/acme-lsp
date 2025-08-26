@@ -103,6 +103,11 @@ List of sub-commands:
 	ws- [directories...]
 		Remove given directories to the set of workspace directories.
 		Current working directory is removed if no directory is specified.
+
+	sym [-p] pattern
+		Search globally for symbols matching pattern and send the locations
+		to the plumber. If -p flag is given, the locations are printed to
+		stdout instead.
 `
 
 func usage() {
@@ -195,6 +200,12 @@ func run(cfg *config.Config, args []string) error {
 			return acmelsp.Assist(sm, args[0])
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
+	case "sym":
+		args = args[1:]
+		if len(args) > 1 && args[0] == "-p" {
+			return acmelsp.Symbol(server, args[1], true)
+		}
+		return acmelsp.Symbol(server, args[0], false)
 	}
 
 	winid, q0, err := getWinID()

@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 	"unicode"
+	"os"
 
 	"9fans.net/acme-lsp/internal/acme"
 	"9fans.net/acme-lsp/internal/acmeutil"
@@ -284,6 +285,21 @@ loop:
 		}
 	}
 	return nil
+}
+
+func Symbol(server proxy.Server, query string, print bool) error {
+	symbols, err := server.Symbol(context.Background(), &protocol.WorkspaceSymbolParams{Query: query})
+	if err != nil {
+		return err
+	}
+	var locations []protocol.Location
+	for _, symbol := range symbols {
+		locations = append(locations, symbol.Location)
+	}
+	if print {
+		return PrintLocations(os.Stdout, locations)
+	}
+	return PlumbLocations(locations)
 }
 
 // ServerMatcher represents a set of servers where it's possible to

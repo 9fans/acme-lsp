@@ -136,6 +136,19 @@ func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.Docum
 	return srv.Client.DocumentSymbol(ctx, params)
 }
 
+func (s *proxyServer) Symbol(ctx context.Context, params *protocol.WorkspaceSymbolParams) ([]protocol.SymbolInformation, error) {
+	var symbols []protocol.SymbolInformation
+	err := s.ss.ForEach(func(c *Client) error {
+		resp, err := c.Symbol(ctx, params)
+		if err != nil {
+			return err
+		}
+		symbols = append(symbols, resp...)
+		return nil
+	})
+	return symbols, err
+}
+
 func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
