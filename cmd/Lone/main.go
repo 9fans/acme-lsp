@@ -150,7 +150,7 @@ func run(cfg *config.Config, args []string) error {
 	case "hov":
 		err = rc.Hover(ctx)
 	case "refs":
-		err = rc.References(ctx)
+		err = rc.References(ctx, false)
 	case "rn":
 		if len(args) < 2 {
 			usage()

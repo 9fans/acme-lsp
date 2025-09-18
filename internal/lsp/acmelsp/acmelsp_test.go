@@ -2,7 +2,7 @@ package acmelsp
 
 import (
 	"flag"
-	"io/ioutil"
+	"io"
 	"reflect"
 	"regexp"
 	"strings"
@@ -112,7 +112,7 @@ func TestParseFlagSet(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			f := flag.NewFlagSet("acme-lsp", flag.ContinueOnError)
-			f.SetOutput(ioutil.Discard)
+			f.SetOutput(io.Discard)
 
 			cfg := config.Default()
 			err := cfg.ParseFlags(config.LangServerFlags, f, tc.args)
