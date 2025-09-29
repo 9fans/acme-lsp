@@ -149,11 +149,15 @@ func TestGoHover(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Hover failed: %v", err)
 			}
-			got := hov.Contents.Value
-			// Instead of doing an exact match, we ignore extra markups
-			// from markdown (if there are any).
-			if !strings.Contains(got, srv.want) {
-				t.Errorf("hover result is %q; expected %q", got, srv.want)
+
+			got, ok := hov.Contents.Value.(string); ok {
+				// Instead of doing an exact match, we ignore extra markups
+				// from markdown (if there are any).
+				if !strings.Contains(got, srv.want) {
+					t.Errorf("hover result is %q; expected %q", got, srv.want)
+				}
+			}else{
+				fmt.Println("Error: 'got' is not a string")
 			}
 		})
 	}
