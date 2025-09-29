@@ -1,4 +1,5 @@
-cmd/acme-lsp/acme-lsp
-cmd/L/L
-cmd/Lone/Lone
-guide
+flake.lock
+flake.nix
+go.sum
+internal/lsp/acmelsp/client_test.go
+result
