@@ -55,7 +55,6 @@ func (h *serverHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *json
 	ok, err := serverDispatch(ctx, h.server, conn, r)
 	if !ok {
 		ok, err = protocol.ServerDispatch(ctx, h.server, conn, r)
-		log.Printf("error in server dispatch %v\n", err)
 	}
 	if !ok {
 		rpcerr := &jsonrpc2.Error{
