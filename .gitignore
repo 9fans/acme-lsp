@@ -1,5 +1,3 @@
 flake.lock
 flake.nix
-go.sum
-internal/lsp/acmelsp/client_test.go
 result
