@@ -150,14 +150,14 @@ func TestGoHover(t *testing.T) {
 				t.Fatalf("Hover failed: %v", err)
 			}
 
-			got, ok := hov.Contents.Value.(string); ok {
+			if got, ok := hov.Contents.Value.(string); ok {
 				// Instead of doing an exact match, we ignore extra markups
 				// from markdown (if there are any).
 				if !strings.Contains(got, srv.want) {
 					t.Errorf("hover result is %q; expected %q", got, srv.want)
 				}
 			}else{
-				fmt.Println("Error: 'got' is not a string")
+				t.Errorf("Error: 'got' is not a string")
 			}
 		})
 	}
@@ -315,7 +315,7 @@ func main() {
 	}
 
 	diag := <-ch
-	wantMessage := "declared and not used: s"
+	wantMessage := "s declared and not used"
 	if diag.Message != wantMessage {
 		t.Errorf("diagnostics message is %q; expected %q", diag.Message, wantMessage)
 	}
@@ -414,12 +414,15 @@ func TestPythonHover(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
-		got := hov.Contents.Value
-		want := "Return the square root of x."
-		// May not be an exact match.
-		// Perhaps depending on if it's Python 2 or 3?
-		if !strings.Contains(got, want) {
-			t.Errorf("hover result is %q does not contain %q", got, want)
+		if got, ok := hov.Contents.Value.(string); ok {
+			want := "Return the square root of x."
+			// May not be an exact match.
+			// Perhaps depending on if it's Python 2 or 3?
+			if !strings.Contains(got, want) {
+				t.Errorf("hover result is %q does not contain %q", got, want)
+			}
+		} else {
+			t.Errorf("'got' is not a string")
 		}
 	})
 }

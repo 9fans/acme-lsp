@@ -14,6 +14,8 @@
         version = "0.1.0";
         src = ./.; # Source directory of your Go project
         vendorHash = "sha256-m0GE5hu0Q7YqiVBQ71owm6fQJuQZhMzUentxPujQHOA="; # Replace with actual hash
+ 	nativeCheckInputs = with pkgs; [ gopls ];
+   	doCheck = false;
       };
     in
     {
@@ -24,7 +26,6 @@
           delve # Go debugger
         ];
       };
-
       
       packages.${system}.default = acme-lsp;
 
