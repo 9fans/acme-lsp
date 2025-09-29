@@ -224,6 +224,9 @@ func (s *NotImplementedServer) FoldingRange(context.Context, *protocol.FoldingRa
 func (s *NotImplementedServer) Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *NotImplementedServer) PlainGoal(context.Context, *protocol.PlainGoalParams) (*protocol.PlainGoal, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 func (s *NotImplementedServer) Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error) {
 	return nil, fmt.Errorf("not implemented")
 }
