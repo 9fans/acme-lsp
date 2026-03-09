@@ -105,16 +105,19 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 
 	if (kind == CompleteInsertFirstMatch && len(result.Items) >= 1) || (kind == CompleteInsertOnlyMatch && len(result.Items) == 1) {
 		textEdit := result.Items[0].TextEdit
-		if textEdit == nil {
+		switch edit := textEdit.Value.(type) {
+		default:
+			return fmt.Errorf("unsupported completion text edit %T", edit)
+		case nil:
 			// TODO(fhs): Use insertText or label instead.
 			return fmt.Errorf("nil TextEdit in completion item")
-		}
-		if err := text.Edit(w, []protocol.TextEdit{*textEdit}); err != nil {
-			return fmt.Errorf("failed to apply completion edit: %v", err)
-		}
-
-		if len(result.Items) == 1 {
-			return nil
+		case protocol.TextEdit:
+			if err := text.Edit(w, []protocol.TextEdit{edit}); err != nil {
+				return fmt.Errorf("failed to apply completion edit: %v", err)
+			}
+			if len(result.Items) == 1 {
+				return nil
+			}
 		}
 	}
 
@@ -256,9 +259,11 @@ func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
 		return err
 	}
 	we, err := rc.server.Rename(ctx, &protocol.RenameParams{
-		TextDocument: pos.TextDocument,
-		Position:     pos.Position,
-		NewName:      newname,
+		NewName: newname,
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: pos.TextDocument,
+			Position:     pos.Position,
+		},
 	})
 	if err != nil {
 		return err

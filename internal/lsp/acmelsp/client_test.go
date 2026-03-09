@@ -149,7 +149,12 @@ func TestGoHover(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Hover failed: %v", err)
 			}
-			got := hov.Contents.Value
+			markedString, ok := hov.Contents.Value.(protocol.MarkedString)
+			if !ok {
+				t.Fatalf("hover result %T is not a MarkedString", hov.Contents.Value)
+			}
+			got := markedString.Value.(protocol.MarkedStringWithLanguage).Value
+
 			// Instead of doing an exact match, we ignore extra markups
 			// from markdown (if there are any).
 			if !strings.Contains(got, srv.want) {
@@ -410,7 +415,10 @@ func TestPythonHover(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
-		got := hov.Contents.Value
+		got, ok := hov.Contents.Value.(string)
+		if !ok {
+			t.Fatalf("hover result %q is not a string", got)
+		}
 		want := "Return the square root of x."
 		// May not be an exact match.
 		// Perhaps depending on if it's Python 2 or 3?
@@ -500,7 +508,8 @@ func TestPythonTypeDefinition(t *testing.T) {
 
 func TestFileLanguage(t *testing.T) {
 	for _, tc := range []struct {
-		name, lang string
+		name string
+		lang protocol.LanguageKind
 	}{
 		{"/home/gopher/hello.py", "python"},
 		{"/home/gopher/hello.go", "go"},

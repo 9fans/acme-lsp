@@ -113,3 +113,13 @@ func (c *NotImplementedClient) InlineValueRefresh(context.Context) error {
 func (c *NotImplementedClient) SemanticTokensRefresh(context.Context) error {
 	return fmt.Errorf("workspace/semanticTokens/refresh not implemented")
 }
+
+// workspace/foldingRange/refresh
+func (c *NotImplementedClient) FoldingRangeRefresh(context.Context) error {
+	return fmt.Errorf("workspace/foldingRange/refresh not implemented")
+}
+
+// workspace/textDocumentContent/refresh
+func (c *NotImplementedClient) TextDocumentContentRefresh(context.Context, *protocol.TextDocumentContentRefreshParams) error {
+	return fmt.Errorf("workspace/textDocumentContent/refresh not implemented")
+}
