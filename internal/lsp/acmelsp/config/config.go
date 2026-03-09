@@ -109,7 +109,7 @@ type FilenameHandler struct {
 	// Language identifier (e.g. "go" or "python")
 	// See list of languages here:
 	// https://microsoft.github.io/language-server-protocol/specifications/specification-current/#textDocumentItem
-	LanguageID string
+	LanguageID protocol.LanguageKind
 
 	// ServerKey is the key in Config.File.Servers.
 	ServerKey string
@@ -341,7 +341,7 @@ func (sf *serverFlag) Set(val string) error {
 		} else {
 			handlers = append(handlers, FilenameHandler{
 				Pattern:    f[0],
-				LanguageID: f[1],
+				LanguageID: protocol.LanguageKind(f[1]),
 			})
 		}
 	}

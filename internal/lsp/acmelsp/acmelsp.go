@@ -223,6 +223,22 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 	return nil
 }
 
+func filterUnsupportedTextEdits(edits []protocol.Or_TextDocumentEdit_edits_Elem) (out []protocol.TextEdit, filtered bool) {
+	for _, edit := range edits {
+		switch e := edit.Value.(type) {
+		default:
+			filtered = true
+		case nil: // ignore
+		case protocol.AnnotatedTextEdit:
+			// ignore annotation
+			out = append(out, e.TextEdit)
+		case protocol.TextEdit:
+			out = append(out, e)
+		}
+	}
+	return
+}
+
 func editWorkspace(we *protocol.WorkspaceEdit) error {
 	if we == nil {
 		return nil // no changes to apply
@@ -234,7 +250,11 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
 		for _, dc := range we.DocumentChanges {
 			if tde := dc.TextDocumentEdit; tde != nil {
-				changes[tde.TextDocument.TextDocumentIdentifier.URI] = tde.Edits
+				edits, filtered := filterUnsupportedTextEdits(tde.Edits)
+				if filtered {
+					return fmt.Errorf("unsupported text edit type (e.g. snippet)")
+				}
+				changes[tde.TextDocument.TextDocumentIdentifier.URI] = edits
 			}
 		}
 		we.Changes = changes

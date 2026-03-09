@@ -81,7 +81,7 @@ func LocationLink(l *protocol.Location, basedir string) string {
 		l.Range.End.Line+1, l.Range.End.Character+1)
 }
 
-func DidOpen(ctx context.Context, server protocol.Server, filename string, lang string, body []byte) error {
+func DidOpen(ctx context.Context, server protocol.Server, filename string, lang protocol.LanguageKind, body []byte) error {
 	if lang == "" {
 		lang = DetectLanguage(filename)
 	}
@@ -127,14 +127,14 @@ func DidChange(ctx context.Context, server protocol.Server, filename string, bod
 	})
 }
 
-func DetectLanguage(filename string) string {
+func DetectLanguage(filename string) protocol.LanguageKind {
 	switch base := filepath.Base(filename); base {
 	case "go.mod", "go.sum":
-		return base
+		return protocol.LanguageKind(base)
 	}
 	lang := filepath.Ext(filename)
 	if len(lang) == 0 {
-		return lang
+		return protocol.LanguageKind(lang)
 	}
 	if lang[0] == '.' {
 		lang = lang[1:]
@@ -143,7 +143,7 @@ func DetectLanguage(filename string) string {
 	case "py":
 		lang = "python"
 	}
-	return lang
+	return protocol.LanguageKind(lang)
 }
 
 func DirsToWorkspaceFolders(dirs []string) ([]protocol.WorkspaceFolder, error) {

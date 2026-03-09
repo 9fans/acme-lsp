@@ -500,7 +500,8 @@ func TestPythonTypeDefinition(t *testing.T) {
 
 func TestFileLanguage(t *testing.T) {
 	for _, tc := range []struct {
-		name, lang string
+		name string
+		lang protocol.LanguageKind
 	}{
 		{"/home/gopher/hello.py", "python"},
 		{"/home/gopher/hello.go", "go"},

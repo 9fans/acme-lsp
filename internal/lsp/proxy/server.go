@@ -191,7 +191,7 @@ func (s *NotImplementedServer) Declaration(context.Context, *protocol.Declaratio
 func (s *NotImplementedServer) Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (s *NotImplementedServer) Diagnostic(context.Context, *string) (*string, error) {
+func (s *NotImplementedServer) Diagnostic(context.Context, *protocol.DocumentDiagnosticParams) (*protocol.DocumentDiagnosticReport, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *NotImplementedServer) DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error {
@@ -248,7 +248,7 @@ func (s *NotImplementedServer) OnTypeFormatting(context.Context, *protocol.Docum
 func (s *NotImplementedServer) PrepareCallHierarchy(context.Context, *protocol.CallHierarchyPrepareParams) ([]protocol.CallHierarchyItem, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (s *NotImplementedServer) PrepareRename(context.Context, *protocol.PrepareRenameParams) (*protocol.PrepareRename2Gn, error) {
+func (s *NotImplementedServer) PrepareRename(context.Context, *protocol.PrepareRenameParams) (*protocol.PrepareRenameResult, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *NotImplementedServer) PrepareTypeHierarchy(context.Context, *protocol.TypeHierarchyPrepareParams) ([]protocol.TypeHierarchyItem, error) {
@@ -336,5 +336,20 @@ func (s *NotImplementedServer) ResolveWorkspaceSymbol(context.Context, *protocol
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *NotImplementedServer) NonstandardRequest(ctx context.Context, method string, params interface{}) (interface{}, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) InlineCompletion(context.Context, *protocol.InlineCompletionParams) (*protocol.Or_Result_textDocument_inlineCompletion, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) InteractiveListEnum(context.Context, *protocol.InteractiveListEnumParams) ([]protocol.FormEnumEntry, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) RangesFormatting(ctx context.Context, params *protocol.DocumentRangesFormattingParams) ([]protocol.TextEdit, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) ResolveCommand(ctx context.Context, params *protocol.ExecuteCommandParams) (*protocol.ExecuteCommandParams, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *NotImplementedServer) TextDocumentContent(ctx context.Context, params *protocol.TextDocumentContentParams) (*protocol.TextDocumentContentResult, error) {
 	return nil, fmt.Errorf("not implemented")
 }
