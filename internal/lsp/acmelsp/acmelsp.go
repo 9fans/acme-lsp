@@ -141,7 +141,10 @@ type FormatServer interface {
 	DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
 	Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
 	CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
+
+	// HACK
 	ExecuteCommandOnDocument(context.Context, *proxy.ExecuteCommandOnDocumentParams) (interface{}, error)
+	ExecuteCommandOnServer(context.Context, *proxy.ExecuteCommandOnServerParams) (interface{}, error)
 }
 
 // CodeActionAndFormat runs the given code actions and then formats the file f.
