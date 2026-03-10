@@ -62,6 +62,9 @@ List of sub-commands:
 		Show more information about the symbol under the cursor
 		("hover").
 
+	goal 
+		Show the current goal under cursor (lean4 only).
+
 	impls
 		List implementation location(s) of the symbol under the cursor.
 
@@ -232,6 +235,8 @@ func run(cfg *config.Config, args []string) error {
 		return rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
 		return rc.Hover(ctx)
+	case "goal":
+		return rc.PlainGoal(ctx)
 	case "impls":
 		return rc.Implementation(ctx, true)
 	case "refs":

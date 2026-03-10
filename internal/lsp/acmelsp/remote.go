@@ -190,6 +190,30 @@ func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
 	})
 }
 
+func (rc *RemoteCmd) PlainGoal(ctx context.Context) error {
+	pos, _, err := rc.getPosition()
+	if err != nil {
+		return err
+	}
+
+	pgoal, err := rc.server.PlainGoal(ctx, &protocol.PlainGoalParams{
+		TextDocumentPositionParams: *pos,
+	})
+	if err != nil {
+		return err
+	}
+
+	if pgoal == nil {
+		fmt.Fprintln(rc.Stdout, "No plain goals available")
+		return nil
+	}
+
+	// TODO: Print the array nicely
+	fmt.Fprintf(rc.Stdout, "%v\n", pgoal.Rendered)
+
+	return nil
+}
+
 func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	pos, _, err := rc.getPosition()
 	if err != nil {

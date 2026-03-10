@@ -1,4 +1,3 @@
-cmd/acme-lsp/acme-lsp
-cmd/L/L
-cmd/Lone/Lone
-guide
+flake.lock
+flake.nix
+result
