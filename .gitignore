@@ -2,3 +2,6 @@ cmd/acme-lsp/acme-lsp
 cmd/L/L
 cmd/Lone/Lone
 guide
+acme.dump
+go.work
+go.work.sum

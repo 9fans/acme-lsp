@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 
 	"9fans.net/acme-lsp/internal/acme"
@@ -22,21 +21,7 @@ import (
 	"github.com/fhs/9fans-go/plumb"
 )
 
-func CurrentWindowRemoteCmd(ss *ServerSet, fm *FileManager) (*RemoteCmd, error) {
-	id, err := strconv.Atoi(os.Getenv("winid"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse $winid: %v", err)
-	}
-	return WindowRemoteCmd(ss, fm, id)
-}
-
-func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, error) {
-	w, err := acmeutil.OpenWin(winid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to to open window %v: %v", winid, err)
-	}
-	defer w.CloseFiles()
-
+func WindowRemoteCmd(ss *ServerSet, fm FileManager, w text.AddressableFile) (*RemoteCmd, error) {
 	_, fname, err := text.DocumentURI(w)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get text position: %v", err)
@@ -49,13 +34,14 @@ func WindowRemoteCmd(ss *ServerSet, fm *FileManager, winid int) (*RemoteCmd, err
 		return nil, fmt.Errorf("no language server for filename %q", fname)
 	}
 
+	rc := NewRemoteCmd(srv.Client, w)
 	// In case the window has unsaved changes (it's dirty),
 	// send changes to LSP server.
-	if err = fm.didChange(winid, fname); err != nil {
+	err = rc.DidChange(context.Background())
+	if err != nil {
 		return nil, fmt.Errorf("DidChange failed: %v", err)
 	}
-
-	return NewRemoteCmd(srv.Client, winid, -1), nil
+	return rc, nil
 }
 
 func getLine(p string, l int) string {

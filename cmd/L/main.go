@@ -1,26 +1,19 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 
-	"9fans.net/acme-lsp/internal/acme"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/internal/go-lsp/lsp/protocol"
-	p9client "github.com/fhs/9fans-go/plan9/client"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
@@ -197,12 +190,13 @@ func run(cfg *config.Config, args []string) error {
 		return fmt.Errorf("unknown assist command %q", args[0])
 	}
 
-	winid, q0, err := getWinID()
+	win, err := acmelsp.OpenFocusedWin(cfg.Headless)
 	if err != nil {
 		return err
 	}
+	defer win.CloseFiles()
 
-	rc := acmelsp.NewRemoteCmd(server, winid, q0)
+	rc := acmelsp.NewRemoteCmd(server, win)
 
 	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
 	err = rc.DidChange(ctx)
@@ -253,54 +247,6 @@ func run(cfg *config.Config, args []string) error {
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
-func parseAcmeAddr(addr string) (filename string, q0 int, err error) {
-	f := strings.Split(addr, ":")
-	if len(f) < 2 {
-		return "", -1, fmt.Errorf("invalid $acmeaddr %q", addr)
-	}
-	filename = f[0]
-	f = strings.Split(f[1], ",")
-	q0, err = strconv.Atoi(strings.TrimPrefix(f[0], "#"))
-	if err != nil {
-		return "", -1, fmt.Errorf("failed to parse q0 in $acmdaddr %q: %v", addr, err)
-	}
-	return filename, q0, err
-}
-
-func getWinID() (id int, q0 int, err error) {
-	// First, check for a chord command
-	acmeaddr := os.Getenv("acmeaddr")
-	if acmeaddr != "" {
-		if err != nil {
-			return -1, -1, fmt.Errorf("failed to to parse $acmeaddr %q: %v", acmeaddr, err)
-		}
-		filename, q0, err := parseAcmeAddr(string(acmeaddr))
-		if err != nil {
-			return -1, -1, err
-		}
-		// Find the filename in the index
-		windows, err := acme.Windows()
-		if err != nil {
-			return -1, -1, err
-		}
-		for _, w := range windows {
-			if w.Name == filename {
-				return w.ID, q0, nil
-			}
-		}
-		return -1, -1, fmt.Errorf("failed to find window for $acmeaddr %q", acmeaddr)
-	}
-	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
-	if err != nil {
-		return 0, -1, fmt.Errorf("could not get focused window ID: %v", err)
-	}
-	n, err := strconv.Atoi(winid)
-	if err != nil {
-		return 0, -1, fmt.Errorf("failed to parse $winid: %v", err)
-	}
-	return n, -1, nil
-}
-
 func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {
 	if len(dirs) == 0 {
 		d, err := os.Getwd()
@@ -310,21 +256,4 @@ func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {
 		dirs = []string{d}
 	}
 	return lsp.DirsToWorkspaceFolders(dirs)
-}
-
-func getFocusedWinID(addr string) (string, error) {
-	winid := os.Getenv("winid")
-	if winid == "" {
-		conn, err := net.Dial("unix", addr)
-		if err != nil {
-			return "", fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
-		}
-		defer conn.Close()
-		b, err := io.ReadAll(conn)
-		if err != nil {
-			return "", fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
-		}
-		return string(bytes.TrimSpace(b)), nil
-	}
-	return winid, nil
 }

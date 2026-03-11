@@ -586,6 +586,8 @@ func (f *BytesFile) DisableMark() error {
 	return nil
 }
 
+func (f *BytesFile) CloseFiles() {}
+
 func TestClientProvidesCodeAction(t *testing.T) {
 	for _, tc := range []struct {
 		provider interface{}

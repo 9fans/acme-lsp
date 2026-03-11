@@ -76,6 +76,9 @@ type Config struct {
 
 	// Path to configuration file.
 	filename string
+
+	// Run without acme (for testing)
+	Headless bool
 }
 
 // Server describes a LSP server.
@@ -247,6 +250,7 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 		"address where acme is serving 9P file system")
 	f.BoolVar(&cfg.Verbose, "v", cfg.Verbose, "Verbose output")
 	f.BoolVar(&cfg.ShowConfig, "showconfig", false, "show configuration values and exit")
+	f.BoolVar(&cfg.Headless, "headless", false, "Run without acme (for testing)")
 
 	if flags&ProxyFlags != 0 {
 		f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,

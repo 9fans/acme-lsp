@@ -205,13 +205,20 @@ func (w *outputWin) Update(fw *focusWin, server proxy.Server, cmd string) {
 		}
 	}
 
-	rc := NewRemoteCmd(server, fw.id, -1)
+	win, err := OpenFocusedWin(false)
+	if err != nil {
+		dprintf("failed to get focused window: %v\n", err)
+		return
+	}
+	defer win.CloseFiles()
+
+	rc := NewRemoteCmd(server, win)
 	rc.Stdout = w.body
 	rc.Stderr = w.body
 	ctx := context.Background()
 
 	// Assume file is already opened by file management.
-	err := rc.DidChange(ctx)
+	err = rc.DidChange(ctx)
 	if err != nil {
 		dprintf("DidChange failed: %v\n", err)
 		return

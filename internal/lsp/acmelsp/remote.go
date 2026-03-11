@@ -1,64 +1,55 @@
 package acmelsp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
+	"9fans.net/acme-lsp/internal/acme"
 	"9fans.net/acme-lsp/internal/acmeutil"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/acme-lsp/internal/lsp/text"
 	"9fans.net/internal/go-lsp/lsp/protocol"
+	p9client "github.com/fhs/9fans-go/plan9/client"
 )
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.
 type RemoteCmd struct {
 	server proxy.Server
-	winid  int
-	q0     int // if $acmeaddr is defined
+	win    text.AddressableFile
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
-func NewRemoteCmd(server proxy.Server, winid int, q0 int) *RemoteCmd {
+func NewRemoteCmd(server proxy.Server, win text.AddressableFile) *RemoteCmd {
 	return &RemoteCmd{
 		server: server,
-		winid:  winid,
-		q0:     q0,
+		win:    win,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
 }
 
-func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, filename string, err error) {
-	w, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
-	}
-	defer w.CloseFiles()
-	if rc.q0 != -1 {
-		return text.PositionQ0(w, rc.q0)
-	}
-	return text.Position(w)
-}
-
 func (rc *RemoteCmd) DidChange(ctx context.Context) error {
-	w, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
-	}
-	defer w.CloseFiles()
-
-	uri, _, err := text.DocumentURI(w)
+	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
 	}
-	body, err := w.ReadAll("body")
+	r, err := rc.win.Reader()
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
 	}
@@ -86,13 +77,7 @@ const (
 )
 
 func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error {
-	w, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return err
-	}
-	defer w.CloseFiles()
-
-	pos, _, err := text.Position(w)
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -112,7 +97,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 			// TODO(fhs): Use insertText or label instead.
 			return fmt.Errorf("nil TextEdit in completion item")
 		case protocol.TextEdit:
-			if err := text.Edit(w, []protocol.TextEdit{edit}); err != nil {
+			if err := text.Edit(rc.win, []protocol.TextEdit{edit}); err != nil {
 				return fmt.Errorf("failed to apply completion edit: %v", err)
 			}
 			if len(result.Items) == 1 {
@@ -154,7 +139,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 }
 
 func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return fmt.Errorf("failed to get position: %v", err)
 	}
@@ -171,13 +156,7 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 }
 
 func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
-	win, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return err
-	}
-	defer win.CloseFiles()
-
-	uri, _, err := text.DocumentURI(win)
+	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
 	}
@@ -185,13 +164,13 @@ func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
 	doc := &protocol.TextDocumentIdentifier{
 		URI: uri,
 	}
-	return CodeActionAndFormat(ctx, rc.server, doc, win, []protocol.CodeActionKind{
+	return CodeActionAndFormat(ctx, rc.server, doc, rc.win, []protocol.CodeActionKind{
 		protocol.SourceOrganizeImports,
 	})
 }
 
 func (rc *RemoteCmd) Hover(ctx context.Context) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -214,7 +193,7 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 }
 
 func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -232,7 +211,7 @@ func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
 }
 
 func (rc *RemoteCmd) References(ctx context.Context) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -254,7 +233,7 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 
 // Rename renames the identifier at cursor position to newname.
 func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -272,7 +251,7 @@ func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
 }
 
 func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -292,15 +271,9 @@ func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
 }
 
 func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
-	win, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return err
-	}
-	defer win.CloseFiles()
-
 	basedir := "" // TODO
 
-	uri, _, err := text.DocumentURI(win)
+	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
 	}
@@ -337,7 +310,7 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 }
 
 func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -393,4 +366,94 @@ func parseDocumentSymbol(data map[string]interface{}) (*protocol.DocumentSymbol,
 		return nil, err
 	}
 	return &ds, nil
+}
+
+func parseAcmeAddr(addr string) (filename string, q0 int, q1 int, err error) {
+	f := strings.Split(addr, ":")
+	if len(f) < 2 {
+		return "", -1, -1, fmt.Errorf("invalid $acmeaddr %q", addr)
+	}
+	filename = f[0]
+	f = strings.Split(f[1], ",")
+	if len(f) < 1 {
+		return "", -1, -1, fmt.Errorf("invalid $acmeaddr %q", addr)
+	}
+	q0, err = strconv.Atoi(strings.TrimPrefix(f[0], "#"))
+	if err != nil {
+		return "", -1, -1, fmt.Errorf("failed to parse q0 in $acmdaddr %q: %v", addr, err)
+	}
+	q1 = q0
+	if len(f) > 1 {
+		q1, err = strconv.Atoi(strings.TrimPrefix(f[0], "#"))
+		if err != nil {
+			return "", -1, -1, fmt.Errorf("failed to parse q1 in $acmdaddr %q: %v", addr, err)
+		}
+	}
+	return filename, q0, q1, nil
+}
+
+func getFocusedWinID(addr string) (int, error) {
+	winid := os.Getenv("winid")
+	if winid == "" {
+		conn, err := net.Dial("unix", addr)
+		if err != nil {
+			return -1, fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
+		}
+		defer conn.Close()
+		b, err := io.ReadAll(conn)
+		if err != nil {
+			return -1, fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
+		}
+		winid = string(bytes.TrimSpace(b))
+	}
+	n, err := strconv.Atoi(winid)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse $winid: %v", err)
+	}
+	return n, nil
+}
+
+func OpenFocusedWin(headless bool) (win text.AddressableFile, err error) {
+	acmeaddr := os.Getenv("acmeaddr")
+
+	// Headless mode is used for testing.
+	// We assume acme is not running and use $acmeaddr to access the file directly on the filesystem.
+	if headless {
+		filename, q0, q1, err := parseAcmeAddr(acmeaddr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to to parse $acmeaddr %q: %v", acmeaddr, err)
+		}
+		return text.NewHeadlessFile(
+			filename,
+			q0,
+			q1,
+		)
+	}
+
+	// For a 2-1 chord command, $winid may point to the window with the command (e.g. guide file)
+	// instead of the target window. Find the correct winid based on $acmeaddr.
+	if acmeaddr != "" {
+		filename, _, _, err := parseAcmeAddr(acmeaddr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to to parse $acmeaddr %q: %v", acmeaddr, err)
+		}
+		// Find the filename in the index
+		windows, err := acme.Windows()
+		if err != nil {
+			return nil, err
+		}
+		for _, w := range windows {
+			if w.Name == filename {
+				return acmeutil.OpenWin(w.ID)
+			}
+		}
+		return nil, fmt.Errorf("failed to find window for $acmeaddr %q", acmeaddr)
+	}
+
+	// Find windid based on either $winid env variable or acmefocused.
+	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
+	if err != nil {
+		return nil, fmt.Errorf("could not get focused window ID: %v", err)
+	}
+	return acmeutil.OpenWin(winid)
 }

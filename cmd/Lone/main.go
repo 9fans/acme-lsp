@@ -109,7 +109,7 @@ func run(cfg *config.Config, args []string) error {
 		usage()
 	}
 
-	fm, err := acmelsp.NewFileManager(serverSet, cfg)
+	fm, err := acmelsp.NewAcmeFileManager(serverSet, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create file manager: %v", err)
 	}
@@ -133,7 +133,13 @@ func run(cfg *config.Config, args []string) error {
 		return nil
 	}
 
-	rc, err := acmelsp.CurrentWindowRemoteCmd(serverSet, fm)
+	win, err := acmelsp.OpenFocusedWin(cfg.Headless)
+	if err != nil {
+		return err
+	}
+	defer win.CloseFiles()
+
+	rc, err := acmelsp.WindowRemoteCmd(serverSet, fm, win)
 	if err != nil {
 		return fmt.Errorf("CurrentWindowRemoteCmd failed: %v", err)
 	}

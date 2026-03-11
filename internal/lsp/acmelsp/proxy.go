@@ -15,8 +15,9 @@ import (
 )
 
 type proxyServer struct {
-	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
-	fm *FileManager
+	ss       *ServerSet // client connections to upstream LSP server (e.g. gopls)
+	fm       FileManager
+	headless bool
 	proxy.NotImplementedServer
 }
 
@@ -156,7 +157,7 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 	return srv, nil
 }
 
-func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm *FileManager) error {
+func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm FileManager) error {
 	ln, err := p9service.Listen(ctx, cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return err
