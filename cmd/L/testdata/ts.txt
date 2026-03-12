@@ -1,0 +1,111 @@
+# Typescript Language Server test
+
+# Start acme-lsp server
+env NAMESPACE=$WORK/ns.plan9
+mkdir $NAMESPACE
+acme-lsp -headless -server '\.ts$:typescript-language-server --stdio' &
+exec sleep 2
+
+# Format file
+env acmeaddr=$WORK/hello.ts:'#0'
+L -headless fmt
+cmp hello.ts after-format.txt
+
+# Definition of "HelloGreeter" constructor
+env acmeaddr=$WORK/hello.ts:'#168'
+L -headless def -p
+stdout 'hello.ts:.*:class HelloGreeter implements Greeter {'
+
+# References to the method "hello"
+env acmeaddr=$WORK/hello.ts:'#83'
+L -headless refs
+stdout 'hello.ts:.*hello\(\): void;'
+stdout 'hello.ts:.*hello\(\): void {'
+stdout 'hello.ts:.*g.hello\(\);'
+
+# Type definition of 'g'
+env acmeaddr=$WORK/hello.ts:'#181'
+L -headless type -p
+stdout 'hello.ts:.*:class HelloGreeter implements Greeter {'
+
+# Signature of the "hello" method call
+env acmeaddr=$WORK/hello.ts:'#188'
+L -headless sig
+stdout 'hello\(\): void'
+
+# Hover over the call to the "hello" method
+env acmeaddr=$WORK/hello.ts:'#185'
+L -headless hov
+stdout '\(method\) HelloGreeter.hello\(\): void'
+
+# Implementations of the interface "Greeter"
+env acmeaddr=$WORK/hello.ts:'#14'
+L -headless impls
+stdout 'hello.ts:.*:class HelloGreeter implements Greeter {'
+
+# Completion in middle of method call "hello"
+env acmeaddr=$WORK/hello.ts:'#185'
+L -headless comp
+stdout 'hello'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'Greeter'
+stdout 'hello'
+stdout 'HelloGreeter'
+stdout 'main'
+stdout '/hello.ts:'
+
+# Rename HelloGreeter class to WorldGreeter
+env acmeaddr=$WORK/hello.ts:'#168'
+L -headless rn WorldGreeter
+cmp hello.ts after-rename.txt
+
+
+-- hello.ts --
+interface Greeter {
+	hello() : void; }
+
+class HelloGreeter implements Greeter {
+	hello() : void {
+        console.log("Hello, 世界"); } }
+
+function main() {
+    const g = new HelloGreeter();
+    g.hello(); }
+
+main();
+-- after-format.txt --
+interface Greeter {
+	hello(): void;
+}
+
+class HelloGreeter implements Greeter {
+	hello(): void {
+		console.log("Hello, 世界");
+	}
+}
+
+function main() {
+	const g = new HelloGreeter();
+	g.hello();
+}
+
+main();
+-- after-rename.txt --
+interface Greeter {
+	hello(): void;
+}
+
+class WorldGreeter implements Greeter {
+	hello(): void {
+		console.log("Hello, 世界");
+	}
+}
+
+function main() {
+	const g = new WorldGreeter();
+	g.hello();
+}
+
+main();

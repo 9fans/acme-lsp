@@ -142,6 +142,8 @@ func DetectLanguage(filename string) protocol.LanguageKind {
 	switch lang {
 	case "py":
 		lang = "python"
+	case "ts":
+		lang = "typescript"
 	}
 	return protocol.LanguageKind(lang)
 }

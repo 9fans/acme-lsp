@@ -208,16 +208,18 @@ func run(cfg *config.Config, args []string) error {
 
 	if cfg.Headless {
 		// If headless mode we don't monitor for open/closed files, so open the file.
-		err = rc.DidOpen(ctx)
-		if err != nil {
+		if err = rc.DidOpen(ctx); err != nil {
 			return fmt.Errorf("DidOpen failed: %v", err)
 		}
-	} else {
-		// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
-		err = rc.DidChange(ctx)
-		if err != nil {
-			return fmt.Errorf("DidChange failed: %v", err)
-		}
+	}
+
+	// In case the window has unsaved changes (it's dirty),
+	// sync changes with LSP server.
+	// For Headless, some servers (e.g. typescript) will reject
+	// the DidOpen if the file was already opened before,
+	// so this is our second chance to sync file content.
+	if err = rc.DidChange(ctx); err != nil {
+		return fmt.Errorf("DidChange failed: %v", err)
 	}
 
 	switch args[0] {

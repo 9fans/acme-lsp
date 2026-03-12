@@ -1,3 +1,4 @@
+# Go language server (gopls) test
 
 # Start acme-lsp server
 env NAMESPACE=$WORK/ns.plan9
@@ -18,7 +19,7 @@ stdout 'fmt/print\.go:.*:func Println\(a \.\.\.any\) \(n int, err error\) {'
 
 # References to "HelloGreeter"
 env acmeaddr=$WORK/hello.go:'#340'
-L -headless refs -p
+L -headless refs
 stdout 'hello.go:.*:type HelloGreeter struct{}'
 stdout 'hello.go:.*:func \(g HelloGreeter\) Hello\(\) {'
 stdout 'hello.go:.*:.*g := HelloGreeter{}'

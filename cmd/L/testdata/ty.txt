@@ -1,3 +1,5 @@
+# Python language server (ty) test
+
 # Start acme-lsp server
 env NAMESPACE=$WORK/ns.plan9
 env HOME=$WORK
@@ -14,7 +16,7 @@ stdout 'hello.py:.*:class Greeter:'
 
 # References to "Greeter"
 env acmeaddr=$WORK/hello.py:'#131'
-L -headless refs -p
+L -headless refs
 stdout 'hello.py:.*:class Greeter:'
 stdout 'hello.py:.*:.*g = Greeter()'
 
