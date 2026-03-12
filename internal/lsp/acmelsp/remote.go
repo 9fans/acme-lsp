@@ -42,6 +42,33 @@ func NewRemoteCmd(server proxy.Server, win text.AddressableFile, menu text.Menu)
 	}
 }
 
+func (rc *RemoteCmd) DidOpen(ctx context.Context) error {
+	uri, _, err := text.DocumentURI(rc.win)
+	if err != nil {
+		return err
+	}
+	filename, err := rc.win.Filename()
+	if err != nil {
+		return err
+	}
+	r, err := rc.win.Reader()
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	return rc.server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
+		TextDocument: protocol.TextDocumentItem{
+			URI:        uri,
+			LanguageID: lsp.DetectLanguage(filename),
+			Version:    0,
+			Text:       string(body),
+		},
+	})
+}
+
 func (rc *RemoteCmd) DidChange(ctx context.Context) error {
 	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
@@ -89,6 +116,9 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	if err != nil {
 		return err
 	}
+	if result == nil || len(result.Items) == 0 {
+		return rc.showCompletion("no completion\n", kind)
+	}
 
 	if (kind == CompleteInsertFirstMatch && len(result.Items) >= 1) || (kind == CompleteInsertOnlyMatch && len(result.Items) == 1) {
 		textEdit := result.Items[0].TextEdit
@@ -109,15 +139,13 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	}
 
 	var sb strings.Builder
-
-	if len(result.Items) == 0 {
-		fmt.Fprintf(&sb, "no completion\n")
-	}
-
 	for _, item := range result.Items {
 		fmt.Fprintf(&sb, "%v\t%v\n", item.Label, item.Detail)
 	}
+	return rc.showCompletion(sb.String(), kind)
+}
 
+func (rc *RemoteCmd) showCompletion(body string, kind CompletionKind) error {
 	if kind == CompleteInsertFirstMatch {
 		cw, err := acmeutil.Hijack("/LSP/Completions")
 		if err != nil {
@@ -125,18 +153,15 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 			if err != nil {
 				return err
 			}
-
 			cw.Name("/LSP/Completions")
 		}
-
 		defer cw.Win.Ctl("clean")
 
 		cw.Clear()
-		cw.PrintTabbed(sb.String())
-	} else {
-		fmt.Fprintln(rc.Stdout, sb.String())
+		cw.PrintTabbed(body)
+		return nil
 	}
-
+	fmt.Fprintln(rc.Stdout, body)
 	return nil
 }
 

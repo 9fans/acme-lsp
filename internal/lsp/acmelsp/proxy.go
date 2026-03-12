@@ -15,9 +15,8 @@ import (
 )
 
 type proxyServer struct {
-	ss       *ServerSet // client connections to upstream LSP server (e.g. gopls)
-	fm       FileManager
-	headless bool
+	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
+	fm FileManager
 	proxy.NotImplementedServer
 }
 
@@ -35,6 +34,14 @@ func (s *proxyServer) InitializeResult(ctx context.Context, params *protocol.Tex
 		return nil, fmt.Errorf("InitializeResult: %v", err)
 	}
 	return srv.Client.InitializeResult(ctx, params)
+}
+
+func (s *proxyServer) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return fmt.Errorf("DidOpen: %v", err)
+	}
+	return srv.Client.DidOpen(ctx, params)
 }
 
 func (s *proxyServer) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {

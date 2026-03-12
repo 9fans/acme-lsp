@@ -1,0 +1,68 @@
+# Start acme-lsp server
+env NAMESPACE=$WORK/ns.plan9
+env HOME=$WORK
+mkdir $NAMESPACE
+acme-lsp -headless -hidediag -server '\.py$:ty server' &
+exec sleep 1
+
+# ty does not support formatting (textDocument/formatting)
+
+# Definition of "Greeter"
+env acmeaddr=$WORK/hello.py:'#131'
+L -headless def -p
+stdout 'hello.py:.*:class Greeter:'
+
+# References to "Greeter"
+env acmeaddr=$WORK/hello.py:'#131'
+L -headless refs -p
+stdout 'hello.py:.*:class Greeter:'
+stdout 'hello.py:.*:.*g = Greeter()'
+
+# Hover over call to method "hello"
+env acmeaddr=$WORK/hello.py:'#146'
+L -headless hov
+stdout 'bound method Greeter.hello()'
+stdout 'Hello prints a hello greeting'
+
+# Completion in middle of method "hello"
+#env acmeaddr=$WORK/hello.py:'#146'
+#L -headless comp
+#stdout 'Greeter'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'Greeter'
+stdout 'hello'
+stdout 'main'
+stdout '/hello.py:'
+
+# Rename Greeter to WorldGreeter
+env acmeaddr=$WORK/hello.py:'#131'
+L -headless rn WorldGreeter
+cmp hello.py after-rename-py.txt
+
+
+-- hello.py --
+class Greeter:
+    def hello(self):
+        """Hello prints a hello greeting"""
+        print("Hello, 世界")
+
+def main():
+    g = Greeter()
+    g.hello()
+
+if __name__ == "__main__":
+    main()
+-- after-rename-py.txt --
+class WorldGreeter:
+    def hello(self):
+        """Hello prints a hello greeting"""
+        print("Hello, 世界")
+
+def main():
+    g = WorldGreeter()
+    g.hello()
+
+if __name__ == "__main__":
+    main()

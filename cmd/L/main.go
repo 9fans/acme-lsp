@@ -206,10 +206,18 @@ func run(cfg *config.Config, args []string) error {
 
 	rc := acmelsp.NewRemoteCmd(server, win, menu)
 
-	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
-	err = rc.DidChange(ctx)
-	if err != nil {
-		return fmt.Errorf("DidChange failed: %v", err)
+	if cfg.Headless {
+		// If headless mode we don't monitor for open/closed files, so open the file.
+		err = rc.DidOpen(ctx)
+		if err != nil {
+			return fmt.Errorf("DidOpen failed: %v", err)
+		}
+	} else {
+		// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
+		err = rc.DidChange(ctx)
+		if err != nil {
+			return fmt.Errorf("DidChange failed: %v", err)
+		}
 	}
 
 	switch args[0] {
