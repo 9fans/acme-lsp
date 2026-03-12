@@ -10,6 +10,7 @@ import (
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
+	"9fans.net/acme-lsp/internal/lsp/text"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -139,7 +140,14 @@ func run(cfg *config.Config, args []string) error {
 	}
 	defer win.CloseFiles()
 
-	rc, err := acmelsp.WindowRemoteCmd(serverSet, fm, win)
+	var menu text.Menu
+	if cfg.Headless {
+		menu = &text.HeadlessMenu{}
+	} else {
+		menu = &text.AcmeMenu{}
+	}
+
+	rc, err := acmelsp.WindowRemoteCmd(serverSet, fm, win, menu)
 	if err != nil {
 		return fmt.Errorf("CurrentWindowRemoteCmd failed: %v", err)
 	}

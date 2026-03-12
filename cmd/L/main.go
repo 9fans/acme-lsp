@@ -13,6 +13,7 @@ import (
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
+	"9fans.net/acme-lsp/internal/lsp/text"
 	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -196,7 +197,14 @@ func run(cfg *config.Config, args []string) error {
 	}
 	defer win.CloseFiles()
 
-	rc := acmelsp.NewRemoteCmd(server, win)
+	var menu text.Menu
+	if cfg.Headless {
+		menu = &text.HeadlessMenu{}
+	} else {
+		menu = &text.AcmeMenu{}
+	}
+
+	rc := acmelsp.NewRemoteCmd(server, win, menu)
 
 	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
 	err = rc.DidChange(ctx)

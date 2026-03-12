@@ -213,6 +213,6 @@ func (fm *AcmeFileManager) format(winid int, name string) error {
 		doc := &protocol.TextDocumentIdentifier{
 			URI: text.ToURI(name),
 		}
-		return CodeActionAndFormat(context.Background(), c, doc, w, fm.cfg.CodeActionsOnPut)
+		return CodeActionAndFormat(context.Background(), c, doc, w, &text.AcmeMenu{}, fm.cfg.CodeActionsOnPut)
 	})
 }

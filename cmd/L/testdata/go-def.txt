@@ -53,9 +53,9 @@ stdout 'main func\(\)'
 stdout '/hello\.go:'
 
 # Rename HelloGreeter to WorldGreeter
-#env acmeaddr=$WORK/hello.go:'#202'
-#L -headless rn WorldGreeter
-#cmp stdout after-rename.txt
+env acmeaddr=$WORK/hello.go:'#202'
+L -headless rn WorldGreeter
+cmp hello.go after-rename.txt
 
 
 -- hello.go --
@@ -79,5 +79,28 @@ func (g HelloGreeter) Hello() {
 
 func main() {
 	g := HelloGreeter{}
+	g.Hello()
+}
+-- after-rename.txt --
+package main // import "example.com/test"
+
+import "fmt"
+
+// Greeter is a greeting interface.
+type Greeter interface {
+	// Hello prints a greeting
+	Hello()
+}
+
+// WorldGreeter greets with hello
+type WorldGreeter struct{}
+
+// Hello prints a hello greeting
+func (g WorldGreeter) Hello() {
+	fmt.Println("Hello, 世界")
+}
+
+func main() {
+	g := WorldGreeter{}
 	g.Hello()
 }

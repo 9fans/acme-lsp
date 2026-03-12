@@ -27,14 +27,16 @@ import (
 type RemoteCmd struct {
 	server proxy.Server
 	win    text.AddressableFile
+	menu   text.Menu
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
-func NewRemoteCmd(server proxy.Server, win text.AddressableFile) *RemoteCmd {
+func NewRemoteCmd(server proxy.Server, win text.AddressableFile, menu text.Menu) *RemoteCmd {
 	return &RemoteCmd{
 		server: server,
 		win:    win,
+		menu:   menu,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -164,7 +166,7 @@ func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
 	doc := &protocol.TextDocumentIdentifier{
 		URI: uri,
 	}
-	return CodeActionAndFormat(ctx, rc.server, doc, rc.win, []protocol.CodeActionKind{
+	return CodeActionAndFormat(ctx, rc.server, doc, rc.win, rc.menu, []protocol.CodeActionKind{
 		protocol.SourceOrganizeImports,
 	})
 }
@@ -247,7 +249,7 @@ func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
 	if err != nil {
 		return err
 	}
-	return editWorkspace(we)
+	return editWorkspace(we, rc.menu)
 }
 
 func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {

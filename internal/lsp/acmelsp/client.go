@@ -83,7 +83,7 @@ func (h *clientHandler) ShowMessageRequest(context.Context, *protocol.ShowMessag
 }
 
 func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResult, error) {
-	err := editWorkspace(&params.Edit)
+	err := editWorkspace(&params.Edit, &text.AcmeMenu{})
 	if err != nil {
 		return &protocol.ApplyWorkspaceEditResult{Applied: false, FailureReason: err.Error()}, nil
 	}

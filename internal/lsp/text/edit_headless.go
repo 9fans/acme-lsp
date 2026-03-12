@@ -13,7 +13,7 @@ type HeadlessFile struct {
 	q0, q1   int
 }
 
-func NewHeadlessFile( filename string, q0, q1 int) (*HeadlessFile, error) {
+func NewHeadlessFile(filename string, q0, q1 int) (*HeadlessFile, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR, 0)
 	if err != nil {
 		return nil, err
@@ -81,4 +81,10 @@ func (f *HeadlessFile) CurrentAddr() (q0, q1 int, err error) {
 // CloseFiles closes all the open files associated with the file.
 func (f *HeadlessFile) CloseFiles() {
 	f.file.Close()
+}
+
+type HeadlessMenu struct{}
+
+func (m *HeadlessMenu) Open(filename string) (AddressableFile, error) {
+	return NewHeadlessFile(filename, 0, 0)
 }

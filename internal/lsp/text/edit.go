@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"9fans.net/acme-lsp/internal/acme"
+	"9fans.net/acme-lsp/internal/acmeutil"
 	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
@@ -156,4 +158,23 @@ func CutPrefix(s, prefix string) (after string, found bool) {
 		return s, false
 	}
 	return s[len(prefix):], true
+}
+
+type Menu interface {
+	Open(filename string) (AddressableFile, error)
+}
+
+type AcmeMenu struct{}
+
+func (m *AcmeMenu) Open(filename string) (AddressableFile, error) {
+	wins, err := acme.Windows()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read list of acme index: %v", err)
+	}
+	for _, info := range wins {
+		if info.Name == filename {
+			return acmeutil.OpenWin(info.ID)
+		}
+	}
+	return nil, fmt.Errorf("%v: not open in acme", filename)
 }

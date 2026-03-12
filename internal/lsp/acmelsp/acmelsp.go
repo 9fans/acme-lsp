@@ -11,8 +11,6 @@ import (
 	"sort"
 	"strings"
 
-	"9fans.net/acme-lsp/internal/acme"
-	"9fans.net/acme-lsp/internal/acmeutil"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/acme-lsp/internal/lsp/text"
@@ -21,7 +19,7 @@ import (
 	"github.com/fhs/9fans-go/plumb"
 )
 
-func WindowRemoteCmd(ss *ServerSet, fm FileManager, w text.AddressableFile) (*RemoteCmd, error) {
+func WindowRemoteCmd(ss *ServerSet, fm FileManager, w text.AddressableFile, menu text.Menu) (*RemoteCmd, error) {
 	_, fname, err := text.DocumentURI(w)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get text position: %v", err)
@@ -34,7 +32,7 @@ func WindowRemoteCmd(ss *ServerSet, fm FileManager, w text.AddressableFile) (*Re
 		return nil, fmt.Errorf("no language server for filename %q", fname)
 	}
 
-	rc := NewRemoteCmd(srv.Client, w)
+	rc := NewRemoteCmd(srv.Client, w, menu)
 	// In case the window has unsaved changes (it's dirty),
 	// send changes to LSP server.
 	err = rc.DidChange(context.Background())
@@ -131,7 +129,7 @@ type FormatServer interface {
 }
 
 // CodeActionAndFormat runs the given code actions and then formats the file f.
-func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File, actions []protocol.CodeActionKind) error {
+func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol.TextDocumentIdentifier, f text.File, menu text.Menu, actions []protocol.CodeActionKind) error {
 	initres, err := server.InitializeResult(ctx, doc)
 	if err != nil {
 		return err
@@ -152,7 +150,7 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 		}
 		for _, a := range actions {
 			if a.Edit != nil {
-				err := editWorkspace(a.Edit)
+				err := editWorkspace(a.Edit, menu)
 				if err != nil {
 					return err
 				}
@@ -225,7 +223,7 @@ func filterUnsupportedTextEdits(edits []protocol.Or_TextDocumentEdit_edits_Elem)
 	return
 }
 
-func editWorkspace(we *protocol.WorkspaceEdit) error {
+func editWorkspace(we *protocol.WorkspaceEdit, menu text.Menu) error {
 	if we == nil {
 		return nil // no changes to apply
 	}
@@ -249,30 +247,14 @@ func editWorkspace(we *protocol.WorkspaceEdit) error {
 		return nil // no changes to apply
 	}
 
-	wins, err := acme.Windows()
-	if err != nil {
-		return fmt.Errorf("failed to read list of acme index: %v", err)
-	}
-	winid := make(map[string]int, len(wins))
-	for _, info := range wins {
-		winid[info.Name] = info.ID
-	}
-
-	for uri := range we.Changes {
-		fname := text.ToPath(uri)
-		if _, ok := winid[fname]; !ok {
-			return fmt.Errorf("%v: not open in acme", fname)
-		}
-	}
 	for uri, edits := range we.Changes {
 		fname := text.ToPath(uri)
-		id := winid[fname]
-		w, err := acmeutil.OpenWin(id)
+		w, err := menu.Open(fname)
 		if err != nil {
-			return fmt.Errorf("failed to open window %v: %v", id, err)
+			return fmt.Errorf("failed to open window %v: %v", fname, err)
 		}
 		if err := text.Edit(w, edits); err != nil {
-			return fmt.Errorf("failed to apply edits to window %v: %v", id, err)
+			return fmt.Errorf("failed to apply edits to window %v: %v", fname, err)
 		}
 		w.CloseFiles()
 	}

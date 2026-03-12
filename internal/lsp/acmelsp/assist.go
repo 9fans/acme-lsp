@@ -212,7 +212,7 @@ func (w *outputWin) Update(fw *focusWin, server proxy.Server, cmd string) {
 	}
 	defer win.CloseFiles()
 
-	rc := NewRemoteCmd(server, win)
+	rc := NewRemoteCmd(server, win, &text.AcmeMenu{})
 	rc.Stdout = w.body
 	rc.Stderr = w.body
 	ctx := context.Background()
