@@ -5,7 +5,6 @@ env NAMESPACE=$WORK/ns.plan9
 env HOME=$WORK		# location of gopls go build cache
 mkdir $NAMESPACE
 acme-lsp -headless -server '\.go$:gopls -rpc.trace' &
-exec sleep 1
 
 # Format file
 env acmeaddr=$WORK/hello.go:'#0'

@@ -4,7 +4,6 @@
 env NAMESPACE=$WORK/ns.plan9
 mkdir $NAMESPACE
 acme-lsp -headless -server '\.ts$:typescript-language-server --stdio' &
-exec sleep 2
 
 # Format file
 env acmeaddr=$WORK/hello.ts:'#0'

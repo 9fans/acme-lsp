@@ -5,7 +5,6 @@ env NAMESPACE=$WORK/ns.plan9
 env HOME=$WORK
 mkdir $NAMESPACE
 acme-lsp -headless -hidediag -server '\.py$:ty server' &
-exec sleep 1
 
 # ty does not support formatting (textDocument/formatting)
 

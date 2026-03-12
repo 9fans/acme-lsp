@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
@@ -123,7 +124,10 @@ func run(cfg *config.Config, args []string) error {
 		usage()
 	}
 
-	conn, err := net.Dial(cfg.ProxyNetwork, cfg.ProxyAddress)
+	// In tests which use headless mode, we might be
+	// connecting to the proxy right after starting acme-lsp.
+	// So, the retry dial until unix socket is ready.
+	conn, err := dialRetry(cfg.ProxyNetwork, cfg.ProxyAddress, cfg.Headless)
 	if err != nil {
 		return fmt.Errorf("dial failed: %v", err)
 	}
@@ -274,4 +278,15 @@ func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {
 		dirs = []string{d}
 	}
 	return lsp.DirsToWorkspaceFolders(dirs)
+}
+
+func dialRetry(network, address string, retry bool) (conn net.Conn, err error) {
+	for i := 0; ; i++ {
+		conn, err = net.Dial(network, address)
+		if err == nil || !retry || i >= 10 {
+			return conn, err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return
 }
