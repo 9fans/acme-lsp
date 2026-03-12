@@ -6,6 +6,11 @@ mkdir $NAMESPACE
 acme-lsp -headless -server '\.go$:gopls -rpc.trace' &
 exec sleep 1
 
+# Format file
+env acmeaddr=$WORK/hello.go:'#0'
+L -headless fmt
+cmp hello.go after-format.txt
+
 # Definition of "fmt.Println"
 env acmeaddr=$WORK/hello.go:'#295'
 L -headless def -p
@@ -59,6 +64,29 @@ cmp hello.go after-rename.txt
 
 
 -- hello.go --
+package main // import "example.com/test"
+
+import "fmt"
+
+// Greeter is a greeting interface.
+type Greeter interface {
+	// Hello prints a greeting
+	Hello( )
+	}
+
+// HelloGreeter greets with hello
+type HelloGreeter struct{}
+
+// Hello prints a hello greeting
+func (g HelloGreeter) Hello( ) {
+	fmt.Println("Hello, 世界")
+	}
+
+func main() {
+	g := HelloGreeter{}
+	g.Hello( )
+	}
+-- after-format.txt --
 package main // import "example.com/test"
 
 import "fmt"

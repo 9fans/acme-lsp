@@ -59,7 +59,11 @@ func (f *HeadlessFile) WriteAt(q0, q1 int, b []byte) (int, error) {
 	if _, err := f.file.Seek(0, 0); err != nil {
 		return 0, err
 	}
-	return f.file.Write(newBytes)
+	n, err := f.file.Write(newBytes)
+	if err != nil {
+		return 0, err
+	}
+	return n, f.file.Sync()
 }
 
 // Mark does nothing.
