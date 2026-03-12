@@ -27,14 +27,14 @@ incompatibilities with those or other servers.
 
 Install the latest release:
 
-	GO111MODULE=on go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
-	GO111MODULE=on go install 9fans.net/acme-lsp/cmd/L@latest
+	go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
+	go install 9fans.net/acme-lsp/cmd/L@latest
 
 ## gopls
 
 First install the latest release of gopls:
 
-	GO111MODULE=on go install golang.org/x/tools/gopls@latest
+	go install golang.org/x/tools/gopls@latest
 
 Start acme-lsp like this:
 
@@ -115,6 +115,20 @@ typing. This can be achieved by using a general keybinding daemon
 (e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
 in X11) and running
 [acmefocused](https://pkg.go.dev/9fans.net/acme-lsp/cmd/acmefocused).
+
+## Development
+
+On MacOS, while running tests, you may see this error:
+```
+proxy failed: listen unix $WORK/ns.plan9/acme-lsp.rpc: bind: invalid argument
+```
+This is due to the unix domain socket path being too long.
+$WORK can look like this:
+```
+WORK=/private/var/folders/1d/pts9r6h116s1m5kx723m4q3w0000gn/T/go-test-script2157504515/script-gopls
+```
+As a workaround, run tests after setting TMPDIR=/tmp.
+
 
 ## See also
 
