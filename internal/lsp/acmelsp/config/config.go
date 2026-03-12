@@ -261,8 +261,8 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 	if flags&LangServerFlags != 0 {
 		f.BoolVar(&cfg.Verbose, "debug", cfg.Verbose, "turn on debugging prints (deprecated: use -v)")
 		f.StringVar(&cfg.RootDirectory, "rootdir", cfg.RootDirectory, "root directory used for LSP initialization")
-		f.BoolVar(&cfg.HideDiagnostics, "hidediag", false, "hide diagnostics sent by LSP server")
-		f.BoolVar(&cfg.RPCTrace, "rpc.trace", false, "print the full rpc trace in lsp inspector format")
+		f.BoolVar(&cfg.HideDiagnostics, "hidediag", cfg.HideDiagnostics, "hide diagnostics sent by LSP server")
+		f.BoolVar(&cfg.RPCTrace, "rpc.trace", cfg.RPCTrace, "print the full rpc trace in lsp inspector format")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `map filename to language server command. The format is
 'handlers:cmd' where cmd is the LSP server command and handlers is
