@@ -239,7 +239,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	}
 	srv, err := info.start(ss.ClientConfig(info))
 	if err != nil {
-		return nil, false, err
+		return nil, true, err
 	}
 	return srv, true, err
 }

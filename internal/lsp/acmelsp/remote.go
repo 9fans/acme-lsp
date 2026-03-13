@@ -176,6 +176,9 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	if err != nil {
 		return fmt.Errorf("bad server response: %v", err)
 	}
+	if len(locations) == 0 {
+		return fmt.Errorf("no definition found")
+	}
 	if print {
 		return PrintLocations(rc.Stdout, locations)
 	}

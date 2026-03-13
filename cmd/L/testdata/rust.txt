@@ -8,12 +8,10 @@ env acmeaddr=$WORK/src/main.rs:'#0'
 L -headless fmt
 cmp src/main.rs after-format.txt
 
-# Allow rust-analyzer to index
-exec sleep 2
-
 # Definition of "HelloGreeter" struct
+# We wait for rust-analyzer to index by retrying
 env acmeaddr=$WORK/src/main.rs:'#223'
-L -headless def -p
+retry L -headless def -p
 stdout 'src/main.rs:.*:struct HelloGreeter;'
 
 # References to "HelloGreeter"
