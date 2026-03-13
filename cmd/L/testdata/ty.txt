@@ -16,6 +16,17 @@ L -headless refs
 stdout 'hello.py:.*:class Greeter:'
 stdout 'hello.py:.*:.*g = Greeter()'
 
+# Type definition of "g"
+env acmeaddr=$WORK/hello.py:'#143'
+L -headless type -p
+stdout 'hello.py:1.7,1.14:class Greeter:'
+
+# Signature of method "hello"
+env acmeaddr=$WORK/hello.py:'#150'
+L -headless sig
+stdout '\(\) -> Unknown'
+stdout 'Hello prints a hello greeting'
+
 # Hover over call to method "hello"
 env acmeaddr=$WORK/hello.py:'#146'
 L -headless hov

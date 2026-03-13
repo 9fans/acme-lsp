@@ -31,6 +31,13 @@ env acmeaddr=$WORK/src/main.rs:'#244'
 L -headless sig
 stdout 'fn hello\(&self\)'
 
+# Hover over the call to the "hello" method
+env acmeaddr=$WORK/src/main.rs:'#241'
+L -headless hov
+stdout 'hello::HelloGreeter'
+stdout 'fn hello\(&self\)'
+stdout 'Hello prints a hello greeting'
+
 # Implementations of trait "Greeter"
 env acmeaddr=$WORK/src/main.rs:'#9'
 L -headless impls
@@ -40,13 +47,6 @@ stdout 'src/main.rs:.*:impl Greeter for HelloGreeter {'
 env acmeaddr=$WORK/src/main.rs:'#241'
 L -headless comp
 stdout 'hello\(as Greeter\)	fn\(&self\)'
-
-# Hover over the call to the "hello" method
-env acmeaddr=$WORK/src/main.rs:'#241'
-L -headless hov
-stdout 'hello::HelloGreeter'
-stdout 'fn hello\(&self\)'
-stdout 'Hello prints a hello greeting'
 
 # Print all symbols in the file
 L -headless syms
