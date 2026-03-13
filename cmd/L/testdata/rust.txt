@@ -1,8 +1,6 @@
 # Rust-analyzer test
 
 # Start acme-lsp server
-env NAMESPACE=$WORK/ns.plan9
-mkdir $NAMESPACE
 acme-lsp -headless -server '\.rs$:rust-analyzer' -workspaces $WORK &
 
 # Format file

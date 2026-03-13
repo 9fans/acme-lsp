@@ -20,6 +20,12 @@ func TestL(t *testing.T) {
 	testscript.Run(t, testscript.Params{
 		Dir: "testdata",
 		Setup: func(env *testscript.Env) error {
+			ns := filepath.Join(env.WorkDir, "ns")
+			if err := os.MkdirAll(ns, 0755); err != nil {
+				return err
+			}
+			env.Vars = append(env.Vars, "NAMESPACE="+ns)
+
 			for _, name := range []string{"RUSTUP_HOME", "CARGO_HOME"} {
 				if val, ok := os.LookupEnv(name); ok {
 					env.Vars = append(env.Vars, name+"="+val)

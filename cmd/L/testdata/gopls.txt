@@ -1,9 +1,7 @@
 # Go language server (gopls) test
 
 # Start acme-lsp server
-env NAMESPACE=$WORK/ns.plan9
 env HOME=$WORK		# location of gopls go build cache
-mkdir $NAMESPACE
 acme-lsp -headless -server '\.go$:gopls -rpc.trace' &
 
 # Format file

@@ -1,8 +1,6 @@
 # Typescript Language Server test
 
 # Start acme-lsp server
-env NAMESPACE=$WORK/ns.plan9
-mkdir $NAMESPACE
 acme-lsp -headless -server '\.ts$:typescript-language-server --stdio' &
 
 # Format file

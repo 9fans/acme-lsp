@@ -1,9 +1,6 @@
 # Python language server (ty) test
 
 # Start acme-lsp server
-env NAMESPACE=$WORK/ns.plan9
-env HOME=$WORK
-mkdir $NAMESPACE
 acme-lsp -headless -hidediag -server '\.py$:ty server' &
 
 # ty does not support formatting (textDocument/formatting)
