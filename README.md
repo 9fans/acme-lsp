@@ -14,14 +14,9 @@ It also watches for files created (`New`), loaded (`Get`), saved
 (`Put`), or deleted (`Del`) in acme, and tells the LSP server about
 these changes. The LSP server in turn responds by sending diagnostics
 information (compiler errors, lint errors, etc.) which are shown in an
-acme window.  When `Put` is executed in an acme window, `acme-lsp`
+acme window unless its disabled by the user.
+When `Put` is executed in an acme window, `acme-lsp`
 also organizes import paths in the window and formats it.
-
-Currently, `acme-lsp` has been tested with
-[gopls](https://github.com/golang/tools/tree/master/gopls),
-[go-langserver](https://github.com/sourcegraph/go-langserver) and
-[pyls](https://github.com/palantir/python-language-server). Please report
-incompatibilities with those or other servers.
 
 ## Installation
 
@@ -30,7 +25,22 @@ Install the latest release:
 	go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
 	go install 9fans.net/acme-lsp/cmd/L@latest
 
-## gopls
+## LSP Servers
+
+There are [integration tests](cmd/L/testdata) with some LSP servers.
+We aim to support any servers that follow the LSP protocol.
+Following is a compatibility table between LSP servers and the
+[L sub-commands](https://pkg.go.dev/9fans.net/acme-lsp/cmd/L):
+
+|                                                                                        |  fmt  |  def  | refs  | type  |  sig  |  hov  | impls | comp  | syms  |  rn   |
+| :------------- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| [gopls](https://github.com/golang/tools/tree/master/gopls)                             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
+| [typescript](https://github.com/typescript-language-server/typescript-language-server) |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
+| [rust](https://rust-analyzer.github.io/)                                               |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
+| [ty](https://docs.astral.sh/ty/)                                                       |   -   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  -   |  ✅   |  ✅   |  ✅   |
+
+
+### gopls
 
 First install the latest release of gopls:
 
@@ -46,7 +56,7 @@ by using the `L ws+` and `L ws-` sub-commands.
 
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also
-enables commands like `L def` (jump to defenition), `L refs` (list of
+enables commands like `L def` (jump to definition), `L refs` (list of
 references), etc. within acme. The `L assist` command opens a window
 where completion, hover, or signature help output is shown for the
 current cursor position in the `.go` file being edited.
