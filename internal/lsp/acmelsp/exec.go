@@ -85,15 +85,13 @@ func execServer(cs *config.Server, cfg *ClientConfig, restartOnExit bool) (*Serv
 			}
 			srv.conn = p1
 
-			go func() {
-				// Reinitialize existing client instead of creating a new one
-				// because it's still being used.
-				if err := srv.Client.init(p1, cfg); err != nil {
-					log.Printf("initialize after server restart failed: %v", err)
-					cmd.Process.Kill()
-					srv.conn.Close()
-				}
-			}()
+			// Reinitialize existing client instead of creating a new one
+			// because it's still being used.
+			if err := srv.Client.init(p1, cfg); err != nil {
+				log.Printf("initialize after server restart failed: %v", err)
+				cmd.Process.Kill()
+				srv.conn.Close()
+			}
 		}
 	}()
 

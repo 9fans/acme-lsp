@@ -138,12 +138,13 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if c.rpc != nil {
 		c.rpc.Close()
 	}
-	c.rpc = jsonrpc2.NewConn(ctx, stream, handler, opts...)
-	server := protocol.NewServer(c.rpc)
+	rpc := jsonrpc2.NewConn(ctx, stream, handler, opts...)
+	server := protocol.NewServer(rpc)
 	go func() {
-		<-c.rpc.DisconnectNotify()
+		<-rpc.DisconnectNotify()
 		log.Printf("jsonrpc2 client connection to LSP sever disconnected\n")
 	}()
+	c.rpc = rpc
 
 	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {
