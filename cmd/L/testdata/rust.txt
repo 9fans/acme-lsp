@@ -8,48 +8,54 @@ env acmeaddr=$WORK/src/main.rs:'#0'
 L -headless fmt
 cmp src/main.rs after-format.txt
 
+# Note: rust-analyzier seems to be taking some time to index,
+# which results in commands returning empty results initially
+# but returns a valid result after we wait for some time.
+# That is why we have retry for most of the commands below.
+# It is not enough to retry just the first command.
+# We need to retry on all command to make the test not be flaky.
+
 # Definition of "HelloGreeter" struct
-# We wait for rust-analyzer to index by retrying
 env acmeaddr=$WORK/src/main.rs:'#223'
 retry L -headless def -p
 stdout 'src/main.rs:.*:struct HelloGreeter;'
 
 # References to "HelloGreeter"
 env acmeaddr=$WORK/src/main.rs:'#223'
-L -headless refs
+retry L -headless refs
 stdout 'src/main.rs:.*:struct HelloGreeter;'
 stdout 'src/main.rs:.*:impl Greeter for HelloGreeter {'
 stdout 'src/main.rs:.*:.*let g = HelloGreeter;'
 
 # Type definition of "g"
 env acmeaddr=$WORK/src/main.rs:'#237'
-L -headless type -p
+retry L -headless type -p
 stdout 'src/main.rs:.*:struct HelloGreeter;'
 
 # Signature of method call "hello"
 env acmeaddr=$WORK/src/main.rs:'#244'
-L -headless sig
+retry L -headless sig
 stdout 'fn hello\(&self\)'
 
 # Hover over the call to the "hello" method
 env acmeaddr=$WORK/src/main.rs:'#241'
-L -headless hov
+retry L -headless hov
 stdout 'hello::HelloGreeter'
 stdout 'fn hello\(&self\)'
 stdout 'Hello prints a hello greeting'
 
 # Implementations of trait "Greeter"
 env acmeaddr=$WORK/src/main.rs:'#9'
-L -headless impls
+retry L -headless impls
 stdout 'src/main.rs:.*:impl Greeter for HelloGreeter {'
 
 # Completion in the middle of method call "hello"
 env acmeaddr=$WORK/src/main.rs:'#241'
-L -headless comp
+retry L -headless comp
 stdout 'hello\(as Greeter\)	fn\(&self\)'
 
 # Print all symbols in the file
-L -headless syms
+retry L -headless syms
 stdout 'Greeter'
 stdout 'hello fn\(&self\)'
 stdout 'HelloGreeter'

@@ -117,7 +117,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 		return err
 	}
 	if result == nil || len(result.Items) == 0 {
-		return rc.showCompletion("no completion\n", kind)
+		return fmt.Errorf("no completion")
 	}
 
 	if (kind == CompleteInsertFirstMatch && len(result.Items) >= 1) || (kind == CompleteInsertOnlyMatch && len(result.Items) == 1) {
@@ -161,7 +161,7 @@ func (rc *RemoteCmd) showCompletion(body string, kind CompletionKind) error {
 		cw.PrintTabbed(body)
 		return nil
 	}
-	fmt.Fprintln(rc.Stdout, body)
+	fmt.Fprint(rc.Stdout, body)
 	return nil
 }
 
@@ -213,8 +213,7 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	}
 
 	if hov == nil {
-		fmt.Fprintln(rc.Stdout, "No hover help available.")
-		return nil
+		return fmt.Errorf("no hover help available")
 	}
 
 	fmt.Fprintf(rc.Stdout, "%v\n", hov.Contents.Value)
@@ -234,8 +233,7 @@ func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
 		return err
 	}
 	if len(loc) == 0 {
-		fmt.Fprintf(rc.Stderr, "No implementations found.\n")
-		return nil
+		return fmt.Errorf("no implementations found")
 	}
 	return PrintLocations(rc.Stdout, loc)
 }
@@ -255,8 +253,7 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 		return err
 	}
 	if len(loc) == 0 {
-		fmt.Fprintf(rc.Stderr, "No references found.\n")
-		return nil
+		return fmt.Errorf("no references found")
 	}
 	return PrintLocations(rc.Stdout, loc)
 }
@@ -291,11 +288,12 @@ func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if sh != nil {
-		for _, sig := range sh.Signatures {
-			fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
-			fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
-		}
+	if sh == nil || len(sh.Signatures) == 0 {
+		return fmt.Errorf("no signature help available")
+	}
+	for _, sig := range sh.Signatures {
+		fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
+		fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
 	}
 	return nil
 }
@@ -324,8 +322,7 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 		return err
 	}
 	if len(syms) == 0 {
-		fmt.Fprintf(rc.Stderr, "No symbols found.\n")
-		return nil
+		return fmt.Errorf("no symbols found")
 	}
 	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
 		loc := &protocol.Location{
@@ -349,6 +346,9 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 	})
 	if err != nil {
 		return err
+	}
+	if len(locations) == 0 {
+		return fmt.Errorf("no type definition found")
 	}
 	if print {
 		return PrintLocations(rc.Stdout, locations)

@@ -42,7 +42,7 @@ env acmeaddr=$WORK/hello.go:'#101'
 L -headless impls
 stdout 'hello.go:.*:type HelloGreeter struct{}'
 
-# Completion in middle of contruction of struct "HelloGreeter"
+# Completion in middle of construction of struct "HelloGreeter"
 env acmeaddr=$WORK/hello.go:'#340'
 L -headless comp
 stdout 'HelloGreeter	struct{...}'
