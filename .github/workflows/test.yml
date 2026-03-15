@@ -45,6 +45,11 @@ jobs:
     - name: Install clangd
       run: sudo apt-get update && sudo apt-get install -y clangd
 
+    - name: Install Dart
+      uses: dart-lang/setup-dart@v1
+      with:
+        sdk: 3.11.2
+
     - name: Install Rust and rust-analyzer
       run: |
         rustup toolchain install 1.94.0 --profile minimal --component rust-analyzer --component rustfmt

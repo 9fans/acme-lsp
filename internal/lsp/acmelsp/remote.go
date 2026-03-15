@@ -112,6 +112,9 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	}
 	result, err := rc.server.Completion(ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
+		Context: protocol.CompletionContext{
+			TriggerKind: protocol.Invoked,
+		},
 	})
 	if err != nil {
 		return err
@@ -341,12 +344,13 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 	if err != nil {
 		return err
 	}
-	locations, err := rc.server.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
+	result, err := rc.server.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
 		return err
 	}
+	locations := locationsFromTypeDefinition(result)
 	if len(locations) == 0 {
 		return fmt.Errorf("no type definition found")
 	}
@@ -354,6 +358,34 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 		return PrintLocations(rc.Stdout, locations)
 	}
 	return PlumbLocations(locations)
+}
+
+// locationsFromTypeDefinition converts an Or_Result_textDocument_typeDefinition
+// response to a flat []Location. The LSP spec allows the response to be a single
+// Location, a []Location (via Definition = Or_Definition), or []LocationLink.
+func locationsFromTypeDefinition(result *protocol.Or_Result_textDocument_typeDefinition) []protocol.Location {
+	if result == nil {
+		return nil
+	}
+	switch v := result.Value.(type) {
+	case protocol.Definition:
+		switch lv := v.Value.(type) {
+		case protocol.Location:
+			return []protocol.Location{lv}
+		case []protocol.Location:
+			return lv
+		}
+	case []protocol.DefinitionLink:
+		locs := make([]protocol.Location, len(v))
+		for i, dl := range v {
+			locs[i] = protocol.Location{
+				URI:   dl.TargetURI,
+				Range: dl.TargetSelectionRange,
+			}
+		}
+		return locs
+	}
+	return nil
 }
 
 func walkDocumentSymbols1(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {

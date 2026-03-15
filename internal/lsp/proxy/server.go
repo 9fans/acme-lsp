@@ -278,7 +278,7 @@ func (s *NotImplementedServer) SemanticTokensRange(context.Context, *protocol.Se
 func (s *NotImplementedServer) SignatureHelp(context.Context, *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (s *NotImplementedServer) TypeDefinition(context.Context, *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
+func (s *NotImplementedServer) TypeDefinition(context.Context, *protocol.TypeDefinitionParams) (*protocol.Or_Result_textDocument_typeDefinition, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *NotImplementedServer) WillSave(context.Context, *protocol.WillSaveTextDocumentParams) error {

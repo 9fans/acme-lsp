@@ -144,7 +144,7 @@ func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.Docum
 	return srv.Client.DocumentSymbol(ctx, params)
 }
 
-func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
+func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) (*protocol.Or_Result_textDocument_typeDefinition, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
 		return nil, fmt.Errorf("TypeDefinition: %v", err)

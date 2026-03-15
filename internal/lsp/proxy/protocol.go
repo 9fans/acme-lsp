@@ -27,6 +27,9 @@ func (h *clientHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *json
 		ok, err = protocol.ClientDispatch(ctx, h.client, conn, r)
 	}
 	if !ok {
+		if r.Notif {
+			return
+		}
 		rpcerr := &jsonrpc2.Error{
 			Code:    jsonrpc2.CodeMethodNotFound,
 			Message: "method not implemented",
@@ -57,6 +60,9 @@ func (h *serverHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, r *json
 		ok, err = protocol.ServerDispatch(ctx, h.server, conn, r)
 	}
 	if !ok {
+		if r.Notif {
+			return
+		}
 		rpcerr := &jsonrpc2.Error{
 			Code:    jsonrpc2.CodeMethodNotFound,
 			Message: "method not implemented",

@@ -3,7 +3,7 @@ module 9fans.net/acme-lsp
 go 1.23
 
 require (
-	9fans.net/internal/go-lsp v0.0.0-20260313160840-e30d6148da01
+	9fans.net/internal/go-lsp v0.0.0-20260316013741-4b55fbbb7970
 	github.com/BurntSushi/toml v0.3.1
 	github.com/fhs/9fans-go v0.0.0-fhs.20200606
 	github.com/google/go-cmp v0.6.0

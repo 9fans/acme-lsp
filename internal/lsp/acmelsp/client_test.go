@@ -244,12 +244,13 @@ func main() {
 					Character: 2,
 				},
 			}
-			got, err := c.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
+			result, err := c.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
 				TextDocumentPositionParams: *pos,
 			})
 			if err != nil {
 				t.Fatalf("TypeDefinition failed: %v", err)
 			}
+			got := locationsFromTypeDefinition(result)
 			want := []protocol.Location{
 				{
 					URI: uri,

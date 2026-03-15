@@ -1,0 +1,112 @@
+# Dart language server test
+
+# Start acme-lsp server with workspaces and rootdir to avoid hang
+acme-lsp -headless -rootdir $WORK -workspaces $WORK -server '\.dart$:dart language-server' &
+
+# Format file
+env acmeaddr=$WORK/hello.dart:'#0'
+L -headless fmt
+# Give some time to dart to index the file and try again
+exec sleep 1
+L -headless fmt
+cmp hello.dart after-format.txt
+
+# Definition of "hello" from call site
+env acmeaddr=$WORK/hello.dart:'#219'
+L -headless def -p
+stdout 'hello\.dart:.*:  void hello\(String name\) {'
+
+# References to "hello"
+env acmeaddr=$WORK/hello.dart:'#219'
+L -headless refs
+stdout 'hello\.dart:.*:  g.hello\(''world''\);'
+stdout 'hello\.dart:.*:  void hello\(String name\) {'
+
+# Type definition of "g"
+env acmeaddr=$WORK/hello.dart:'#214'
+L -headless type -p
+stdout 'hello\.dart:.*:class WorldGreeter implements Greeter {'
+
+# Signature of "hello" call
+env acmeaddr=$WORK/hello.dart:'#222'
+L -headless sig
+stdout 'hello\(String name\)'
+
+# Hover over method call "hello"
+env acmeaddr=$WORK/hello.dart:'#219'
+L -headless hov
+stdout 'void hello\(String name\)'
+stdout 'Type: `void Function\(String\)`'
+stdout 'Declared in `WorldGreeter` in _hello.dart_.}'
+
+# Implementations of the interface Greeter
+env acmeaddr=$WORK/hello.dart:'#18'
+L -headless impls
+stdout 'hello\.dart:.*:class WorldGreeter implements Greeter {'
+
+# Completion after "g.hel" in the "hello" method call
+env acmeaddr=$WORK/hello.dart:'#219'
+L -headless comp
+stdout 'hello\(…\)	\(String name\) → void'
+
+# Symbols in the file
+L -headless syms
+stdout 'Greeter'
+stdout 'WorldGreeter'
+stdout 'main \(\)'
+stdout '/hello\.dart:'
+stdout 'hello \(String name\)'
+
+# Rename WorldGreeter to EarthGreeter
+env acmeaddr=$WORK/hello.dart:'#66'
+L -headless rn EarthGreeter
+cmp hello.dart after-rename.txt
+
+-- pubspec.yaml --
+name: hello
+environment:
+  sdk: '>=3.11.2 <4.0.0'
+-- hello.dart --
+abstract class Greeter {
+  void hello(String name); }
+
+class WorldGreeter implements Greeter {
+  @override
+  void hello(String name) {
+    print('Hello, $name!'); } }
+
+void main() {
+  final g = WorldGreeter();
+  g.hello('world'); }
+-- after-format.txt --
+abstract class Greeter {
+  void hello(String name);
+}
+
+class WorldGreeter implements Greeter {
+  @override
+  void hello(String name) {
+    print('Hello, $name!');
+  }
+}
+
+void main() {
+  final g = WorldGreeter();
+  g.hello('world');
+}
+-- after-rename.txt --
+abstract class Greeter {
+  void hello(String name);
+}
+
+class EarthGreeter implements Greeter {
+  @override
+  void hello(String name) {
+    print('Hello, $name!');
+  }
+}
+
+void main() {
+  final g = EarthGreeter();
+  g.hello('world');
+}

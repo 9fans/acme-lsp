@@ -32,14 +32,21 @@ We aim to support any servers that follow the LSP protocol.
 Following is a compatibility table between LSP servers and the
 [L sub-commands](https://pkg.go.dev/9fans.net/acme-lsp/cmd/L):
 
-|                                                                                        |  fmt  |  def  | refs  | type  |  sig  |  hov  | impls | comp  | syms  |  rn   |
-| :------------- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| [clangd](https://clangd.llvm.org/)                                                     |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
-| [gopls](https://github.com/golang/tools/tree/master/gopls)                             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
-| [rust](https://rust-analyzer.github.io/)                                               |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
-| [ty](https://docs.astral.sh/ty/)                                                       |   -   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  -   |  ✅   |  ✅   |  ✅   |
-| [typescript](https://github.com/typescript-language-server/typescript-language-server) |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
+|                       |  fmt  |  def  | refs  | type  |  sig   |  hov  | impls | comp   | syms  |  rn   |
+| :-------------------- | :---: | :---: | :---: | :---: | :----: | :---: | :---: | :----: | :---: | :---: |
+| [clangd][]            |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |
+| [dart][dart-lsp]      |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |
+| [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |
+| [rust][rust-analyzer] |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |
+| [ty][astral-ty]       |   -   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  -    |  ✅    |  ✅   |  ✅   |
+| [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |
 
+[clangd]: https://clangd.llvm.org/
+[dart-lsp]: https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md
+[gopls]: https://github.com/golang/tools/tree/master/gopls
+[rust-analyzer]: https://rust-analyzer.github.io/
+[astral-ty]: https://docs.astral.sh/ty/
+[ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
 
 ### gopls
 
