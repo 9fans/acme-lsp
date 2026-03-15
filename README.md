@@ -34,10 +34,11 @@ Following is a compatibility table between LSP servers and the
 
 |                                                                                        |  fmt  |  def  | refs  | type  |  sig  |  hov  | impls | comp  | syms  |  rn   |
 | :------------- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| [clangd](https://clangd.llvm.org/)                                                     |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
 | [gopls](https://github.com/golang/tools/tree/master/gopls)                             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
-| [typescript](https://github.com/typescript-language-server/typescript-language-server) |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
 | [rust](https://rust-analyzer.github.io/)                                               |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
 | [ty](https://docs.astral.sh/ty/)                                                       |   -   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  -   |  ✅   |  ✅   |  ✅   |
+| [typescript](https://github.com/typescript-language-server/typescript-language-server) |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |  ✅   |
 
 
 ### gopls
