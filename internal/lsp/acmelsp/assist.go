@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 	"unicode"
 
@@ -291,6 +292,18 @@ loop:
 		}
 	}
 	return nil
+}
+
+func Symbol(server proxy.Server, query string) error {
+	symbols, err := server.Symbol(context.Background(), &protocol.WorkspaceSymbolParams{Query: query})
+	if err != nil {
+		return err
+	}
+	var locations []protocol.Location
+	for _, symbol := range symbols {
+		locations = append(locations, symbol.Location)
+	}
+	return PrintLocations(os.Stdout, locations)
 }
 
 // ServerMatcher represents a set of servers where it's possible to

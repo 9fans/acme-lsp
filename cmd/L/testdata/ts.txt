@@ -53,6 +53,10 @@ stdout 'HelloGreeter'
 stdout 'main'
 stdout '/hello.ts:'
 
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'hello\.ts:.*:class HelloGreeter implements Greeter {'
+
 # Rename HelloGreeter class to WorldGreeter
 env acmeaddr=$WORK/hello.ts:'#168'
 L -headless rn WorldGreeter

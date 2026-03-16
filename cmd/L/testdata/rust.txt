@@ -63,6 +63,10 @@ stdout 'impl Greeter for HelloGreeter'
 stdout 'main fn\(\)'
 stdout '/src/main.rs:'
 
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'src/main\.rs:.*:struct HelloGreeter;'
+
 # Rename HelloGreeter to WorldGreeter
 env acmeaddr=$WORK/src/main.rs:'#223'
 L -headless rn WorldGreeter

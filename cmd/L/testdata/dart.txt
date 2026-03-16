@@ -57,6 +57,10 @@ stdout 'main \(\)'
 stdout '/hello\.dart:'
 stdout 'hello \(String name\)'
 
+# Query workspace symbols
+L -headless wss WorldGreeter
+stdout 'hello\.dart:.*:class WorldGreeter implements Greeter {'
+
 # Rename WorldGreeter to EarthGreeter
 env acmeaddr=$WORK/hello.dart:'#66'
 L -headless rn EarthGreeter

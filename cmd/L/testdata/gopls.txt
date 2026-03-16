@@ -55,6 +55,11 @@ stdout '\(HelloGreeter\).Hello func()'
 stdout 'main func\(\)'
 stdout '/hello\.go:'
 
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'hello\.go:.*:type HelloGreeter struct{}'
+stdout 'hello\.go:.*:func \(g HelloGreeter\) Hello\(\) {'
+
 # Rename HelloGreeter to WorldGreeter
 env acmeaddr=$WORK/hello.go:'#202'
 L -headless rn WorldGreeter
