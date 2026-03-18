@@ -33,11 +33,6 @@ type Server interface {
 	// multiple ExecuteCommand request to the right server.
 	ExecuteCommandOnDocument(context.Context, *ExecuteCommandOnDocumentParams) (interface{}, error)
 
-	// ExecuteCommandOnServer is the same as ExecuteCommand, but params contain the
-	// ServerIdentifier of the original CodeAction so that the server implemention can
-	// multiplex ExecuteCommand request to the right server.
-	ExecuteCommandOnServer(context.Context, *ExecuteCommandOnServerParams) (interface{}, error)
-
 	protocol.Server
 	//DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
 	//DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
@@ -80,14 +75,6 @@ func serverDispatch(ctx context.Context, server Server, conn *jsonrpc2.Conn, r *
 		resp, err := server.ExecuteCommandOnDocument(ctx, &params)
 		return true, reply(ctx, conn, r.ID, resp, err)
 
-	case "acme-lsp/executeCommandOnServer": // req
-		var params ExecuteCommandOnServerParams
-		if err := json.Unmarshal(*r.Params, &params); err != nil {
-			return true, sendParseError(ctx, conn, r.ID, err)
-		}
-		resp, err := server.ExecuteCommandOnServer(ctx, &params)
-		return true, reply(ctx, conn, r.ID, resp, err)
-
 	default:
 		return false, nil
 	}
@@ -128,14 +115,6 @@ func (s *serverDispatcher) InitializeResult(ctx context.Context, params *protoco
 func (s *serverDispatcher) ExecuteCommandOnDocument(ctx context.Context, params *ExecuteCommandOnDocumentParams) (interface{}, error) {
 	var result interface{}
 	if err := s.Conn.Call(ctx, "acme-lsp/executeCommandOnDocument", params, &result); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (s *serverDispatcher) ExecuteCommandOnServer(ctx context.Context, params *ExecuteCommandOnServerParams) (interface{}, error) {
-	var result interface{}
-	if err := s.Conn.Call(ctx, "acme-lsp/executeCommandOnServer", params, &result); err != nil {
 		return nil, err
 	}
 	return result, nil

@@ -96,12 +96,19 @@ func (s *proxyServer) ExecuteCommandOnDocument(ctx context.Context, params *prox
 	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
 }
 
-func (s *proxyServer) ExecuteCommandOnServer(ctx context.Context, params *proxy.ExecuteCommandOnServerParams) (interface{}, error) {
-	srv, err := serverForID(s.ss, params.Server.ID)
+func (s *proxyServer) ExecuteCommand(ctx context.Context, params *protocol.ExecuteCommandParams) (interface{}, error) {
+	srv, err := s.ss.FindServerWithCapability(func(initResult *protocol.InitializeResult) bool {
+		for _, name := range initResult.Capabilities.ExecuteCommandProvider.Commands {
+			if name == params.Command {
+				return true
+			}
+		}
+		return false
+	})
 	if err != nil {
-		return nil, fmt.Errorf("ExecuteCommandOnServer: %v", err)
+		return nil, fmt.Errorf("ExecuteCommand: server with command %v not found: %v", params.Command, err)
 	}
-	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+	return srv.Client.ExecuteCommand(ctx, params)
 }
 
 func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
@@ -178,17 +185,6 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 	srv, found, err := ss.StartForFile(filename)
 	if !found {
 		return nil, fmt.Errorf("unknown language server for URI %q", uri)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("cound not start language server: %v", err)
-	}
-	return srv, nil
-}
-
-func serverForID(ss *ServerSet, id string) (*Server, error) {
-	srv, found, err := ss.StartForID(id)
-	if !found {
-		return nil, fmt.Errorf("unknown language server for ID %s", id)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cound not start language server: %v", err)

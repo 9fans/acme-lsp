@@ -199,7 +199,6 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if err := server.Initialized(ctx, &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialized failed: %v", err)
 	}
-
 	c.Server = server
 	c.initializeResult = result
 	return nil
@@ -222,10 +221,5 @@ func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, 
 
 // ExecuteCommandOnDocument implements proxy.Server.
 func (s *Client) ExecuteCommandOnDocument(ctx context.Context, params *proxy.ExecuteCommandOnDocumentParams) (interface{}, error) {
-	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
-}
-
-// ExecuteCommandOnServer implements proxy.Server.
-func (s *Client) ExecuteCommandOnServer(ctx context.Context, params *proxy.ExecuteCommandOnServerParams) (interface{}, error) {
 	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
 }

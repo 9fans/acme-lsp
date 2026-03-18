@@ -123,7 +123,6 @@ type ServerInfo struct {
 	*config.Server
 	*config.FilenameHandler
 
-	ID     string         // name of the server
 	Re     *regexp.Regexp // filename regular expression
 	Logger *log.Logger    // Logger for config.Server.LogFile
 	srv    *Server        // running server instance
@@ -195,7 +194,6 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 			logger = log.New(f, "", log.LstdFlags)
 		}
 		data = append(data, &ServerInfo{
-			ID:              h.ServerKey,
 			Server:          cs,
 			FilenameHandler: &cfg.FilenameHandlers[i],
 			Re:              re,
@@ -210,18 +208,22 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 	}, nil
 }
 
+func (ss *ServerSet) FindServerWithCapability(match func(*protocol.InitializeResult) bool) (*Server, error) {
+	for _, info := range ss.Data {
+		srv, err := info.start(ss.ClientConfig(info))
+		if err != nil {
+			return nil, err
+		}
+		if match(srv.Client.initializeResult) {
+			return srv, nil
+		}
+	}
+	return nil, fmt.Errorf("no server with capability")
+}
+
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
 	for _, info := range ss.Data {
 		if info.Re.MatchString(filename) {
-			return info
-		}
-	}
-	return nil
-}
-
-func (ss *ServerSet) FindID(id string) *ServerInfo {
-	for _, info := range ss.Data {
-		if info.ID == id {
 			return info
 		}
 	}
@@ -249,18 +251,6 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	srv, err := info.start(ss.ClientConfig(info))
 	if err != nil {
 		return nil, true, err
-	}
-	return srv, true, err
-}
-
-func (ss *ServerSet) StartForID(filename string) (*Server, bool, error) {
-	info := ss.FindID(filename)
-	if info == nil {
-		return nil, false, nil // unknown language server
-	}
-	srv, err := info.start(ss.ClientConfig(info))
-	if err != nil {
-		return nil, false, err
 	}
 	return srv, true, err
 }

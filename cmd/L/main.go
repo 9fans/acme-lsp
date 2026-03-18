@@ -207,10 +207,11 @@ func run(cfg *config.Config, args []string) error {
 		}
 		return acmelsp.Symbol(server, args[0])
 	case "exec":
-		// exec -s serverID command args...
-		if len(args) >= 4 && args[1] == "-s" {
-			return acmelsp.Execute(server, args[2], args[3], args[4:])
+		args = args[1:]
+		if len(args) < 1 {
+			return fmt.Errorf("usage: exec command arguments...")
 		}
+		return acmelsp.Execute(server, "", args[0], args[1:])
 	}
 
 	win, err := acmelsp.OpenFocusedWin(cfg.Headless)
@@ -283,12 +284,6 @@ func run(cfg *config.Config, args []string) error {
 	case "type":
 		args = args[1:]
 		return rc.TypeDefinition(ctx, len(args) > 0 && args[0] == "-p")
-	case "exec":
-		args = args[1:]
-		if len(args) < 1 {
-			usage()
-		}
-		return rc.Execute(ctx, args[0], args[1:])
 	}
 	return fmt.Errorf("unknown command %q", args[0])
 }

@@ -314,19 +314,14 @@ func Execute(server proxy.Server, serverID string, command string, args []string
 		var r json.RawMessage
 		err := json.NewDecoder(strings.NewReader(arg)).Decode(&r)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not parse argument %v: %v\n", arg, err)
 		}
 		jargs = append(jargs, r)
 	}
 
-	resp, err := server.ExecuteCommandOnServer(context.Background(), &proxy.ExecuteCommandOnServerParams{
-		Server: proxy.ServerIdentifier{
-			ID: serverID,
-		},
-		ExecuteCommandParams: protocol.ExecuteCommandParams{
-			Command:   command,
-			Arguments: jargs,
-		},
+	resp, err := server.ExecuteCommand(context.Background(), &protocol.ExecuteCommandParams{
+		Command:   command,
+		Arguments: jargs,
 	})
 	if err != nil {
 		return err
