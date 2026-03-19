@@ -34,7 +34,11 @@ type clientHandler struct {
 }
 
 func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMessageParams) error {
-	log.Printf("LSP %v: %v\n", params.Type, params.Message)
+	if h.cfg != nil && h.cfg.FilenameHandler != nil {
+		log.Printf("LSP %s %v: %v\n", h.cfg.FilenameHandler.ServerKey, params.Type, params.Message)
+	} else {
+		log.Printf("LSP %v: %v\n", params.Type, params.Message)
+	}
 	return nil
 }
 
