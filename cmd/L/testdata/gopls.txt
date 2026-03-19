@@ -65,6 +65,9 @@ env acmeaddr=$WORK/hello.go:'#202'
 L -headless rn WorldGreeter
 cmp hello.go after-rename.txt
 
+# Test command execution
+L exec gopls.workspace_stats
+stdout '{.*Files.*Total.*}'
 
 -- hello.go --
 package main // import "example.com/test"

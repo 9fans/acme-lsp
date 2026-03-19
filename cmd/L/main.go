@@ -101,6 +101,10 @@ List of sub-commands:
 
 	wss query
 		Print workspace symbols matching the query string.
+
+	exec command [args...]
+		Execute a command against the language server, args must be valid
+		JSON of any type.
 `
 
 func usage() {
@@ -202,6 +206,12 @@ func run(cfg *config.Config, args []string) error {
 			return fmt.Errorf("missing query")
 		}
 		return acmelsp.Symbol(server, args[0])
+	case "exec":
+		args = args[1:]
+		if len(args) < 1 {
+			return fmt.Errorf("usage: exec command arguments...")
+		}
+		return acmelsp.Execute(server, "", args[0], args[1:])
 	}
 
 	win, err := acmelsp.OpenFocusedWin(cfg.Headless)

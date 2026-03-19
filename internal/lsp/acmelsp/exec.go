@@ -208,10 +208,23 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 	}, nil
 }
 
+func (ss *ServerSet) FindServerWithCapability(match func(*protocol.InitializeResult) bool) (*Server, error) {
+	for _, info := range ss.Data {
+		srv, err := info.start(ss.ClientConfig(info))
+		if err != nil {
+			return nil, err
+		}
+		if match(srv.Client.initializeResult) {
+			return srv, nil
+		}
+	}
+	return nil, fmt.Errorf("no server with capability")
+}
+
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
-	for i, info := range ss.Data {
+	for _, info := range ss.Data {
 		if info.Re.MatchString(filename) {
-			return ss.Data[i]
+			return info
 		}
 	}
 	return nil

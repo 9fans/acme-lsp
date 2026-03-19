@@ -28,10 +28,9 @@ type Server interface {
 	// of an already initialized LSP server.
 	InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error)
 
-	// ExecuteCommandOnDocument is the same as ExecuteCommand, but
-	// params contain the TextDocumentIdentifier of the original
-	// CodeAction so that the server implemention can multiplex
-	// ExecuteCommand request to the right server.
+	// ExecuteCommandOnDocument is the same as ExecuteCommand, but params contain the
+	// TextDocumentIdentifier of the original CodeAction so that the server implemention can
+	// multiple ExecuteCommand request to the right server.
 	ExecuteCommandOnDocument(context.Context, *ExecuteCommandOnDocumentParams) (interface{}, error)
 
 	protocol.Server
