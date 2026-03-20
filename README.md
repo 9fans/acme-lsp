@@ -37,6 +37,7 @@ Following is a compatibility table between LSP servers and the
 | [clangd][]            |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [dart][dart-lsp]      |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [jdtls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ?     |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [rust][rust-analyzer] |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [ty][astral-ty]       |   -   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  -    |  ✅    |  ✅   |  ✅   | ✅  |
 | [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
@@ -47,6 +48,7 @@ Following is a compatibility table between LSP servers and the
 [rust-analyzer]: https://rust-analyzer.github.io/
 [astral-ty]: https://docs.astral.sh/ty/
 [ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
+[jdtls]: https://github.com/eclipse-jdtls/eclipse.jdt.ls
 
 ### gopls
 

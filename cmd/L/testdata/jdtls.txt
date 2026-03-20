@@ -1,0 +1,125 @@
+# Java language server (jdtls) test
+
+# Start acme-lsp server
+mkdir .jdtls
+acme-lsp -headless -rootdir $WORK -workspaces $WORK -server '\.java$:jdtls -data $WORK/.jdtls' &
+
+# Format file
+env acmeaddr=$WORK/hello.java:'#0'
+L -headless fmt
+cmp hello.java after-format.txt
+
+# Definition of "HelloGreeter" from constructor call
+env acmeaddr=$WORK/hello.java:'#333'
+L -headless def -p
+stdout 'hello\.java:.*:class HelloGreeter implements Greeter \{'
+
+# References to "HelloGreeter"
+env acmeaddr=$WORK/hello.java:'#333'
+L -headless refs
+stdout 'hello\.java:.*:class HelloGreeter implements Greeter \{'
+stdout 'hello\.java:.*:.*HelloGreeter g = new HelloGreeter\(\);'
+
+# Type definition of "g"
+env acmeaddr=$WORK/hello.java:'#346'
+L -headless type -p
+stdout 'hello\.java:.*:class HelloGreeter implements Greeter \{'
+
+# Signature help does not seems to return anything in jdtls. Is it supported?
+# Signature of "hello" method call
+#env acmeaddr=$WORK/hello.java:'#354'
+#L -headless sig
+#stdout 'hello\(\)'
+
+# Hover over the "println" function call
+env acmeaddr=$WORK/hello.java:'#227'
+L -headless hov
+stdout 'Prints a String and then terminates the line'
+
+# Implementations of the "Greeter" interface
+env acmeaddr=$WORK/hello.java:'#13'
+L -headless impls
+stdout 'hello\.java:.*:class HelloGreeter implements Greeter \{'
+
+# Completion in the middle of method call "hello"
+env acmeaddr=$WORK/hello.java:'#350'
+L -headless comp
+stdout 'hello\(\) : void	HelloGreeter\.hello\(\) : void'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'Greeter'
+stdout 'HelloGreeter'
+stdout 'hello\(\)  : void'
+stdout 'Main'
+stdout 'main\(String\[\]\)  : void'
+stdout '/hello\.java:'
+
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'hello\.java:.*:class HelloGreeter implements Greeter \{'
+
+# Rename HelloGreeter to WorldGreeter
+env acmeaddr=$WORK/hello.java:'#119'
+retry L -headless rn WorldGreeter
+cmp hello.java after-rename.txt
+
+# Test command execution
+L exec java.project.getAll
+stdout 'file:.*'
+
+-- hello.java --
+interface Greeter {
+	/** Hello prints a greeting */
+	void hello(); }
+
+/** HelloGreeter greets with hello */
+class HelloGreeter implements Greeter {
+	/** Hello prints a hello greeting */
+	public void hello() {
+		System.out.println("Hello, 世界"); } }
+
+class Main {
+	public static void main(String[] args) {
+		HelloGreeter g = new HelloGreeter();
+		g.hello(); } }
+-- after-format.txt --
+interface Greeter {
+	/** Hello prints a greeting */
+	void hello();
+}
+
+/** HelloGreeter greets with hello */
+class HelloGreeter implements Greeter {
+	/** Hello prints a hello greeting */
+	public void hello() {
+		System.out.println("Hello, 世界");
+	}
+}
+
+class Main {
+	public static void main(String[] args) {
+		HelloGreeter g = new HelloGreeter();
+		g.hello();
+	}
+}
+-- after-rename.txt --
+interface Greeter {
+	/** Hello prints a greeting */
+	void hello();
+}
+
+/** HelloGreeter greets with hello */
+class WorldGreeter implements Greeter {
+	/** Hello prints a hello greeting */
+	public void hello() {
+		System.out.println("Hello, 世界");
+	}
+}
+
+class Main {
+	public static void main(String[] args) {
+		WorldGreeter g = new WorldGreeter();
+		g.hello();
+	}
+}

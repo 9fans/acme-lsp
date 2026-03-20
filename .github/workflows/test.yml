@@ -55,6 +55,19 @@ jobs:
         rustup toolchain install 1.94.0 --profile minimal --component rust-analyzer --component rustfmt
         rustup default 1.94.0
 
+    - name: Install Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Install jdtls
+      run: |
+        mkdir -p /opt/jdtls
+        curl -fL https://download.eclipse.org/jdtls/milestones/1.57.0/jdt-language-server-1.57.0-202602261110.tar.gz -o /tmp/jdtls.tar.gz
+        tar -xzf /tmp/jdtls.tar.gz -C /opt/jdtls
+        echo '/opt/jdtls/bin' >> $GITHUB_PATH
+
     - name: Check gofmt
       run: |
         gofmt -l .
