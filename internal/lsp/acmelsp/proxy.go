@@ -77,6 +77,9 @@ func (s *proxyServer) Formatting(ctx context.Context, params *protocol.DocumentF
 	if err != nil {
 		return nil, fmt.Errorf("Formatting: %v", err)
 	}
+	cfg := s.ss.ServerConfigForFile(text.ToPath(params.TextDocument.URI))
+	// override formatting options with user config
+	params.Options = cfg.FormattingOptions
 	return srv.Client.Formatting(ctx, params)
 }
 

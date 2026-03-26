@@ -197,10 +197,6 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 	}
 	edits, err := server.Formatting(ctx, &protocol.DocumentFormattingParams{
 		TextDocument: *doc,
-		Options: protocol.FormattingOptions{
-			TabSize:      4,
-			InsertSpaces: false,
-		},
 	})
 	if err != nil {
 		return err

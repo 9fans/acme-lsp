@@ -1,7 +1,8 @@
 # Typescript Language Server test
 
 # Start acme-lsp server
-acme-lsp -headless -server '\.ts$:typescript-language-server --stdio' &
+env ACME_LSP_CONFIG=$WORK/config.toml
+acme-lsp -headless &
 
 # Format file
 env acmeaddr=$WORK/hello.ts:'#0'
@@ -110,3 +111,16 @@ function main() {
 }
 
 main();
+-- config.toml --
+[Servers]
+	[Servers.tsls]
+	Command = ["typescript-language-server", "--stdio"]
+
+		[Servers.tsls.FormattingOptions]
+		TabSize = 4
+		InsertSpaces = false
+
+[[FilenameHandlers]]
+  Pattern = "\\.ts$"
+  LanguageID = "typescript"
+  ServerKey = "tsls"
