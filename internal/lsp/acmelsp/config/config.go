@@ -195,28 +195,39 @@ func Load() (*Config, error) {
 	if cfg.File.RootDirectory == "" {
 		cfg.File.RootDirectory = def.File.RootDirectory
 	}
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return nil, err
-	}
-	cacheDir = filepath.Join(cacheDir, "acme-lsp")
-	err = os.MkdirAll(cacheDir, 0700)
-	if err != nil {
-		return nil, err
-	}
 	for key := range cfg.Servers {
 		if len(key) > 0 && key[0] == '_' {
 			return nil, fmt.Errorf("server key %q begins with underscore", key)
 		}
 		s := cfg.File.Servers[key]
-		if s.StderrFile != "" && !filepath.IsAbs(s.StderrFile) {
-			s.StderrFile = filepath.Join(cacheDir, s.StderrFile)
+		var err error
+		if s.StderrFile, err = cacheFilePath(s.StderrFile); err != nil {
+			return nil, err
 		}
-		if s.LogFile != "" && !filepath.IsAbs(s.LogFile) {
-			s.LogFile = filepath.Join(cacheDir, s.LogFile)
+		if s.LogFile, err = cacheFilePath(s.LogFile); err != nil {
+			return nil, err
 		}
 	}
 	return cfg, nil
+}
+
+// cacheFilePath returns an absolute path for the given log file path.
+// If path is empty or already absolute, it is returned unchanged.
+// Otherwise, it is resolved relative to the acme-lsp user cache directory,
+// which is created if it does not exist.
+func cacheFilePath(path string) (string, error) {
+	if path == "" || filepath.IsAbs(path) {
+		return path, nil
+	}
+	d, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	cacheDir := filepath.Join(d, "acme-lsp")
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return "", err
+	}
+	return filepath.Join(cacheDir, path), nil
 }
 
 func load(filename string) (*Config, error) {
