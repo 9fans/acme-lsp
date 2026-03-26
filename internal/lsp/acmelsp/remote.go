@@ -1,60 +1,84 @@
 package acmelsp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
+	"9fans.net/acme-lsp/internal/acme"
 	"9fans.net/acme-lsp/internal/acmeutil"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/acme-lsp/internal/lsp/text"
 	"9fans.net/internal/go-lsp/lsp/protocol"
+	p9client "github.com/fhs/9fans-go/plan9/client"
 )
 
 // RemoteCmd executes LSP commands in an acme window using the proxy server.
 type RemoteCmd struct {
 	server proxy.Server
-	winid  int
+	win    text.AddressableFile
+	menu   text.Menu
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
-func NewRemoteCmd(server proxy.Server, winid int) *RemoteCmd {
+func NewRemoteCmd(server proxy.Server, win text.AddressableFile, menu text.Menu) *RemoteCmd {
 	return &RemoteCmd{
 		server: server,
-		winid:  winid,
+		win:    win,
+		menu:   menu,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
 }
 
-func (rc *RemoteCmd) getPosition() (pos *protocol.TextDocumentPositionParams, filename string, err error) {
-	w, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
-	}
-	defer w.CloseFiles()
-
-	return text.Position(w)
-}
-
-func (rc *RemoteCmd) DidChange(ctx context.Context) error {
-	w, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return fmt.Errorf("failed to to open window %v: %v", rc.winid, err)
-	}
-	defer w.CloseFiles()
-
-	uri, _, err := text.DocumentURI(w)
+func (rc *RemoteCmd) DidOpen(ctx context.Context) error {
+	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
 	}
-	body, err := w.ReadAll("body")
+	filename, err := rc.win.Filename()
+	if err != nil {
+		return err
+	}
+	r, err := rc.win.Reader()
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	return rc.server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
+		TextDocument: protocol.TextDocumentItem{
+			URI:        uri,
+			LanguageID: lsp.DetectLanguage(filename),
+			Version:    0,
+			Text:       string(body),
+		},
+	})
+}
+
+func (rc *RemoteCmd) DidChange(ctx context.Context) error {
+	uri, _, err := text.DocumentURI(rc.win)
+	if err != nil {
+		return err
+	}
+	r, err := rc.win.Reader()
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
 	}
@@ -82,48 +106,49 @@ const (
 )
 
 func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error {
-	w, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return err
-	}
-	defer w.CloseFiles()
-
-	pos, _, err := text.Position(w)
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
 	result, err := rc.server.Completion(ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
+		Context: protocol.CompletionContext{
+			TriggerKind: protocol.Invoked,
+		},
 	})
 	if err != nil {
 		return err
 	}
+	if result == nil || len(result.Items) == 0 {
+		return fmt.Errorf("no completion")
+	}
 
 	if (kind == CompleteInsertFirstMatch && len(result.Items) >= 1) || (kind == CompleteInsertOnlyMatch && len(result.Items) == 1) {
 		textEdit := result.Items[0].TextEdit
-		if textEdit == nil {
+		switch edit := textEdit.Value.(type) {
+		default:
+			return fmt.Errorf("unsupported completion text edit %T", edit)
+		case nil:
 			// TODO(fhs): Use insertText or label instead.
 			return fmt.Errorf("nil TextEdit in completion item")
-		}
-		if err := text.Edit(w, []protocol.TextEdit{*textEdit}); err != nil {
-			return fmt.Errorf("failed to apply completion edit: %v", err)
-		}
-
-		if len(result.Items) == 1 {
-			return nil
+		case protocol.TextEdit:
+			if err := text.Edit(rc.win, []protocol.TextEdit{edit}); err != nil {
+				return fmt.Errorf("failed to apply completion edit: %v", err)
+			}
+			if len(result.Items) == 1 {
+				return nil
+			}
 		}
 	}
 
 	var sb strings.Builder
-
-	if len(result.Items) == 0 {
-		fmt.Fprintf(&sb, "no completion\n")
-	}
-
 	for _, item := range result.Items {
 		fmt.Fprintf(&sb, "%v\t%v\n", item.Label, item.Detail)
 	}
+	return rc.showCompletion(sb.String(), kind)
+}
 
+func (rc *RemoteCmd) showCompletion(body string, kind CompletionKind) error {
 	if kind == CompleteInsertFirstMatch {
 		cw, err := acmeutil.Hijack("/LSP/Completions")
 		if err != nil {
@@ -131,23 +156,20 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 			if err != nil {
 				return err
 			}
-
 			cw.Name("/LSP/Completions")
 		}
-
 		defer cw.Win.Ctl("clean")
 
 		cw.Clear()
-		cw.PrintTabbed(sb.String())
-	} else {
-		fmt.Fprintln(rc.Stdout, sb.String())
+		cw.PrintTabbed(body)
+		return nil
 	}
-
+	fmt.Fprint(rc.Stdout, body)
 	return nil
 }
 
 func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return fmt.Errorf("failed to get position: %v", err)
 	}
@@ -157,20 +179,17 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	if err != nil {
 		return fmt.Errorf("bad server response: %v", err)
 	}
+	if len(locations) == 0 {
+		return fmt.Errorf("no definition found")
+	}
 	if print {
 		return PrintLocations(rc.Stdout, locations)
 	}
 	return PlumbLocations(locations)
 }
 
-func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context, fopts *protocol.FormattingOptions) error {
-	win, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return err
-	}
-	defer win.CloseFiles()
-
-	uri, _, err := text.DocumentURI(win)
+func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context) error {
+	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
 	}
@@ -178,13 +197,13 @@ func (rc *RemoteCmd) OrganizeImportsAndFormat(ctx context.Context, fopts *protoc
 	doc := &protocol.TextDocumentIdentifier{
 		URI: uri,
 	}
-	return CodeActionAndFormat(ctx, rc.server, doc, win, []protocol.CodeActionKind{
+	return CodeActionAndFormat(ctx, rc.server, doc, rc.win, rc.menu, []protocol.CodeActionKind{
 		protocol.SourceOrganizeImports,
-	}, fopts)
+	})
 }
 
 func (rc *RemoteCmd) Hover(ctx context.Context) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -197,8 +216,7 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 	}
 
 	if hov == nil {
-		fmt.Fprintln(rc.Stdout, "No hover help available.")
-		return nil
+		return fmt.Errorf("no hover help available")
 	}
 
 	fmt.Fprintf(rc.Stdout, "%v\n", hov.Contents.Value)
@@ -207,7 +225,7 @@ func (rc *RemoteCmd) Hover(ctx context.Context) error {
 }
 
 func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -218,14 +236,13 @@ func (rc *RemoteCmd) Implementation(ctx context.Context, print bool) error {
 		return err
 	}
 	if len(loc) == 0 {
-		fmt.Fprintf(rc.Stderr, "No implementations found.\n")
-		return nil
+		return fmt.Errorf("no implementations found")
 	}
 	return PrintLocations(rc.Stdout, loc)
 }
 
 func (rc *RemoteCmd) References(ctx context.Context) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -239,31 +256,32 @@ func (rc *RemoteCmd) References(ctx context.Context) error {
 		return err
 	}
 	if len(loc) == 0 {
-		fmt.Fprintf(rc.Stderr, "No references found.\n")
-		return nil
+		return fmt.Errorf("no references found")
 	}
 	return PrintLocations(rc.Stdout, loc)
 }
 
 // Rename renames the identifier at cursor position to newname.
 func (rc *RemoteCmd) Rename(ctx context.Context, newname string) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
 	we, err := rc.server.Rename(ctx, &protocol.RenameParams{
-		TextDocument: pos.TextDocument,
-		Position:     pos.Position,
-		NewName:      newname,
+		NewName: newname,
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: pos.TextDocument,
+			Position:     pos.Position,
+		},
 	})
 	if err != nil {
 		return err
 	}
-	return editWorkspace(we)
+	return editWorkspace(we, rc.menu)
 }
 
 func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
@@ -273,25 +291,20 @@ func (rc *RemoteCmd) SignatureHelp(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if sh != nil {
-		for _, sig := range sh.Signatures {
-			fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
-			fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
-		}
+	if sh == nil || len(sh.Signatures) == 0 {
+		return fmt.Errorf("no signature help available")
+	}
+	for _, sig := range sh.Signatures {
+		fmt.Fprintf(rc.Stdout, "%v\n", sig.Label)
+		fmt.Fprintf(rc.Stdout, "%v\n", sig.Documentation)
 	}
 	return nil
 }
 
 func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
-	win, err := acmeutil.OpenWin(rc.winid)
-	if err != nil {
-		return err
-	}
-	defer win.CloseFiles()
-
 	basedir := "" // TODO
 
-	uri, _, err := text.DocumentURI(win)
+	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
 	}
@@ -312,8 +325,7 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 		return err
 	}
 	if len(syms) == 0 {
-		fmt.Fprintf(rc.Stderr, "No symbols found.\n")
-		return nil
+		return fmt.Errorf("no symbols found")
 	}
 	walkDocumentSymbols(syms, 0, func(s *protocol.DocumentSymbol, depth int) {
 		loc := &protocol.Location{
@@ -328,20 +340,52 @@ func (rc *RemoteCmd) DocumentSymbol(ctx context.Context) error {
 }
 
 func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
-	pos, _, err := rc.getPosition()
+	pos, _, err := text.Position(rc.win)
 	if err != nil {
 		return err
 	}
-	locations, err := rc.server.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
+	result, err := rc.server.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
 		return err
 	}
+	locations := locationsFromTypeDefinition(result)
+	if len(locations) == 0 {
+		return fmt.Errorf("no type definition found")
+	}
 	if print {
 		return PrintLocations(rc.Stdout, locations)
 	}
 	return PlumbLocations(locations)
+}
+
+// locationsFromTypeDefinition converts an Or_Result_textDocument_typeDefinition
+// response to a flat []Location. The LSP spec allows the response to be a single
+// Location, a []Location (via Definition = Or_Definition), or []LocationLink.
+func locationsFromTypeDefinition(result *protocol.Or_Result_textDocument_typeDefinition) []protocol.Location {
+	if result == nil {
+		return nil
+	}
+	switch v := result.Value.(type) {
+	case protocol.Definition:
+		switch lv := v.Value.(type) {
+		case protocol.Location:
+			return []protocol.Location{lv}
+		case []protocol.Location:
+			return lv
+		}
+	case []protocol.DefinitionLink:
+		locs := make([]protocol.Location, len(v))
+		for i, dl := range v {
+			locs[i] = protocol.Location{
+				URI:   dl.TargetURI,
+				Range: dl.TargetSelectionRange,
+			}
+		}
+		return locs
+	}
+	return nil
 }
 
 func walkDocumentSymbols1(syms []protocol.DocumentSymbol, depth int, f func(s *protocol.DocumentSymbol, depth int)) {
@@ -384,4 +428,94 @@ func parseDocumentSymbol(data map[string]interface{}) (*protocol.DocumentSymbol,
 		return nil, err
 	}
 	return &ds, nil
+}
+
+func parseAcmeAddr(addr string) (filename string, q0 int, q1 int, err error) {
+	f := strings.Split(addr, ":")
+	if len(f) < 2 {
+		return "", -1, -1, fmt.Errorf("invalid $acmeaddr %q", addr)
+	}
+	filename = f[0]
+	f = strings.Split(f[1], ",")
+	if len(f) < 1 {
+		return "", -1, -1, fmt.Errorf("invalid $acmeaddr %q", addr)
+	}
+	q0, err = strconv.Atoi(strings.TrimPrefix(f[0], "#"))
+	if err != nil {
+		return "", -1, -1, fmt.Errorf("failed to parse q0 in $acmdaddr %q: %v", addr, err)
+	}
+	q1 = q0
+	if len(f) > 1 {
+		q1, err = strconv.Atoi(strings.TrimPrefix(f[0], "#"))
+		if err != nil {
+			return "", -1, -1, fmt.Errorf("failed to parse q1 in $acmdaddr %q: %v", addr, err)
+		}
+	}
+	return filename, q0, q1, nil
+}
+
+func getFocusedWinID(addr string) (int, error) {
+	winid := os.Getenv("winid")
+	if winid == "" {
+		conn, err := net.Dial("unix", addr)
+		if err != nil {
+			return -1, fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
+		}
+		defer conn.Close()
+		b, err := io.ReadAll(conn)
+		if err != nil {
+			return -1, fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
+		}
+		winid = string(bytes.TrimSpace(b))
+	}
+	n, err := strconv.Atoi(winid)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse $winid: %v", err)
+	}
+	return n, nil
+}
+
+func OpenFocusedWin(headless bool) (win text.AddressableFile, err error) {
+	acmeaddr := os.Getenv("acmeaddr")
+
+	// Headless mode is used for testing.
+	// We assume acme is not running and use $acmeaddr to access the file directly on the filesystem.
+	if headless {
+		filename, q0, q1, err := parseAcmeAddr(acmeaddr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to to parse $acmeaddr %q: %v", acmeaddr, err)
+		}
+		return text.NewHeadlessFile(
+			filename,
+			q0,
+			q1,
+		)
+	}
+
+	// For a 2-1 chord command, $winid may point to the window with the command (e.g. guide file)
+	// instead of the target window. Find the correct winid based on $acmeaddr.
+	if acmeaddr != "" {
+		filename, _, _, err := parseAcmeAddr(acmeaddr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to to parse $acmeaddr %q: %v", acmeaddr, err)
+		}
+		// Find the filename in the index
+		windows, err := acme.Windows()
+		if err != nil {
+			return nil, err
+		}
+		for _, w := range windows {
+			if w.Name == filename {
+				return acmeutil.OpenWin(w.ID)
+			}
+		}
+		return nil, fmt.Errorf("failed to find window for $acmeaddr %q", acmeaddr)
+	}
+
+	// Find windid based on either $winid env variable or acmefocused.
+	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
+	if err != nil {
+		return nil, fmt.Errorf("could not get focused window ID: %v", err)
+	}
+	return acmeutil.OpenWin(winid)
 }

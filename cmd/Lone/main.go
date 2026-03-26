@@ -12,10 +12,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"9fans.net/acme-lsp/internal/acmeutil"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
+	"9fans.net/acme-lsp/internal/lsp/text"
 	p9client "github.com/fhs/9fans-go/plan9/client"
 )
 
@@ -116,7 +116,7 @@ func run(cfg *config.Config, args []string) error {
 		usage()
 	}
 
-	fm, err := acmelsp.NewFileManager(serverSet, cfg)
+	fm, err := acmelsp.NewAcmeFileManager(serverSet, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create file manager: %v", err)
 	}
@@ -140,16 +140,20 @@ func run(cfg *config.Config, args []string) error {
 		return nil
 	}
 
-	winid, err := getWinID()
+	win, err := acmelsp.OpenFocusedWin(cfg.Headless)
 	if err != nil {
 		return err
 	}
-	name, err := acmeutil.Filename(winid)
-	if err != nil {
-		return err
+	defer win.CloseFiles()
+
+	var menu text.Menu
+	if cfg.Headless {
+		menu = &text.HeadlessMenu{}
+	} else {
+		menu = &text.AcmeMenu{}
 	}
 
-	rc, err := acmelsp.CurrentWindowRemoteCmd(serverSet, fm)
+	rc, err := acmelsp.WindowRemoteCmd(serverSet, fm, win, menu)
 	if err != nil {
 		return fmt.Errorf("CurrentWindowRemoteCmd failed: %v", err)
 	}
@@ -162,7 +166,7 @@ func run(cfg *config.Config, args []string) error {
 	case "def":
 		err = rc.Definition(ctx, false)
 	case "fmt":
-		return rc.OrganizeImportsAndFormat(ctx, serverSet.FormatOptionsForFile(name))
+		return rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
 		err = rc.Hover(ctx)
 	case "refs":

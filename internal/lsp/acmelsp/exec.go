@@ -85,15 +85,13 @@ func execServer(cs *config.Server, cfg *ClientConfig, restartOnExit bool) (*Serv
 			}
 			srv.conn = p1
 
-			go func() {
-				// Reinitialize existing client instead of creating a new one
-				// because it's still being used.
-				if err := srv.Client.init(p1, cfg); err != nil {
-					log.Printf("initialize after server restart failed: %v", err)
-					cmd.Process.Kill()
-					srv.conn.Close()
-				}
-			}()
+			// Reinitialize existing client instead of creating a new one
+			// because it's still being used.
+			if err := srv.Client.init(p1, cfg); err != nil {
+				log.Printf("initialize after server restart failed: %v", err)
+				cmd.Process.Kill()
+				srv.conn.Close()
+			}
 		}
 	}()
 
@@ -125,9 +123,11 @@ type ServerInfo struct {
 	*config.Server
 	*config.FilenameHandler
 
-	Re     *regexp.Regexp // filename regular expression
-	Logger *log.Logger    // Logger for config.Server.LogFile
-	srv    *Server        // running server instance
+	Pattern *regexp.Regexp // filename regular expression
+	Ignore  *regexp.Regexp
+
+	Logger *log.Logger // Logger for config.Server.LogFile
+	srv    *Server     // running server instance
 }
 
 func (info *ServerInfo) start(cfg *ClientConfig) (*Server, error) {
@@ -183,10 +183,20 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 		if len(cs.Command) == 0 && len(cs.Address) == 0 {
 			return nil, fmt.Errorf("invalid server for key %q", h.ServerKey)
 		}
+
 		re, err := regexp.Compile(h.Pattern)
 		if err != nil {
 			return nil, err
 		}
+
+		var ignore *regexp.Regexp
+		if h.Ignore != "" {
+			ignore, err = regexp.Compile(h.Ignore)
+			if err != nil {
+				return nil, fmt.Errorf("compiling \"Ignore\" pattern: %w", err)
+			}
+		}
+
 		var logger *log.Logger
 		if cs.LogFile != "" {
 			f, err := os.Create(cs.LogFile)
@@ -198,7 +208,8 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 		data = append(data, &ServerInfo{
 			Server:          cs,
 			FilenameHandler: &cfg.FilenameHandlers[i],
-			Re:              re,
+			Pattern:         re,
+			Ignore:          ignore,
 			Logger:          logger,
 		})
 	}
@@ -210,10 +221,27 @@ func NewServerSet(cfg *config.Config, diagWriter DiagnosticsWriter) (*ServerSet,
 	}, nil
 }
 
+func (ss *ServerSet) FindServerWithCapability(match func(*protocol.InitializeResult) bool) (*Server, error) {
+	for _, info := range ss.Data {
+		srv, err := info.start(ss.ClientConfig(info))
+		if err != nil {
+			return nil, err
+		}
+		if match(srv.Client.initializeResult) {
+			return srv, nil
+		}
+	}
+	return nil, fmt.Errorf("no server with capability")
+}
+
 func (ss *ServerSet) MatchFile(filename string) *ServerInfo {
-	for i, info := range ss.Data {
-		if info.Re.MatchString(filename) {
-			return ss.Data[i]
+	for _, info := range ss.Data {
+		if info.Ignore != nil && info.Ignore.MatchString(filename) {
+			continue
+		}
+
+		if info.Pattern.MatchString(filename) {
+			return info
 		}
 	}
 	return nil
@@ -239,7 +267,7 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	}
 	srv, err := info.start(ss.ClientConfig(info))
 	if err != nil {
-		return nil, false, err
+		return nil, true, err
 	}
 	return srv, true, err
 }
@@ -268,14 +296,14 @@ func (ss *ServerSet) CloseAll() {
 func (ss *ServerSet) PrintTo(w io.Writer) {
 	for _, info := range ss.Data {
 		if len(info.Address) > 0 {
-			fmt.Fprintf(w, "%v %v\n", info.Re, info.Address)
+			fmt.Fprintf(w, "%v %v %v\n", info.Pattern, info.Ignore, info.Address)
 		} else {
-			fmt.Fprintf(w, "%v %v\n", info.Re, strings.Join(info.Command, " "))
+			fmt.Fprintf(w, "%v %v %v\n", info.Pattern, info.Ignore, strings.Join(info.Command, " "))
 		}
 	}
 }
 
-func (ss *ServerSet) forEach(f func(*Client) error) error {
+func (ss *ServerSet) ForEach(f func(*Client) error) error {
 	for _, info := range ss.Data {
 		srv, err := info.start(ss.ClientConfig(info))
 		if err != nil {
@@ -303,7 +331,7 @@ func (ss *ServerSet) Workspaces() []protocol.WorkspaceFolder {
 
 // DidChangeWorkspaceFolders adds and removes given workspace folders.
 func (ss *ServerSet) DidChangeWorkspaceFolders(ctx context.Context, added, removed []protocol.WorkspaceFolder) error {
-	err := ss.forEach(func(c *Client) error {
+	err := ss.ForEach(func(c *Client) error {
 		return c.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
 			Event: protocol.WorkspaceFoldersChangeEvent{
 				Added:   added,

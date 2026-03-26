@@ -16,7 +16,7 @@ import (
 
 type proxyServer struct {
 	ss *ServerSet // client connections to upstream LSP server (e.g. gopls)
-	fm *FileManager
+	fm FileManager
 	proxy.NotImplementedServer
 }
 
@@ -34,6 +34,14 @@ func (s *proxyServer) InitializeResult(ctx context.Context, params *protocol.Tex
 		return nil, fmt.Errorf("InitializeResult: %v", err)
 	}
 	return srv.Client.InitializeResult(ctx, params)
+}
+
+func (s *proxyServer) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return fmt.Errorf("DidOpen: %v", err)
+	}
+	return srv.Client.DidOpen(ctx, params)
 }
 
 func (s *proxyServer) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
@@ -88,6 +96,21 @@ func (s *proxyServer) ExecuteCommandOnDocument(ctx context.Context, params *prox
 	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
 }
 
+func (s *proxyServer) ExecuteCommand(ctx context.Context, params *protocol.ExecuteCommandParams) (interface{}, error) {
+	srv, err := s.ss.FindServerWithCapability(func(initResult *protocol.InitializeResult) bool {
+		for _, name := range initResult.Capabilities.ExecuteCommandProvider.Commands {
+			if name == params.Command {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ExecuteCommand: server with command %v not found: %v", params.Command, err)
+	}
+	return srv.Client.ExecuteCommand(ctx, params)
+}
+
 func (s *proxyServer) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
@@ -136,7 +159,20 @@ func (s *proxyServer) DocumentSymbol(ctx context.Context, params *protocol.Docum
 	return srv.Client.DocumentSymbol(ctx, params)
 }
 
-func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
+func (s *proxyServer) Symbol(ctx context.Context, params *protocol.WorkspaceSymbolParams) ([]protocol.SymbolInformation, error) {
+	var symbols []protocol.SymbolInformation
+	err := s.ss.ForEach(func(c *Client) error {
+		resp, err := c.Symbol(ctx, params)
+		if err != nil {
+			return err
+		}
+		symbols = append(symbols, resp...)
+		return nil
+	})
+	return symbols, err
+}
+
+func (s *proxyServer) TypeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) (*protocol.Or_Result_textDocument_typeDefinition, error) {
 	srv, err := serverForURI(s.ss, params.TextDocumentPositionParams.TextDocument.URI)
 	if err != nil {
 		return nil, fmt.Errorf("TypeDefinition: %v", err)
@@ -156,7 +192,7 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 	return srv, nil
 }
 
-func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm *FileManager) error {
+func ListenAndServeProxy(ctx context.Context, cfg *config.Config, ss *ServerSet, fm FileManager) error {
 	ln, err := p9service.Listen(ctx, cfg.ProxyNetwork, cfg.ProxyAddress)
 	if err != nil {
 		return err

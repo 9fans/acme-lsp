@@ -1,25 +1,21 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"path/filepath"
-	"strconv"
+	"time"
 
-	"9fans.net/acme-lsp/internal/acmeutil"
 	"9fans.net/acme-lsp/internal/lsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
 	"9fans.net/acme-lsp/internal/lsp/proxy"
+	"9fans.net/acme-lsp/internal/lsp/text"
 	"9fans.net/internal/go-lsp/lsp/protocol"
-	p9client "github.com/fhs/9fans-go/plan9/client"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
@@ -102,6 +98,13 @@ List of sub-commands:
 	ws- [directories...]
 		Remove given directories to the set of workspace directories.
 		Current working directory is removed if no directory is specified.
+
+	wss query
+		Print workspace symbols matching the query string.
+
+	exec command [args...]
+		Execute a command against the language server, args must be valid
+		JSON of any type.
 `
 
 func usage() {
@@ -123,16 +126,15 @@ func main() {
 
 func run(cfg *config.Config, args []string) error {
 	ctx := context.Background()
-	ss, err := acmelsp.NewServerSet(cfg, acmelsp.NewDiagnosticsWriter())
-	if err != nil {
-		return fmt.Errorf("failed to create server set: %v", err)
-	}
 
 	if len(args) == 0 {
 		usage()
 	}
 
-	conn, err := net.Dial(cfg.ProxyNetwork, cfg.ProxyAddress)
+	// In tests which use headless mode, we might be
+	// connecting to the proxy right after starting acme-lsp.
+	// So, the retry dial until unix socket is ready.
+	conn, err := dialRetry(cfg.ProxyNetwork, cfg.ProxyAddress, cfg.Headless)
 	if err != nil {
 		return fmt.Errorf("dial failed: %v", err)
 	}
@@ -172,7 +174,8 @@ func run(cfg *config.Config, args []string) error {
 		}
 		return server.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
 			Event: protocol.WorkspaceFoldersChangeEvent{
-				Added: dirs,
+				Added:   dirs,
+				Removed: []protocol.WorkspaceFolder{},
 			},
 		})
 	case "ws-":
@@ -183,6 +186,7 @@ func run(cfg *config.Config, args []string) error {
 		return server.DidChangeWorkspaceFolders(ctx, &protocol.DidChangeWorkspaceFoldersParams{
 			Event: protocol.WorkspaceFoldersChangeEvent{
 				Removed: dirs,
+				Added:   []protocol.WorkspaceFolder{},
 			},
 		})
 	case "win", "assist": // "win" is deprecated
@@ -196,22 +200,48 @@ func run(cfg *config.Config, args []string) error {
 			return acmelsp.Assist(sm, args[0])
 		}
 		return fmt.Errorf("unknown assist command %q", args[0])
+	case "wss":
+		args = args[1:]
+		if len(args) == 0 {
+			return fmt.Errorf("missing query")
+		}
+		return acmelsp.Symbol(server, args[0])
+	case "exec":
+		args = args[1:]
+		if len(args) < 1 {
+			return fmt.Errorf("usage: exec command arguments...")
+		}
+		return acmelsp.Execute(server, "", args[0], args[1:])
 	}
 
-	winid, err := getWinID()
+	win, err := acmelsp.OpenFocusedWin(cfg.Headless)
 	if err != nil {
 		return err
 	}
-	name, err := acmeutil.Filename(winid)
-	if err != nil {
-		return err
+	defer win.CloseFiles()
+
+	var menu text.Menu
+	if cfg.Headless {
+		menu = &text.HeadlessMenu{}
+	} else {
+		menu = &text.AcmeMenu{}
 	}
 
-	rc := acmelsp.NewRemoteCmd(server, winid)
+	rc := acmelsp.NewRemoteCmd(server, win, menu)
 
-	// In case the window has unsaved changes (it's dirty), sync changes with LSP server.
-	err = rc.DidChange(ctx)
-	if err != nil {
+	if cfg.Headless {
+		// If headless mode we don't monitor for open/closed files, so open the file.
+		if err = rc.DidOpen(ctx); err != nil {
+			return fmt.Errorf("DidOpen failed: %v", err)
+		}
+	}
+
+	// In case the window has unsaved changes (it's dirty),
+	// sync changes with LSP server.
+	// For Headless, some servers (e.g. typescript) will reject
+	// the DidOpen if the file was already opened before,
+	// so this is our second chance to sync file content.
+	if err = rc.DidChange(ctx); err != nil {
 		return fmt.Errorf("DidChange failed: %v", err)
 	}
 
@@ -234,7 +264,7 @@ func run(cfg *config.Config, args []string) error {
 		args = args[1:]
 		return rc.Definition(ctx, len(args) > 0 && args[0] == "-p")
 	case "fmt":
-		return rc.OrganizeImportsAndFormat(ctx, ss.FormatOptionsForFile(name))
+		return rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
 		return rc.Hover(ctx)
 	case "impls":
@@ -258,18 +288,6 @@ func run(cfg *config.Config, args []string) error {
 	return fmt.Errorf("unknown command %q", args[0])
 }
 
-func getWinID() (int, error) {
-	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
-	if err != nil {
-		return 0, fmt.Errorf("could not get focused window ID: %v", err)
-	}
-	n, err := strconv.Atoi(winid)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse $winid: %v", err)
-	}
-	return n, nil
-}
-
 func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {
 	if len(dirs) == 0 {
 		d, err := os.Getwd()
@@ -281,19 +299,13 @@ func dirsOrCurrentDir(dirs []string) ([]protocol.WorkspaceFolder, error) {
 	return lsp.DirsToWorkspaceFolders(dirs)
 }
 
-func getFocusedWinID(addr string) (string, error) {
-	winid := os.Getenv("winid")
-	if winid == "" {
-		conn, err := net.Dial("unix", addr)
-		if err != nil {
-			return "", fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
+func dialRetry(network, address string, retry bool) (conn net.Conn, err error) {
+	for i := 0; ; i++ {
+		conn, err = net.Dial(network, address)
+		if err == nil || !retry || i >= 10 {
+			return conn, err
 		}
-		defer conn.Close()
-		b, err := ioutil.ReadAll(conn)
-		if err != nil {
-			return "", fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
-		}
-		return string(bytes.TrimSpace(b)), nil
+		time.Sleep(100 * time.Millisecond)
 	}
-	return winid, nil
+	return
 }

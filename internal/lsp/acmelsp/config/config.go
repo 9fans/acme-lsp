@@ -76,6 +76,9 @@ type Config struct {
 
 	// Path to configuration file.
 	filename string
+
+	// Run without acme (for testing)
+	Headless bool
 }
 
 // Server describes a LSP server.
@@ -109,10 +112,13 @@ type FilenameHandler struct {
 	// Pattern is a regular expression that matches filename.
 	Pattern string
 
+	// Ignore is a regular expression that matches file names not to run this LSP for, even if Pattern matches.
+	Ignore string
+
 	// Language identifier (e.g. "go" or "python")
 	// See list of languages here:
 	// https://microsoft.github.io/language-server-protocol/specifications/specification-current/#textDocumentItem
-	LanguageID string
+	LanguageID protocol.LanguageKind
 
 	// ServerKey is the key in Config.File.Servers.
 	ServerKey string
@@ -250,6 +256,7 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 		"address where acme is serving 9P file system")
 	f.BoolVar(&cfg.Verbose, "v", cfg.Verbose, "Verbose output")
 	f.BoolVar(&cfg.ShowConfig, "showconfig", false, "show configuration values and exit")
+	f.BoolVar(&cfg.Headless, "headless", false, "Run without acme (for testing)")
 
 	if flags&ProxyFlags != 0 {
 		f.StringVar(&cfg.ProxyNetwork, "proxy.net", cfg.ProxyNetwork,
@@ -260,8 +267,8 @@ func (cfg *Config) ParseFlags(flags Flags, f *flag.FlagSet, arguments []string) 
 	if flags&LangServerFlags != 0 {
 		f.BoolVar(&cfg.Verbose, "debug", cfg.Verbose, "turn on debugging prints (deprecated: use -v)")
 		f.StringVar(&cfg.RootDirectory, "rootdir", cfg.RootDirectory, "root directory used for LSP initialization")
-		f.BoolVar(&cfg.HideDiagnostics, "hidediag", false, "hide diagnostics sent by LSP server")
-		f.BoolVar(&cfg.RPCTrace, "rpc.trace", false, "print the full rpc trace in lsp inspector format")
+		f.BoolVar(&cfg.HideDiagnostics, "hidediag", cfg.HideDiagnostics, "hide diagnostics sent by LSP server")
+		f.BoolVar(&cfg.RPCTrace, "rpc.trace", cfg.RPCTrace, "print the full rpc trace in lsp inspector format")
 		f.StringVar(&workspaces, "workspaces", "", "colon-separated list of initial workspace directories")
 		f.Var(&userServers, "server", `map filename to language server command. The format is
 'handlers:cmd' where cmd is the LSP server command and handlers is
@@ -344,7 +351,7 @@ func (sf *serverFlag) Set(val string) error {
 		} else {
 			handlers = append(handlers, FilenameHandler{
 				Pattern:    f[0],
-				LanguageID: f[1],
+				LanguageID: protocol.LanguageKind(f[1]),
 			})
 		}
 	}

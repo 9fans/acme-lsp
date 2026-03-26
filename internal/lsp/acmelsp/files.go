@@ -14,13 +14,18 @@ import (
 	"9fans.net/internal/go-lsp/lsp/protocol"
 )
 
+type FileManager interface {
+	Run()
+	DidChange(winid int) error
+}
+
 // FileManager keeps track of open files in acme.
 // It is used to synchronize text with LSP server.
 //
 // Note that we can't cache the *acmeutil.Win for the windows
 // because having the ctl file open prevents del event from
 // being delivered to acme/log file.
-type FileManager struct {
+type AcmeFileManager struct {
 	ss   *ServerSet
 	wins map[string]struct{} // set of open files
 	mu   sync.Mutex
@@ -29,8 +34,8 @@ type FileManager struct {
 }
 
 // NewFileManager creates a new file manager, initialized with files currently open in acme.
-func NewFileManager(ss *ServerSet, cfg *config.Config) (*FileManager, error) {
-	fm := &FileManager{
+func NewAcmeFileManager(ss *ServerSet, cfg *config.Config) (*AcmeFileManager, error) {
+	fm := &AcmeFileManager{
 		ss:   ss,
 		wins: make(map[string]struct{}),
 		cfg:  cfg,
@@ -51,7 +56,7 @@ func NewFileManager(ss *ServerSet, cfg *config.Config) (*FileManager, error) {
 
 // Run watches for files opened, closed, saved, or refreshed in acme
 // and tells LSP server about it. It also formats files when it's saved.
-func (fm *FileManager) Run() {
+func (fm *AcmeFileManager) Run() {
 	alog, err := acme.Log()
 	if err != nil {
 		log.Printf("file manager opening acme/log: %v", err)
@@ -91,7 +96,7 @@ func (fm *FileManager) Run() {
 	}
 }
 
-func (fm *FileManager) withClient(winid int, name string, f func(*Client, *acmeutil.Win) error) error {
+func (fm *AcmeFileManager) withClient(winid int, name string, f func(*Client, *acmeutil.Win) error) error {
 	s, found, err := fm.ss.StartForFile(name)
 	if err != nil {
 		return err
@@ -112,7 +117,7 @@ func (fm *FileManager) withClient(winid int, name string, f func(*Client, *acmeu
 	return f(s.Client, win)
 }
 
-func (fm *FileManager) didOpen(winid int, name string) error {
+func (fm *AcmeFileManager) didOpen(winid int, name string) error {
 	return fm.withClient(winid, name, func(c *Client, w *acmeutil.Win) error {
 		fm.mu.Lock()
 		defer fm.mu.Unlock()
@@ -130,7 +135,7 @@ func (fm *FileManager) didOpen(winid int, name string) error {
 	})
 }
 
-func (fm *FileManager) didClose(name string) error {
+func (fm *AcmeFileManager) didClose(name string) error {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
 
@@ -144,7 +149,7 @@ func (fm *FileManager) didClose(name string) error {
 	})
 }
 
-func (fm *FileManager) didChange(winid int, name string) error {
+func (fm *AcmeFileManager) didChange(winid int, name string) error {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
 
@@ -160,7 +165,7 @@ func (fm *FileManager) didChange(winid int, name string) error {
 	})
 }
 
-func (fm *FileManager) DidChange(winid int) error {
+func (fm *AcmeFileManager) DidChange(winid int) error {
 	w, err := acmeutil.OpenWin(winid)
 	if err != nil {
 		return err
@@ -175,7 +180,7 @@ func (fm *FileManager) DidChange(winid int) error {
 	return fm.didChange(winid, name)
 }
 
-func (fm *FileManager) didSave(winid int, name string) error {
+func (fm *AcmeFileManager) didSave(winid int, name string) error {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
 
@@ -197,7 +202,7 @@ func (fm *FileManager) didSave(winid int, name string) error {
 	})
 }
 
-func (fm *FileManager) format(winid int, name string) error {
+func (fm *AcmeFileManager) format(winid int, name string) error {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
 
@@ -208,6 +213,6 @@ func (fm *FileManager) format(winid int, name string) error {
 		doc := &protocol.TextDocumentIdentifier{
 			URI: text.ToURI(name),
 		}
-		return CodeActionAndFormat(context.Background(), c, doc, w, fm.cfg.CodeActionsOnPut, fm.ss.FormatOptionsForFile(name))
+		return CodeActionAndFormat(context.Background(), c, doc, w, &text.AcmeMenu{}, fm.cfg.CodeActionsOnPut)
 	})
 }

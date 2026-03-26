@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -132,7 +131,7 @@ func TestGoHover(t *testing.T) {
 		name string
 		want string
 	}{
-		{"gopls", "```go\nfunc fmt.Println(a ...any) (n int, err error)\n```\n\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.\n\n\n[`fmt.Println` on pkg.go.dev](https://pkg.go.dev/fmt#Println)"},
+		{"gopls", "```go\nfunc fmt.Println(a ...any) (n int, err error)\n```\n\n---\n\nPrintln formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.\n\n\n---\n\n[`fmt.Println` on pkg.go.dev](https://pkg.go.dev/fmt#Println)"},
 	} {
 		testGoModule(t, srv.name, goSource, func(t *testing.T, c *Client, uri protocol.DocumentURI) {
 			pos := &protocol.TextDocumentPositionParams{
@@ -150,7 +149,12 @@ func TestGoHover(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Hover failed: %v", err)
 			}
-			got := hov.Contents.Value
+			markedString, ok := hov.Contents.Value.(protocol.MarkedString)
+			if !ok {
+				t.Fatalf("hover result %T is not a MarkedString", hov.Contents.Value)
+			}
+			got := markedString.Value.(protocol.MarkedStringWithLanguage).Value
+
 			// Instead of doing an exact match, we ignore extra markups
 			// from markdown (if there are any).
 			if !strings.Contains(got, srv.want) {
@@ -240,12 +244,13 @@ func main() {
 					Character: 2,
 				},
 			}
-			got, err := c.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
+			result, err := c.TypeDefinition(ctx, &protocol.TypeDefinitionParams{
 				TextDocumentPositionParams: *pos,
 			})
 			if err != nil {
 				t.Fatalf("TypeDefinition failed: %v", err)
 			}
+			got := locationsFromTypeDefinition(result)
 			want := []protocol.Location{
 				{
 					URI: uri,
@@ -312,9 +317,9 @@ func main() {
 	}
 
 	diag := <-ch
-	pat := regexp.MustCompile("^`?s'? declared (and|but) not used$")
-	if !pat.MatchString(diag.Message) {
-		t.Errorf("diagnostics message is %q does not match %q", diag.Message, pat)
+	wantMessage := "declared and not used: s"
+	if diag.Message != wantMessage {
+		t.Errorf("diagnostics message is %q; expected %q", diag.Message, wantMessage)
 	}
 
 	err = lsp.DidClose(ctx, srv.Client, gofile)
@@ -411,7 +416,10 @@ func TestPythonHover(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Hover failed: %v", err)
 		}
-		got := hov.Contents.Value
+		got, ok := hov.Contents.Value.(string)
+		if !ok {
+			t.Fatalf("hover result %q is not a string", got)
+		}
 		want := "Return the square root of x."
 		// May not be an exact match.
 		// Perhaps depending on if it's Python 2 or 3?
@@ -501,7 +509,8 @@ func TestPythonTypeDefinition(t *testing.T) {
 
 func TestFileLanguage(t *testing.T) {
 	for _, tc := range []struct {
-		name, lang string
+		name string
+		lang protocol.LanguageKind
 	}{
 		{"/home/gopher/hello.py", "python"},
 		{"/home/gopher/hello.go", "go"},
@@ -577,6 +586,8 @@ func (f *BytesFile) Mark() error {
 func (f *BytesFile) DisableMark() error {
 	return nil
 }
+
+func (f *BytesFile) CloseFiles() {}
 
 func TestClientProvidesCodeAction(t *testing.T) {
 	for _, tc := range []struct {

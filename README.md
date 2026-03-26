@@ -14,27 +14,47 @@ It also watches for files created (`New`), loaded (`Get`), saved
 (`Put`), or deleted (`Del`) in acme, and tells the LSP server about
 these changes. The LSP server in turn responds by sending diagnostics
 information (compiler errors, lint errors, etc.) which are shown in an
-acme window.  When `Put` is executed in an acme window, `acme-lsp`
+acme window unless its disabled by the user.
+When `Put` is executed in an acme window, `acme-lsp`
 also organizes import paths in the window and formats it.
-
-Currently, `acme-lsp` has been tested with
-[gopls](https://github.com/golang/tools/tree/master/gopls),
-[go-langserver](https://github.com/sourcegraph/go-langserver) and
-[pyls](https://github.com/palantir/python-language-server). Please report
-incompatibilities with those or other servers.
 
 ## Installation
 
 Install the latest release:
 
-	GO111MODULE=on go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
-	GO111MODULE=on go install 9fans.net/acme-lsp/cmd/L@latest
+	go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
+	go install 9fans.net/acme-lsp/cmd/L@latest
 
-## gopls
+## LSP Servers
+
+There are [integration tests](cmd/L/testdata) with some LSP servers.
+We aim to support any servers that follow the LSP protocol.
+Following is a compatibility table between LSP servers and the
+[L sub-commands](https://pkg.go.dev/9fans.net/acme-lsp/cmd/L):
+
+|                       |  fmt  |  def  | refs  | type  |  sig   |  hov  | impls | comp   | syms  |  rn   | wss |
+| :-------------------- | :---: | :---: | :---: | :---: | :----: | :---: | :---: | :----: | :---: | :---: | :-: |
+| [clangd][]            |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [dart][dart-lsp]      |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [jdtls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ?     |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [rust][rust-analyzer] |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [ty][astral-ty]       |   -   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  -    |  ✅    |  ✅   |  ✅   | ✅  |
+| [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+
+[clangd]: https://clangd.llvm.org/
+[dart-lsp]: https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md
+[gopls]: https://github.com/golang/tools/tree/master/gopls
+[rust-analyzer]: https://rust-analyzer.github.io/
+[astral-ty]: https://docs.astral.sh/ty/
+[ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
+[jdtls]: https://github.com/eclipse-jdtls/eclipse.jdt.ls
+
+### gopls
 
 First install the latest release of gopls:
 
-	GO111MODULE=on go install golang.org/x/tools/gopls@latest
+	go install golang.org/x/tools/gopls@latest
 
 Start acme-lsp like this:
 
@@ -46,7 +66,7 @@ by using the `L ws+` and `L ws-` sub-commands.
 
 When `Put` is executed in an acme window editing `.go` file, acme-lsp
 will update import paths and gofmt the window buffer if needed.  It also
-enables commands like `L def` (jump to defenition), `L refs` (list of
+enables commands like `L def` (jump to definition), `L refs` (list of
 references), etc. within acme. The `L assist` command opens a window
 where completion, hover, or signature help output is shown for the
 current cursor position in the `.go` file being edited.
@@ -104,6 +124,9 @@ CodeActionsOnPut = ["source.organizeImports"]
 
 [[FilenameHandlers]]
   Pattern = "\\.go$"
+  # Don't run this LSP in files in /projects/example (for instance because that
+  # project needs a gopls with a Bazel packages driver).
+  Ignore = "/projects/example"
   LanguageID = "go"
   ServerKey = "gopls"
 ```
@@ -132,6 +155,20 @@ typing. This can be achieved by using a general keybinding daemon
 (e.g. [xbindkeys](http://www.nongnu.org/xbindkeys/xbindkeys.html)
 in X11) and running
 [acmefocused](https://pkg.go.dev/9fans.net/acme-lsp/cmd/acmefocused).
+
+## Development
+
+On MacOS, while running tests, you may see this error:
+```
+proxy failed: listen unix $WORK/ns.plan9/acme-lsp.rpc: bind: invalid argument
+```
+This is due to the unix domain socket path being too long.
+$WORK can look like this:
+```
+WORK=/private/var/folders/1d/pts9r6h116s1m5kx723m4q3w0000gn/T/go-test-script2157504515/script-gopls
+```
+As a workaround, run tests after setting TMPDIR=/tmp.
+
 
 ## See also
 

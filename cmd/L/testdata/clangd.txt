@@ -1,0 +1,132 @@
+# clangd C++ test
+
+# Start acme-lsp server
+acme-lsp -headless -server '\.cpp$:clangd' &
+
+# Format file
+env acmeaddr=$WORK/hello.cpp:'#0'
+L -headless fmt
+cmp hello.cpp after-format.txt
+
+# Definition of virtual function "hello" from call site
+env acmeaddr=$WORK/hello.cpp:'#343'
+L -headless def -p
+stdout 'hello\.cpp:.*:  virtual void hello\(std::string name\) = 0;'
+
+# References to variable "g"
+env acmeaddr=$WORK/hello.cpp:'#311'
+L -headless refs
+stdout 'hello\.cpp:.*:  Greeter \*g = new WorldGreeter\(\);'
+stdout 'hello\.cpp:.*:  g->hello\("world"\);'
+stdout 'hello\.cpp:.*:  delete g;'
+
+# Type definition of "g"
+env acmeaddr=$WORK/hello.cpp:'#365'
+L -headless type -p
+stdout 'hello\.cpp:.*:class Greeter {'
+
+# Signature of "hello" call
+env acmeaddr=$WORK/hello.cpp:'#346'
+L -headless sig
+stdout 'hello\(std::string name\) -> void'
+
+# Hover over method call "hello"
+env acmeaddr=$WORK/hello.cpp:'#343'
+L -headless hov -p
+stdout 'instance-method hello'
+stdout '→ void'
+stdout 'Parameters:'
+stdout '- std::string name \(aka basic_string<char>\)'
+stdout '// In Greeter'
+stdout 'public: virtual void hello\(std::string name\) = 0'
+
+# Implementations of the class Greeter
+env acmeaddr=$WORK/hello.cpp:'#48'
+L -headless impls
+stdout 'hello\.cpp:.*:class WorldGreeter : public Greeter {'
+
+# Completion after "g->"
+env acmeaddr=$WORK/hello.cpp:'#340'
+L -headless comp
+stdout 'hello\(std::string name\)	void'
+
+# Symbols in the file
+L -headless syms
+stdout 'Greeter class'
+stdout 'WorldGreeter class'
+stdout 'main int \(\)'
+stdout 'hello void \(std::string\)'
+stdout '/hello\.cpp:'
+
+# Query workspace symbols
+L -headless wss WorldGreeter
+stdout 'hello\.cpp:.*:class WorldGreeter : public Greeter {'
+
+# Rename Greeter to BaseGreeter
+env acmeaddr=$WORK/hello.cpp:'#48'
+L -headless rn BaseGreeter
+cmp hello.cpp after-rename.txt
+
+-- hello.cpp --
+#include <iostream>
+#include <string>
+
+class Greeter {
+public:	virtual ~Greeter() {}
+		virtual void hello(std::string name) = 0; };
+
+class WorldGreeter:public Greeter {
+public: void hello(std::string name) override {
+		std::cout << "Hello, " << name << "!" << std::endl; }};
+
+int main() {
+	Greeter* g = new WorldGreeter();
+	g->hello("world");
+	delete g;
+	return 0; }
+-- after-format.txt --
+#include <iostream>
+#include <string>
+
+class Greeter {
+public:
+  virtual ~Greeter() {}
+  virtual void hello(std::string name) = 0;
+};
+
+class WorldGreeter : public Greeter {
+public:
+  void hello(std::string name) override {
+    std::cout << "Hello, " << name << "!" << std::endl;
+  }
+};
+
+int main() {
+  Greeter *g = new WorldGreeter();
+  g->hello("world");
+  delete g;
+  return 0;
+}
+-- after-rename.txt --
+#include <iostream>
+#include <string>
+
+class BaseGreeter {
+public:
+  virtual ~BaseGreeter() {}
+  virtual void hello(std::string name) = 0;
+};
+
+class WorldGreeter : public BaseGreeter {
+public:
+  void hello(std::string name) override {
+    std::cout << "Hello, " << name << "!" << std::endl;
+  }
+};
+
+int main() {
+  BaseGreeter *g = new WorldGreeter();
+  g->hello("world");
+  delete g;
+  return 0;
+}

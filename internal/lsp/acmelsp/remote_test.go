@@ -1,4 +1,4 @@
-package main
+package acmelsp
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ func TestGetFocusedWinIDFromEnv(t *testing.T) {
 	os.Setenv("winid", "123")
 	defer os.Unsetenv("winid")
 
-	want := "123"
+	want := 123
 	got, err := getFocusedWinID("")
 	if err != nil {
 		t.Fatalf("getFocusedWinID failed with error %v", err)
@@ -23,7 +23,7 @@ func TestGetFocusedWinIDFromEnv(t *testing.T) {
 	}
 }
 
-func WriteAcmeFocused(ln net.Listener, winid string) error {
+func WriteAcmeFocused(ln net.Listener, winid int) error {
 	conn, err := ln.Accept()
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func WriteAcmeFocused(ln net.Listener, winid string) error {
 
 func TestGetFocusedWinIDFromServer(t *testing.T) {
 	os.Unsetenv("winid")
-	want := "321"
+	want := 321
 
 	dir, err := ioutil.TempDir("", "acmefocused")
 	if err != nil {

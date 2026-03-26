@@ -34,7 +34,11 @@ type clientHandler struct {
 }
 
 func (h *clientHandler) ShowMessage(ctx context.Context, params *protocol.ShowMessageParams) error {
-	log.Printf("LSP %v: %v\n", params.Type, params.Message)
+	if h.cfg != nil && h.cfg.FilenameHandler != nil {
+		log.Printf("LSP %s %v: %v\n", h.cfg.FilenameHandler.ServerKey, params.Type, params.Message)
+	} else {
+		log.Printf("LSP %v: %v\n", params.Type, params.Message)
+	}
 	return nil
 }
 
@@ -83,7 +87,7 @@ func (h *clientHandler) ShowMessageRequest(context.Context, *protocol.ShowMessag
 }
 
 func (h *clientHandler) ApplyEdit(ctx context.Context, params *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResult, error) {
-	err := editWorkspace(&params.Edit)
+	err := editWorkspace(&params.Edit, &text.AcmeMenu{})
 	if err != nil {
 		return &protocol.ApplyWorkspaceEditResult{Applied: false, FailureReason: err.Error()}, nil
 	}
@@ -138,12 +142,13 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 	if c.rpc != nil {
 		c.rpc.Close()
 	}
-	c.rpc = jsonrpc2.NewConn(ctx, stream, handler, opts...)
-	server := protocol.NewServer(c.rpc)
+	rpc := jsonrpc2.NewConn(ctx, stream, handler, opts...)
+	server := protocol.NewServer(rpc)
 	go func() {
-		<-c.rpc.DisconnectNotify()
+		<-rpc.DisconnectNotify()
 		log.Printf("jsonrpc2 client connection to LSP sever disconnected\n")
 	}()
+	c.rpc = rpc
 
 	d, err := filepath.Abs(cfg.RootDirectory)
 	if err != nil {
@@ -155,8 +160,8 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 			Capabilities: protocol.ClientCapabilities{
 				TextDocument: protocol.TextDocumentClientCapabilities{
 					CodeAction: protocol.CodeActionClientCapabilities{
-						CodeActionLiteralSupport: protocol.PCodeActionLiteralSupportPCodeAction{
-							CodeActionKind: protocol.FCodeActionKindPCodeActionLiteralSupport{
+						CodeActionLiteralSupport: protocol.ClientCodeActionLiteralOptions{
+							CodeActionKind: protocol.ClientCodeActionKindOptions{
 								ValueSet: []protocol.CodeActionKind{
 									protocol.SourceOrganizeImports,
 								},
@@ -167,8 +172,8 @@ func (c *Client) init(conn net.Conn, cfg *ClientConfig) error {
 						HierarchicalDocumentSymbolSupport: true,
 					},
 					Completion: protocol.CompletionClientCapabilities{
-						CompletionItem: protocol.PCompletionItemPCompletion{
-							TagSupport: protocol.FTagSupportPCompletionItem{
+						CompletionItem: protocol.ClientCompletionItemOptions{
+							TagSupport: &protocol.CompletionItemTagOptions{
 								ValueSet: []protocol.CompletionItemTag{},
 							},
 						},

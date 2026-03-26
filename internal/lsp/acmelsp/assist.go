@@ -2,10 +2,13 @@ package acmelsp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
+	"strings"
 	"time"
 	"unicode"
 
@@ -205,13 +208,20 @@ func (w *outputWin) Update(fw *focusWin, server proxy.Server, cmd string) {
 		}
 	}
 
-	rc := NewRemoteCmd(server, fw.id)
+	win, err := OpenFocusedWin(false)
+	if err != nil {
+		dprintf("failed to get focused window: %v\n", err)
+		return
+	}
+	defer win.CloseFiles()
+
+	rc := NewRemoteCmd(server, win, &text.AcmeMenu{})
 	rc.Stdout = w.body
 	rc.Stderr = w.body
 	ctx := context.Background()
 
 	// Assume file is already opened by file management.
-	err := rc.DidChange(ctx)
+	err = rc.DidChange(ctx)
 	if err != nil {
 		dprintf("DidChange failed: %v\n", err)
 		return
@@ -284,6 +294,39 @@ loop:
 		}
 	}
 	return nil
+}
+
+func Symbol(server proxy.Server, query string) error {
+	symbols, err := server.Symbol(context.Background(), &protocol.WorkspaceSymbolParams{Query: query})
+	if err != nil {
+		return err
+	}
+	var locations []protocol.Location
+	for _, symbol := range symbols {
+		locations = append(locations, symbol.Location)
+	}
+	return PrintLocations(os.Stdout, locations)
+}
+
+func Execute(server proxy.Server, serverID string, command string, args []string) error {
+	jargs := []json.RawMessage{}
+	for _, arg := range args {
+		var r json.RawMessage
+		err := json.NewDecoder(strings.NewReader(arg)).Decode(&r)
+		if err != nil {
+			return fmt.Errorf("could not parse argument %v: %v\n", arg, err)
+		}
+		jargs = append(jargs, r)
+	}
+
+	resp, err := server.ExecuteCommand(context.Background(), &protocol.ExecuteCommandParams{
+		Command:   command,
+		Arguments: jargs,
+	})
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
 // ServerMatcher represents a set of servers where it's possible to

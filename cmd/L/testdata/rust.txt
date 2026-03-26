@@ -1,0 +1,132 @@
+# Rust-analyzer test
+
+# Start acme-lsp server
+acme-lsp -headless -server '\.rs$:rust-analyzer' -workspaces $WORK &
+
+# Format file
+env acmeaddr=$WORK/src/main.rs:'#0'
+L -headless fmt
+cmp src/main.rs after-format.txt
+
+# Note: rust-analyzier seems to be taking some time to index,
+# which results in commands returning empty results initially
+# but returns a valid result after we wait for some time.
+# That is why we have retry for most of the commands below.
+# It is not enough to retry just the first command.
+# We need to retry on all command to make the test not be flaky.
+
+# Definition of "HelloGreeter" struct
+env acmeaddr=$WORK/src/main.rs:'#223'
+retry L -headless def -p
+stdout 'src/main.rs:.*:struct HelloGreeter;'
+
+# References to "HelloGreeter"
+env acmeaddr=$WORK/src/main.rs:'#223'
+retry L -headless refs
+stdout 'src/main.rs:.*:struct HelloGreeter;'
+stdout 'src/main.rs:.*:impl Greeter for HelloGreeter {'
+stdout 'src/main.rs:.*:.*let g = HelloGreeter;'
+
+# Type definition of "g"
+env acmeaddr=$WORK/src/main.rs:'#237'
+retry L -headless type -p
+stdout 'src/main.rs:.*:struct HelloGreeter;'
+
+# Signature of method call "hello"
+env acmeaddr=$WORK/src/main.rs:'#244'
+retry L -headless sig
+stdout 'fn hello\(&self\)'
+
+# Hover over the call to the "hello" method
+env acmeaddr=$WORK/src/main.rs:'#241'
+retry L -headless hov
+stdout 'hello::HelloGreeter'
+stdout 'fn hello\(&self\)'
+stdout 'Hello prints a hello greeting'
+
+# Implementations of trait "Greeter"
+env acmeaddr=$WORK/src/main.rs:'#9'
+retry L -headless impls
+stdout 'src/main.rs:.*:impl Greeter for HelloGreeter {'
+
+# Completion in the middle of method call "hello"
+env acmeaddr=$WORK/src/main.rs:'#241'
+retry L -headless comp
+stdout 'hello\(as Greeter\)	fn\(&self\)'
+
+# Print all symbols in the file
+retry L -headless syms
+stdout 'Greeter'
+stdout 'hello fn\(&self\)'
+stdout 'HelloGreeter'
+stdout 'impl Greeter for HelloGreeter'
+stdout 'main fn\(\)'
+stdout '/src/main.rs:'
+
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'src/main\.rs:.*:struct HelloGreeter;'
+
+# Rename HelloGreeter to WorldGreeter
+env acmeaddr=$WORK/src/main.rs:'#223'
+L -headless rn WorldGreeter
+cmp src/main.rs after-rename.txt
+
+
+-- src/main.rs --
+trait Greeter {
+    fn hello(&self); }
+
+struct HelloGreeter;
+
+impl Greeter for HelloGreeter {
+    /// Hello prints a hello greeting
+    fn hello(&self) {
+        println!("Hello, 世界"); } }
+
+fn main() {
+    let g = HelloGreeter;
+    g.hello(); }
+-- after-format.txt --
+trait Greeter {
+    fn hello(&self);
+}
+
+struct HelloGreeter;
+
+impl Greeter for HelloGreeter {
+    /// Hello prints a hello greeting
+    fn hello(&self) {
+        println!("Hello, 世界");
+    }
+}
+
+fn main() {
+    let g = HelloGreeter;
+    g.hello();
+}
+-- after-rename.txt --
+trait Greeter {
+    fn hello(&self);
+}
+
+struct WorldGreeter;
+
+impl Greeter for WorldGreeter {
+    /// Hello prints a hello greeting
+    fn hello(&self) {
+        println!("Hello, 世界");
+    }
+}
+
+fn main() {
+    let g = WorldGreeter;
+    g.hello();
+}
+-- Cargo.toml --
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]

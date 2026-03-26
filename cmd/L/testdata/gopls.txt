@@ -1,0 +1,140 @@
+# Go language server (gopls) test
+
+# Start acme-lsp server
+env HOME=$WORK		# location of gopls go build cache
+acme-lsp -headless -server '\.go$:gopls -rpc.trace' &
+
+# Format file
+env acmeaddr=$WORK/hello.go:'#0'
+L -headless fmt
+cmp hello.go after-format.txt
+
+# Definition of "fmt.Println"
+env acmeaddr=$WORK/hello.go:'#295'
+L -headless def -p
+stdout 'fmt/print\.go:.*:func Println\(a \.\.\.any\) \(n int, err error\) {'
+
+# References to "HelloGreeter"
+env acmeaddr=$WORK/hello.go:'#340'
+L -headless refs
+stdout 'hello.go:.*:type HelloGreeter struct{}'
+stdout 'hello.go:.*:func \(g HelloGreeter\) Hello\(\) {'
+stdout 'hello.go:.*:.*g := HelloGreeter{}'
+
+# Type definition of "HelloGreeter"
+env acmeaddr=$WORK/hello.go:'#340'
+L -headless type -p
+stdout 'hello.go:.*:type HelloGreeter struct{}'
+
+# Signature of method "Hello"
+env acmeaddr=$WORK/hello.go:'#354'
+L -headless sig
+stdout 'Hello prints a hello greeting'
+
+# Hover over call to method "Hello"
+env acmeaddr=$WORK/hello.go:'#354'
+L -headless hov
+stdout 'func \(g HelloGreeter\) Hello\(\)'
+stdout 'Hello prints a hello greeting'
+
+# Implementations of the interface "Greeter"
+env acmeaddr=$WORK/hello.go:'#101'
+L -headless impls
+stdout 'hello.go:.*:type HelloGreeter struct{}'
+
+# Completion in middle of construction of struct "HelloGreeter"
+env acmeaddr=$WORK/hello.go:'#340'
+L -headless comp
+stdout 'HelloGreeter	struct{...}'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'Greeter interface{\.\.\.}'
+stdout 'HelloGreeter struct{}'
+stdout '\(HelloGreeter\).Hello func()'
+stdout 'main func\(\)'
+stdout '/hello\.go:'
+
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'hello\.go:.*:type HelloGreeter struct{}'
+stdout 'hello\.go:.*:func \(g HelloGreeter\) Hello\(\) {'
+
+# Rename HelloGreeter to WorldGreeter
+env acmeaddr=$WORK/hello.go:'#202'
+L -headless rn WorldGreeter
+cmp hello.go after-rename.txt
+
+# Test command execution
+L exec gopls.workspace_stats
+stdout '{.*Files.*Total.*}'
+
+-- hello.go --
+package main // import "example.com/test"
+
+import "fmt"
+
+// Greeter is a greeting interface.
+type Greeter interface {
+	// Hello prints a greeting
+	Hello( )
+	}
+
+// HelloGreeter greets with hello
+type HelloGreeter struct{}
+
+// Hello prints a hello greeting
+func (g HelloGreeter) Hello( ) {
+	fmt.Println("Hello, 世界")
+	}
+
+func main() {
+	g := HelloGreeter{}
+	g.Hello( )
+	}
+-- after-format.txt --
+package main // import "example.com/test"
+
+import "fmt"
+
+// Greeter is a greeting interface.
+type Greeter interface {
+	// Hello prints a greeting
+	Hello()
+}
+
+// HelloGreeter greets with hello
+type HelloGreeter struct{}
+
+// Hello prints a hello greeting
+func (g HelloGreeter) Hello() {
+	fmt.Println("Hello, 世界")
+}
+
+func main() {
+	g := HelloGreeter{}
+	g.Hello()
+}
+-- after-rename.txt --
+package main // import "example.com/test"
+
+import "fmt"
+
+// Greeter is a greeting interface.
+type Greeter interface {
+	// Hello prints a greeting
+	Hello()
+}
+
+// WorldGreeter greets with hello
+type WorldGreeter struct{}
+
+// Hello prints a hello greeting
+func (g WorldGreeter) Hello() {
+	fmt.Println("Hello, 世界")
+}
+
+func main() {
+	g := WorldGreeter{}
+	g.Hello()
+}
