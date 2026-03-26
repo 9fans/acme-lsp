@@ -272,9 +272,9 @@ func (ss *ServerSet) StartForFile(filename string) (*Server, bool, error) {
 	return srv, true, err
 }
 
-func (ss *ServerSet) FormatOptionsForFile(filename string) *protocol.FormattingOptions {
+func (ss *ServerSet) ServerConfigForFile(filename string) *config.Server {
 	if srv := ss.MatchFile(filename); srv != nil {
-		return &srv.FormattingOptions
+		return srv.Server
 	}
 	return nil
 }

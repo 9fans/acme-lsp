@@ -1,22 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net"
 	"os"
-	"path/filepath"
-	"strconv"
 
 	"9fans.net/acme-lsp/internal/lsp/acmelsp"
 	"9fans.net/acme-lsp/internal/lsp/acmelsp/config"
 	"9fans.net/acme-lsp/internal/lsp/cmd"
 	"9fans.net/acme-lsp/internal/lsp/text"
-	p9client "github.com/fhs/9fans-go/plan9/client"
 )
 
 //go:generate ../../scripts/mkdocs.sh
@@ -166,7 +160,7 @@ func run(cfg *config.Config, args []string) error {
 	case "def":
 		err = rc.Definition(ctx, false)
 	case "fmt":
-		return rc.OrganizeImportsAndFormat(ctx)
+		err = rc.OrganizeImportsAndFormat(ctx)
 	case "hov":
 		err = rc.Hover(ctx)
 	case "refs":
@@ -184,33 +178,4 @@ func run(cfg *config.Config, args []string) error {
 		return fmt.Errorf("unknown command %q", args[0])
 	}
 	return err
-}
-
-func getWinID() (int, error) {
-	winid, err := getFocusedWinID(filepath.Join(p9client.Namespace(), "acmefocused"))
-	if err != nil {
-		return 0, fmt.Errorf("could not get focused window ID: %v", err)
-	}
-	n, err := strconv.Atoi(winid)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse $winid: %v", err)
-	}
-	return n, nil
-}
-
-func getFocusedWinID(addr string) (string, error) {
-	winid := os.Getenv("winid")
-	if winid == "" {
-		conn, err := net.Dial("unix", addr)
-		if err != nil {
-			return "", fmt.Errorf("$winid is empty and could not dial acmefocused: %v", err)
-		}
-		defer conn.Close()
-		b, err := ioutil.ReadAll(conn)
-		if err != nil {
-			return "", fmt.Errorf("$winid is empty and could not read acmefocused: %v", err)
-		}
-		return string(bytes.TrimSpace(b)), nil
-	}
-	return winid, nil
 }
