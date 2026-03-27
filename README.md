@@ -35,6 +35,7 @@ Following is a compatibility table between LSP servers and the
 |                       |  fmt  |  def  | refs  | type  |  sig   |  hov  | impls | comp   | syms  |  rn   | wss |
 | :-------------------- | :---: | :---: | :---: | :---: | :----: | :---: | :---: | :----: | :---: | :---: | :-: |
 | [clangd][]            |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [clojure-lsp][]       |  ✅   |  ✅   |  ✅   |  -    |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [dart][dart-lsp]      |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [jdtls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ?     |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
@@ -42,13 +43,14 @@ Following is a compatibility table between LSP servers and the
 | [ty][astral-ty]       |   -   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  -    |  ✅    |  ✅   |  ✅   | ✅  |
 | [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 
+[astral-ty]: https://docs.astral.sh/ty/
 [clangd]: https://clangd.llvm.org/
+[clojure-lsp]: https://clojure-lsp.io/
 [dart-lsp]: https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md
 [gopls]: https://github.com/golang/tools/tree/master/gopls
-[rust-analyzer]: https://rust-analyzer.github.io/
-[astral-ty]: https://docs.astral.sh/ty/
-[ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
 [jdtls]: https://github.com/eclipse-jdtls/eclipse.jdt.ls
+[rust-analyzer]: https://rust-analyzer.github.io/
+[ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
 
 ### gopls
 

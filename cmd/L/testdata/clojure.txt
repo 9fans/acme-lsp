@@ -1,0 +1,127 @@
+# Clojure language server (clojure-lsp) test
+
+# Start acme-lsp server
+env ACME_LSP_CONFIG=$WORK/config.toml
+acme-lsp -headless -rootdir $WORK -workspaces $WORK &
+
+# Format file
+env acmeaddr=$WORK/src/hello.clj:'#0'
+L -headless fmt
+cmp src/hello.clj after-format.txt
+
+# Definition of "HelloGreeter"
+env acmeaddr=$WORK/src/hello.clj:'#296'
+L -headless def -p
+stdout 'hello\.clj:.*:\(defrecord HelloGreeter \[\]'
+
+# References to "HelloGreeter"
+env acmeaddr=$WORK/src/hello.clj:'#164'
+L -headless refs
+stdout 'hello\.clj:.*:\(defrecord HelloGreeter \[\]'
+stdout 'hello\.clj:.*:  \(let \[g \(->HelloGreeter\)\]'
+
+# Type definition seems to be unsupported by clojure-lsp
+
+# Signature of the "hello" method call
+env acmeaddr=$WORK/src/hello.clj:'#314'
+L -headless sig
+stdout '\(hello \[this\]\)'
+
+# Hover over "HelloGreeter"
+env acmeaddr=$WORK/src/hello.clj:'#296'
+L -headless hov
+stdout '\[\{\{clojure hello/->HelloGreeter\}\} \{\{clojure \[\]\}\} \{.*/hello.clj\}\]'
+
+# Implementation of "Greeter" protocol
+env acmeaddr=$WORK/src/hello.clj:'#63'
+L -headless impls
+stdout 'hello.clj:.*:  Greeter'
+
+# Completion in middle of "->HelloGreeter"
+env acmeaddr=$WORK/src/hello.clj:'#296'
+L -headless comp
+stdout '->HelloGreeter'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'hello'
+stdout 'Greeter'
+stdout 'HelloGreeter'
+stdout '-main'
+stdout '/hello\.clj:'
+
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'hello.clj:.*:\(defrecord HelloGreeter \[\]'
+
+# Rename HelloGreeter to WorldGreeter
+env acmeaddr=$WORK/src/hello.clj:'#164'
+L -headless rn WorldGreeter
+cmp src/hello.clj after-rename.txt
+
+
+-- src/hello.clj --
+(ns hello)
+
+;; Greeter is a greeting protocol.
+(defprotocol Greeter
+;; hello prints a greeting
+(hello [this]))
+
+;; HelloGreeter greets with hello
+(defrecord HelloGreeter []
+Greeter
+;; hello prints a hello greeting
+(hello [this]
+(println "Hello, 世界")))
+
+(defn -main []
+(let [g (->HelloGreeter)]
+(hello g)))
+-- after-format.txt --
+(ns hello)
+
+;; Greeter is a greeting protocol.
+(defprotocol Greeter
+;; hello prints a greeting
+  (hello [this]))
+
+;; HelloGreeter greets with hello
+(defrecord HelloGreeter []
+  Greeter
+;; hello prints a hello greeting
+  (hello [this]
+    (println "Hello, 世界")))
+
+(defn -main []
+  (let [g (->HelloGreeter)]
+    (hello g)))
+-- after-rename.txt --
+(ns hello)
+
+;; Greeter is a greeting protocol.
+(defprotocol Greeter
+;; hello prints a greeting
+  (hello [this]))
+
+;; HelloGreeter greets with hello
+(defrecord WorldGreeter []
+  Greeter
+;; hello prints a hello greeting
+  (hello [this]
+    (println "Hello, 世界")))
+
+(defn -main []
+  (let [g (->WorldGreeter)]
+    (hello g)))
+-- deps.edn --
+{}
+-- config.toml --
+[Servers]
+  [Servers.clojureLsp]
+  Command = ["clojure-lsp"]
+
+[[FilenameHandlers]]
+  Pattern = "\\.clj$"
+  LanguageID = "clojure"
+  ServerKey = "clojureLsp"

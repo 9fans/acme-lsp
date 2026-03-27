@@ -181,13 +181,13 @@ func (s *NotImplementedServer) CodeLens(context.Context, *protocol.CodeLensParam
 func (s *NotImplementedServer) ColorPresentation(context.Context, *protocol.ColorPresentationParams) ([]protocol.ColorPresentation, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (s *NotImplementedServer) Completion(context.Context, *protocol.CompletionParams) (*protocol.CompletionList, error) {
+func (s *NotImplementedServer) Completion(context.Context, *protocol.CompletionParams) (*protocol.Or_Result_textDocument_completion, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *NotImplementedServer) Declaration(context.Context, *protocol.DeclarationParams) (*protocol.Or_textDocument_declaration, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (s *NotImplementedServer) Definition(context.Context, *protocol.DefinitionParams) ([]protocol.Location, error) {
+func (s *NotImplementedServer) Definition(context.Context, *protocol.DefinitionParams) (*protocol.Or_Result_textDocument_definition, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *NotImplementedServer) Diagnostic(context.Context, *protocol.DocumentDiagnosticParams) (*protocol.DocumentDiagnosticReport, error) {

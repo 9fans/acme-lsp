@@ -210,7 +210,7 @@ func main() {
 					},
 				},
 			}
-			if !reflect.DeepEqual(want, got) {
+			if !reflect.DeepEqual(want, locationsFromDefinition(got)) {
 				t.Errorf("definition result is %v; expected %v", got, want)
 			}
 		})
@@ -497,7 +497,7 @@ if __name__ == '__main__':
 				},
 			},
 		}
-		if !reflect.DeepEqual(want, got) {
+		if !reflect.DeepEqual(want, locationsFromDefinition(got)) {
 			t.Errorf("definition result is %v; expected %v", got, want)
 		}
 	})

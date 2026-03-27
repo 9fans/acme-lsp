@@ -110,7 +110,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	if err != nil {
 		return err
 	}
-	result, err := rc.server.Completion(ctx, &protocol.CompletionParams{
+	res, err := rc.server.Completion(ctx, &protocol.CompletionParams{
 		TextDocumentPositionParams: *pos,
 		Context: protocol.CompletionContext{
 			TriggerKind: protocol.Invoked,
@@ -119,6 +119,7 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	if err != nil {
 		return err
 	}
+	result := completionListFromResult(res)
 	if result == nil || len(result.Items) == 0 {
 		return fmt.Errorf("no completion")
 	}
@@ -148,6 +149,22 @@ func (rc *RemoteCmd) Completion(ctx context.Context, kind CompletionKind) error 
 	return rc.showCompletion(sb.String(), kind)
 }
 
+// completionListFromResult converts an Or_Result_textDocument_completion response
+// to a *CompletionList. The LSP spec allows the response to be a CompletionList
+// or []CompletionItem.
+func completionListFromResult(result *protocol.Or_Result_textDocument_completion) *protocol.CompletionList {
+	if result == nil {
+		return nil
+	}
+	switch v := result.Value.(type) {
+	case protocol.CompletionList:
+		return &v
+	case []protocol.CompletionItem:
+		return &protocol.CompletionList{Items: v}
+	}
+	return nil
+}
+
 func (rc *RemoteCmd) showCompletion(body string, kind CompletionKind) error {
 	if kind == CompleteInsertFirstMatch {
 		cw, err := acmeutil.Hijack("/LSP/Completions")
@@ -173,12 +190,13 @@ func (rc *RemoteCmd) Definition(ctx context.Context, print bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to get position: %v", err)
 	}
-	locations, err := rc.server.Definition(ctx, &protocol.DefinitionParams{
+	result, err := rc.server.Definition(ctx, &protocol.DefinitionParams{
 		TextDocumentPositionParams: *pos,
 	})
 	if err != nil {
 		return fmt.Errorf("bad server response: %v", err)
 	}
+	locations := locationsFromDefinition(result)
 	if len(locations) == 0 {
 		return fmt.Errorf("no definition found")
 	}
@@ -364,6 +382,34 @@ func (rc *RemoteCmd) TypeDefinition(ctx context.Context, print bool) error {
 // response to a flat []Location. The LSP spec allows the response to be a single
 // Location, a []Location (via Definition = Or_Definition), or []LocationLink.
 func locationsFromTypeDefinition(result *protocol.Or_Result_textDocument_typeDefinition) []protocol.Location {
+	if result == nil {
+		return nil
+	}
+	switch v := result.Value.(type) {
+	case protocol.Definition:
+		switch lv := v.Value.(type) {
+		case protocol.Location:
+			return []protocol.Location{lv}
+		case []protocol.Location:
+			return lv
+		}
+	case []protocol.DefinitionLink:
+		locs := make([]protocol.Location, len(v))
+		for i, dl := range v {
+			locs[i] = protocol.Location{
+				URI:   dl.TargetURI,
+				Range: dl.TargetSelectionRange,
+			}
+		}
+		return locs
+	}
+	return nil
+}
+
+// locationsFromDefinition converts an Or_Result_textDocument_definition
+// response to a flat []Location. The LSP spec allows the response to be a single
+// Location, a []Location (via Definition = Or_Definition), or []LocationLink.
+func locationsFromDefinition(result *protocol.Or_Result_textDocument_definition) []protocol.Location {
 	if result == nil {
 		return nil
 	}
