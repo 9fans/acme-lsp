@@ -39,6 +39,7 @@ Following is a compatibility table between LSP servers and the
 | [dart][dart-lsp]      |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [jdtls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ?     |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [kotlin-lsp][]        |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [rust][rust-analyzer] |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [ty][astral-ty]       |   -   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  -    |  ✅    |  ✅   |  ✅   | ✅  |
 | [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
@@ -49,6 +50,7 @@ Following is a compatibility table between LSP servers and the
 [dart-lsp]: https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md
 [gopls]: https://github.com/golang/tools/tree/master/gopls
 [jdtls]: https://github.com/eclipse-jdtls/eclipse.jdt.ls
+[kotlin-lsp]: https://github.com/Kotlin/kotlin-lsp
 [rust-analyzer]: https://rust-analyzer.github.io/
 [ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
 

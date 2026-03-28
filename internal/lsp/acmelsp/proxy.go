@@ -190,7 +190,7 @@ func serverForURI(ss *ServerSet, uri protocol.DocumentURI) (*Server, error) {
 		return nil, fmt.Errorf("unknown language server for URI %q", uri)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cound not start language server: %v", err)
+		return nil, fmt.Errorf("could not start language server: %v", err)
 	}
 	return srv, nil
 }

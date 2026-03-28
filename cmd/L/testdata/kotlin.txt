@@ -1,0 +1,116 @@
+# Kotlin language server test
+
+# Start acme-lsp server
+acme-lsp -headless -rootdir $WORK -workspaces $WORK -server '\.kt$:kotlin-lsp --stdio' &
+
+# Format file
+env acmeaddr=$WORK/hello.kt:'#0'
+L -headless fmt
+cmp hello.kt after-format.txt
+
+# Definition of "HelloGreeter" from constructor call
+env acmeaddr=$WORK/hello.kt:'#279'
+L -headless def -p
+stdout 'hello\.kt:.*:class HelloGreeter : Greeter \{'
+
+# References to "HelloGreeter"
+env acmeaddr=$WORK/hello.kt:'#123'
+L -headless refs
+stdout 'hello\.kt:.*:class HelloGreeter : Greeter \{'
+stdout 'hello\.kt:.*:    val g = HelloGreeter()'
+
+# Type definition of "g"
+env acmeaddr=$WORK/hello.kt:'#293'
+L -headless type -p
+stdout 'hello.kt:.*:class HelloGreeter : Greeter \{'
+
+# Signature of method call "hello"
+env acmeaddr=$WORK/hello.kt:'#301'
+L -headless sig
+stdout 'hello\(\): Unit'
+stdout '/\*\* Hello prints a hello greeting \*/'
+
+# Hover over the "hello" method call
+env acmeaddr=$WORK/hello.kt:'#298'
+L -headless hov
+stdout 'Hello prints a hello greeting'
+stdout 'override fun hello\(\)'
+
+# Implementations of "Greeter" interface
+env acmeaddr=$WORK/hello.kt:'#13'
+L -headless impls
+stdout 'hello\.kt:.*:class HelloGreeter : Greeter \{'
+
+# Completion in the middle of method call "hello"
+env acmeaddr=$WORK/hello.kt:'#298'
+L -headless comp
+stdout 'hello'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'Greeter'
+stdout 'HelloGreeter'
+stdout 'hello'
+stdout 'main'
+stdout '/hello\.kt:'
+
+# Query workspace symbols
+L -headless wss HelloGreeter
+stdout 'hello\.kt:.*:class HelloGreeter : Greeter \{'
+
+# Rename HelloGreeter to WorldGreeter
+env acmeaddr=$WORK/hello.kt:'#118'
+L -headless rn WorldGreeter
+cmp hello.kt after-rename.txt
+
+
+-- hello.kt --
+interface Greeter {
+/** Hello prints a greeting */
+fun hello( ) }
+
+/** HelloGreeter greets with hello */
+class HelloGreeter : Greeter {
+/** Hello prints a hello greeting */
+override fun hello( ) {
+println("Hello, 世界") } }
+
+fun main() {
+val g = HelloGreeter()
+g.hello( ) }
+-- after-format.txt --
+interface Greeter {
+    /** Hello prints a greeting */
+    fun hello()
+}
+
+/** HelloGreeter greets with hello */
+class HelloGreeter : Greeter {
+    /** Hello prints a hello greeting */
+    override fun hello() {
+        println("Hello, 世界")
+    }
+}
+
+fun main() {
+    val g = HelloGreeter()
+    g.hello()
+}
+-- after-rename.txt --
+interface Greeter {
+    /** Hello prints a greeting */
+    fun hello()
+}
+
+/** HelloGreeter greets with hello */
+class WorldGreeter : Greeter {
+    /** Hello prints a hello greeting */
+    override fun hello() {
+        println("Hello, 世界")
+    }
+}
+
+fun main() {
+    val g = WorldGreeter()
+    g.hello()
+}

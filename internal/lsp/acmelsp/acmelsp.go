@@ -26,7 +26,7 @@ func WindowRemoteCmd(ss *ServerSet, fm FileManager, w text.AddressableFile, menu
 	}
 	srv, found, err := ss.StartForFile(fname)
 	if err != nil {
-		return nil, fmt.Errorf("cound not start language server: %v", err)
+		return nil, fmt.Errorf("could not start language server: %v", err)
 	}
 	if !found {
 		return nil, fmt.Errorf("no language server for filename %q", fname)

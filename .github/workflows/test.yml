@@ -68,6 +68,14 @@ jobs:
         tar -xzf /tmp/jdtls.tar.gz -C /opt/jdtls
         echo '/opt/jdtls/bin' >> $GITHUB_PATH
 
+    - name: Install kotlin-lsp
+      run: |
+        curl -fL https://download-cdn.jetbrains.com/kotlin-lsp/262.2310.0/kotlin-lsp-262.2310.0-linux-x64.zip -o /tmp/kotlin-lsp.zip
+        unzip /tmp/kotlin-lsp.zip -d /opt/kotlin-lsp
+        chmod +x /opt/kotlin-lsp/kotlin-lsp.sh
+        ln -s kotlin-lsp.sh /opt/kotlin-lsp/kotlin-lsp
+        echo '/opt/kotlin-lsp' >> $GITHUB_PATH
+
     - name: Install clojure-lsp
       run: |
         curl -fL https://github.com/clojure-lsp/clojure-lsp/releases/download/2026.02.20-16.08.58/clojure-lsp-native-linux-amd64.zip -o /tmp/clojure-lsp.zip
