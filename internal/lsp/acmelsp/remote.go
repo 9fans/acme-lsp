@@ -42,34 +42,7 @@ func NewRemoteCmd(server proxy.Server, win text.AddressableFile, menu text.Menu)
 	}
 }
 
-func (rc *RemoteCmd) DidOpen(ctx context.Context) error {
-	uri, _, err := text.DocumentURI(rc.win)
-	if err != nil {
-		return err
-	}
-	filename, err := rc.win.Filename()
-	if err != nil {
-		return err
-	}
-	r, err := rc.win.Reader()
-	if err != nil {
-		return err
-	}
-	body, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-	return rc.server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
-		TextDocument: protocol.TextDocumentItem{
-			URI:        uri,
-			LanguageID: lsp.DetectLanguage(filename),
-			Version:    0,
-			Text:       string(body),
-		},
-	})
-}
-
-func (rc *RemoteCmd) DidChange(ctx context.Context) error {
+func (rc *RemoteCmd) SyncDocument(ctx context.Context) error {
 	uri, _, err := text.DocumentURI(rc.win)
 	if err != nil {
 		return err
@@ -83,17 +56,11 @@ func (rc *RemoteCmd) DidChange(ctx context.Context) error {
 		return err
 	}
 
-	return rc.server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
-		TextDocument: protocol.VersionedTextDocumentIdentifier{
-			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
-				URI: uri,
-			},
+	return rc.server.SyncDocument(ctx, &proxy.SyncDocumentParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: uri,
 		},
-		ContentChanges: []protocol.TextDocumentContentChangeEvent{
-			{
-				Text: string(body),
-			},
-		},
+		Content: string(body),
 	})
 }
 

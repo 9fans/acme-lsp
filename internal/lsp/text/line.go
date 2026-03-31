@@ -3,6 +3,7 @@ package text
 import (
 	"bufio"
 	"io"
+	"unicode/utf16"
 	"unicode/utf8"
 )
 
@@ -65,4 +66,18 @@ func (off *nlOffsets) OffsetToLine(offset int) (line, col int) {
 		return i, offset - off.nl[i]
 	}
 	panic("unreachable")
+}
+
+// GetLastPosition returns the LSP position for the end of give string.
+func GetLastPosition(s string) (line, col int) {
+	for _, r := range s {
+		if r == '\n' {
+			line++
+			col = 0
+		} else {
+			// LSP characters are UTF-16 code units by default
+			col += utf16.RuneLen(r)
+		}
+	}
+	return
 }

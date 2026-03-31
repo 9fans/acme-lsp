@@ -117,3 +117,8 @@ type ExecuteCommandOnDocumentParams struct {
 	TextDocument         protocol.TextDocumentIdentifier
 	ExecuteCommandParams protocol.ExecuteCommandParams
 }
+
+type SyncDocumentParams struct {
+	TextDocument protocol.TextDocumentIdentifier
+	Content      string
+}

@@ -106,16 +106,27 @@ type ClientConfig struct {
 	Logger        *log.Logger
 }
 
+// docState holds the tracked state of an open document.
+type docState struct {
+	version int32
+	end     protocol.Position // end position of the last synced content
+}
+
 // Client represents a LSP client connection.
 type Client struct {
 	protocol.Server
 	initializeResult *protocol.InitializeResult
 	cfg              *ClientConfig
 	rpc              *jsonrpc2.Conn
+	openDocs         map[protocol.DocumentURI]docState
+	mu               sync.Mutex
 }
 
 func NewClient(conn net.Conn, cfg *ClientConfig) (*Client, error) {
-	c := &Client{cfg: cfg}
+	c := &Client{
+		cfg:      cfg,
+		openDocs: make(map[protocol.DocumentURI]docState),
+	}
 	if err := c.init(conn, cfg); err != nil {
 		return nil, err
 	}
@@ -226,4 +237,93 @@ func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, 
 // ExecuteCommandOnDocument implements proxy.Server.
 func (s *Client) ExecuteCommandOnDocument(ctx context.Context, params *proxy.ExecuteCommandOnDocumentParams) (interface{}, error) {
 	return s.Server.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+}
+
+func (s *Client) didOpen(ctx context.Context, params *proxy.SyncDocumentParams) error {
+	var langID protocol.LanguageKind
+	if s.cfg != nil && s.cfg.FilenameHandler != nil {
+		langID = s.cfg.FilenameHandler.LanguageID
+	}
+	if langID == "" {
+		langID = lsp.DetectLanguage(text.ToPath(params.TextDocument.URI))
+	}
+	return s.Server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
+		TextDocument: protocol.TextDocumentItem{
+			URI:        params.TextDocument.URI,
+			LanguageID: langID,
+			Version:    0,
+			Text:       params.Content,
+		},
+	})
+}
+
+func (s *Client) SyncDocument(ctx context.Context, params *proxy.SyncDocumentParams) error {
+	line, col := text.GetLastPosition(params.Content)
+	newEnd := protocol.Position{
+		Line:      uint32(line),
+		Character: uint32(col),
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	state, ok := s.openDocs[params.TextDocument.URI]
+	if !ok {
+		// Document is not open, so open it
+		if err := s.didOpen(ctx, params); err != nil {
+			return err
+		}
+		s.openDocs[params.TextDocument.URI] = docState{version: 1, end: newEnd}
+		return nil
+	}
+
+	// Document was previously opened, so update the content.
+	// Only include Range if the server supports incremental sync.
+	// The range covers the entire old document content.
+	var rg *protocol.Range
+	if s.initializeResult != nil && lsp.ServerSupportsIncrementalSync(&s.initializeResult.Capabilities) {
+		rg = &protocol.Range{
+			Start: protocol.Position{Line: 0, Character: 0},
+			End:   state.end,
+		}
+	}
+	newVersion := state.version + 1
+	err := s.Server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
+		TextDocument: protocol.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: params.TextDocument,
+			Version:                newVersion,
+		},
+		ContentChanges: []protocol.TextDocumentContentChangeEvent{
+			{
+				Range: rg,
+				Text:  params.Content,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	s.openDocs[params.TextDocument.URI] = docState{version: newVersion, end: newEnd}
+	return nil
+}
+
+func (s *Client) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.openDocs[params.TextDocument.URI]; !ok {
+		return nil // document is not open
+	}
+	if err := s.Server.DidClose(ctx, params); err != nil {
+		return err
+	}
+	delete(s.openDocs, params.TextDocument.URI)
+	return nil
+}
+func (s *Client) DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error {
+	return fmt.Errorf("not implemented -- use SyncDocument")
+}
+
+func (s *Client) DidOpen(context.Context, *protocol.DidOpenTextDocumentParams) error {
+	return fmt.Errorf("not implemented -- use SyncDocument")
 }

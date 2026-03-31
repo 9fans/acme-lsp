@@ -35,9 +35,9 @@ func WindowRemoteCmd(ss *ServerSet, fm FileManager, w text.AddressableFile, menu
 	rc := NewRemoteCmd(srv.Client, w, menu)
 	// In case the window has unsaved changes (it's dirty),
 	// send changes to LSP server.
-	err = rc.DidChange(context.Background())
+	err = rc.SyncDocument(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("DidChange failed: %v", err)
+		return nil, fmt.Errorf("SyncDocument failed: %v", err)
 	}
 	return rc, nil
 }
@@ -122,7 +122,7 @@ func plumbLocation(loc *protocol.Location) *plumb.Message {
 
 type FormatServer interface {
 	InitializeResult(context.Context, *protocol.TextDocumentIdentifier) (*protocol.InitializeResult, error)
-	DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
+	SyncDocument(context.Context, *proxy.SyncDocumentParams) error
 	Formatting(context.Context, *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error)
 	CodeAction(context.Context, *protocol.CodeActionParams) ([]protocol.CodeAction, error)
 	ExecuteCommandOnDocument(context.Context, *proxy.ExecuteCommandOnDocumentParams) (interface{}, error)
@@ -180,17 +180,10 @@ func CodeActionAndFormat(ctx context.Context, server FormatServer, doc *protocol
 			if err != nil {
 				return err
 			}
-			server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
-				TextDocument: protocol.VersionedTextDocumentIdentifier{
-					TextDocumentIdentifier: *doc,
-				},
-				ContentChanges: []protocol.TextDocumentContentChangeEvent{
-					{
-						Text: string(b),
-					},
-				},
-			})
-			if err != nil {
+			if err = server.SyncDocument(ctx, &proxy.SyncDocumentParams{
+				TextDocument: *doc,
+				Content:      string(b),
+			}); err != nil {
 				return err
 			}
 		}

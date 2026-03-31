@@ -80,9 +80,9 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = lsp.DidOpen(ctx, srv.Client, gofile, "go", []byte(src))
+	err = lsp.SyncDocument(ctx, srv.Client, gofile, []byte(src))
 	if err != nil {
-		t.Fatalf("DidOpen failed: %v", err)
+		t.Fatalf("SyncDocument failed: %v", err)
 	}
 	defer func() {
 		err := lsp.DidClose(ctx, srv.Client, gofile)
@@ -311,9 +311,9 @@ func main() {
 	defer srv.Close()
 
 	ctx := context.Background()
-	err = lsp.DidOpen(ctx, srv.Client, gofile, "go", []byte(src))
+	err = lsp.SyncDocument(ctx, srv.Client, gofile, []byte(src))
 	if err != nil {
-		t.Fatalf("DidOpen failed: %v", err)
+		t.Fatalf("SyncDocument failed: %v", err)
 	}
 
 	diag := <-ch

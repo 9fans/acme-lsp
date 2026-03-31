@@ -221,9 +221,9 @@ func (w *outputWin) Update(fw *focusWin, server proxy.Server, cmd string) {
 	ctx := context.Background()
 
 	// Assume file is already opened by file management.
-	err = rc.DidChange(ctx)
+	err = rc.SyncDocument(ctx)
 	if err != nil {
-		dprintf("DidChange failed: %v\n", err)
+		dprintf("SyncDocument failed: %v\n", err)
 		return
 	}
 

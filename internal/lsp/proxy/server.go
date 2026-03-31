@@ -33,6 +33,10 @@ type Server interface {
 	// multiple ExecuteCommand request to the right server.
 	ExecuteCommandOnDocument(context.Context, *ExecuteCommandOnDocumentParams) (interface{}, error)
 
+	// SyncDocument sends a DidOpen or DidChange notification depending on if the document
+	// is already open.
+	SyncDocument(context.Context, *SyncDocumentParams) error
+
 	protocol.Server
 	//DidChange(context.Context, *protocol.DidChangeTextDocumentParams) error
 	//DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error
@@ -74,6 +78,14 @@ func serverDispatch(ctx context.Context, server Server, conn *jsonrpc2.Conn, r *
 		}
 		resp, err := server.ExecuteCommandOnDocument(ctx, &params)
 		return true, reply(ctx, conn, r.ID, resp, err)
+
+	case "acme-lsp/syncDocument": // notif
+		var params SyncDocumentParams
+		if err := json.Unmarshal(*r.Params, &params); err != nil {
+			return true, err
+		}
+		err := server.SyncDocument(ctx, &params)
+		return true, err
 
 	default:
 		return false, nil
@@ -118,6 +130,10 @@ func (s *serverDispatcher) ExecuteCommandOnDocument(ctx context.Context, params 
 		return nil, err
 	}
 	return result, nil
+}
+
+func (s *serverDispatcher) SyncDocument(ctx context.Context, params *SyncDocumentParams) error {
+	return s.Conn.Notify(ctx, "acme-lsp/syncDocument", params)
 }
 
 var _ protocol.Server = (*NotImplementedServer)(nil)

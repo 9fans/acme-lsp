@@ -36,22 +36,6 @@ func (s *proxyServer) InitializeResult(ctx context.Context, params *protocol.Tex
 	return srv.Client.InitializeResult(ctx, params)
 }
 
-func (s *proxyServer) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
-	srv, err := serverForURI(s.ss, params.TextDocument.URI)
-	if err != nil {
-		return fmt.Errorf("DidOpen: %v", err)
-	}
-	return srv.Client.DidOpen(ctx, params)
-}
-
-func (s *proxyServer) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
-	srv, err := serverForURI(s.ss, params.TextDocument.URI)
-	if err != nil {
-		return fmt.Errorf("DidChange: %v", err)
-	}
-	return srv.Client.DidChange(ctx, params)
-}
-
 func (s *proxyServer) DidChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
 	return s.ss.DidChangeWorkspaceFolders(ctx, params.Event.Added, params.Event.Removed)
 }
@@ -97,6 +81,14 @@ func (s *proxyServer) ExecuteCommandOnDocument(ctx context.Context, params *prox
 		return nil, fmt.Errorf("ExecuteCommandOnDocument: %v", err)
 	}
 	return srv.Client.ExecuteCommand(ctx, &params.ExecuteCommandParams)
+}
+
+func (s *proxyServer) SyncDocument(ctx context.Context, params *proxy.SyncDocumentParams) error {
+	srv, err := serverForURI(s.ss, params.TextDocument.URI)
+	if err != nil {
+		return fmt.Errorf("SyncDocument: %v", err)
+	}
+	return srv.Client.SyncDocument(ctx, params)
 }
 
 func (s *proxyServer) ExecuteCommand(ctx context.Context, params *protocol.ExecuteCommandParams) (interface{}, error) {

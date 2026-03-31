@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"9fans.net/acme-lsp/internal/lsp/proxy"
 	"9fans.net/acme-lsp/internal/lsp/text"
 	"9fans.net/internal/go-lsp/lsp/protocol"
 	"github.com/sourcegraph/jsonrpc2"
@@ -70,6 +71,21 @@ Kinds:
 
 }
 
+func ServerSupportsIncrementalSync(cap *protocol.ServerCapabilities) bool {
+	switch v := cap.TextDocumentSync.(type) {
+	case float64:
+		return protocol.TextDocumentSyncKind(v) == protocol.Incremental
+	case protocol.TextDocumentSyncKind:
+		return v == protocol.Incremental
+	case protocol.TextDocumentSyncOptions:
+		return v.Change == protocol.Incremental
+	case map[string]any:
+		change, ok := v["change"].(float64)
+		return ok && protocol.TextDocumentSyncKind(change) == protocol.Incremental
+	}
+	return false
+}
+
 func LocationLink(l *protocol.Location, basedir string) string {
 	p := text.ToPath(l.URI)
 	rel, err := filepath.Rel(basedir, p)
@@ -79,20 +95,6 @@ func LocationLink(l *protocol.Location, basedir string) string {
 	return fmt.Sprintf("%s:%v.%v,%v.%v", p,
 		l.Range.Start.Line+1, l.Range.Start.Character+1,
 		l.Range.End.Line+1, l.Range.End.Character+1)
-}
-
-func DidOpen(ctx context.Context, server protocol.Server, filename string, lang protocol.LanguageKind, body []byte) error {
-	if lang == "" {
-		lang = DetectLanguage(filename)
-	}
-	return server.DidOpen(ctx, &protocol.DidOpenTextDocumentParams{
-		TextDocument: protocol.TextDocumentItem{
-			URI:        text.ToURI(filename),
-			LanguageID: lang,
-			Version:    0,
-			Text:       string(body),
-		},
-	})
 }
 
 func DidClose(ctx context.Context, server protocol.Server, filename string) error {
@@ -112,18 +114,12 @@ func DidSave(ctx context.Context, server protocol.Server, filename string) error
 	})
 }
 
-func DidChange(ctx context.Context, server protocol.Server, filename string, body []byte) error {
-	return server.DidChange(ctx, &protocol.DidChangeTextDocumentParams{
-		TextDocument: protocol.VersionedTextDocumentIdentifier{
-			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
-				URI: text.ToURI(filename),
-			},
+func SyncDocument(ctx context.Context, server proxy.Server, filename string, body []byte) error {
+	return server.SyncDocument(ctx, &proxy.SyncDocumentParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: text.ToURI(filename),
 		},
-		ContentChanges: []protocol.TextDocumentContentChangeEvent{
-			{
-				Text: string(body),
-			},
-		},
+		Content: string(body),
 	})
 }
 

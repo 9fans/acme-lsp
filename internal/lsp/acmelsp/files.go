@@ -131,7 +131,7 @@ func (fm *AcmeFileManager) didOpen(winid int, name string) error {
 		if err != nil {
 			return err
 		}
-		return lsp.DidOpen(context.Background(), c, name, c.cfg.FilenameHandler.LanguageID, b)
+		return lsp.SyncDocument(context.Background(), c, name, b)
 	})
 }
 
@@ -161,7 +161,7 @@ func (fm *AcmeFileManager) didChange(winid int, name string) error {
 		if err != nil {
 			return err
 		}
-		return lsp.DidChange(context.Background(), c, name, b)
+		return lsp.SyncDocument(context.Background(), c, name, b)
 	})
 }
 
@@ -194,7 +194,7 @@ func (fm *AcmeFileManager) didSave(winid int, name string) error {
 		}
 
 		// TODO(fhs): Maybe DidChange is not needed with includeText option to DidSave?
-		err = lsp.DidChange(context.Background(), c, name, b)
+		err = lsp.SyncDocument(context.Background(), c, name, b)
 		if err != nil {
 			return err
 		}

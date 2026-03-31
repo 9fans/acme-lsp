@@ -229,20 +229,10 @@ func run(cfg *config.Config, args []string) error {
 
 	rc := acmelsp.NewRemoteCmd(server, win, menu)
 
-	if cfg.Headless {
-		// If headless mode we don't monitor for open/closed files, so open the file.
-		if err = rc.DidOpen(ctx); err != nil {
-			return fmt.Errorf("DidOpen failed: %v", err)
-		}
-	}
-
-	// In case the window has unsaved changes (it's dirty),
-	// sync changes with LSP server.
-	// For Headless, some servers (e.g. typescript) will reject
-	// the DidOpen if the file was already opened before,
-	// so this is our second chance to sync file content.
-	if err = rc.DidChange(ctx); err != nil {
-		return fmt.Errorf("DidChange failed: %v", err)
+	// SyncDocument will with either do DidOpen or DidChange,
+	// depending on whether the document is already open.
+	if err = rc.SyncDocument(ctx); err != nil {
+		return fmt.Errorf("SyncDocument failed: %v", err)
 	}
 
 	switch args[0] {
@@ -307,5 +297,4 @@ func dialRetry(network, address string, retry bool) (conn net.Conn, err error) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	return
 }
