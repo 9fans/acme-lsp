@@ -1,46 +1,49 @@
-# Python language server (ty) test
+# Python LSP Server (https://github.com/python-lsp/python-lsp-server) test
 
 # Start acme-lsp server
-acme-lsp -headless -hidediag -server '\.py$:ty server' &
+acme-lsp -headless -hidediag -server '\.py$:pylsp' &
 
-# ty does not support formatting (textDocument/formatting)
+# Format file
+env acmeaddr=$WORK/hello.py:'#0'
+L -headless fmt
+cmp hello.py after-format.txt
 
 # Definition of "Greeter"
-env acmeaddr=$WORK/hello.py:'#131'
+env acmeaddr=$WORK/hello.py:'#132'
 L -headless def -p
 stdout 'hello.py:.*:class Greeter:'
 
 # References to "Greeter"
-env acmeaddr=$WORK/hello.py:'#131'
+env acmeaddr=$WORK/hello.py:'#132'
 L -headless refs
 stdout 'hello.py:.*:class Greeter:'
 stdout 'hello.py:.*:.*g = Greeter()'
 
 # Type definition of "g"
-env acmeaddr=$WORK/hello.py:'#143'
+env acmeaddr=$WORK/hello.py:'#144'
 L -headless type -p
 stdout 'hello.py:1.7,1.14:class Greeter:'
 
 # Signature of method "hello"
-env acmeaddr=$WORK/hello.py:'#150'
+env acmeaddr=$WORK/hello.py:'#151'
 L -headless sig
-stdout '\(\) -> Unknown'
+stdout 'hello\(\)'
 stdout 'Hello prints a hello greeting'
 
 # Hover over call to method "hello"
-env acmeaddr=$WORK/hello.py:'#146'
+env acmeaddr=$WORK/hello.py:'#147'
 L -headless hov
-stdout 'bound method Greeter.hello()'
+stdout 'hello\(\)'
 stdout 'Hello prints a hello greeting'
 
 # Implementation query is not supported
-#env acmeaddr=$WORK/hello.py:'#146'
+#env acmeaddr=$WORK/hello.py:'#147'
 #L -headless impls
 
-# Completion works interactively but does not return any completion during testing.
-# It may not work immediately after a DidOpen.
-#env acmeaddr=$WORK/hello.py:'#146'
-#L -headless comp
+# Completion in middle of method "hello"
+env acmeaddr=$WORK/hello.py:'#147'
+L -headless comp
+stdout 'hello\(\)'
 
 # Print all symbols in the file
 L -headless syms
@@ -49,25 +52,38 @@ stdout 'hello'
 stdout 'main'
 stdout '/hello.py:'
 
-# Query workspace symbols
-L -headless wss Greeter
-stdout 'hello\.py:.*:class Greeter:'
+# Query workspace symbols is not supported
+#L -headless wss Greeter
 
 # Rename Greeter to WorldGreeter
-env acmeaddr=$WORK/hello.py:'#131'
+env acmeaddr=$WORK/hello.py:'#132'
 L -headless rn WorldGreeter
 cmp hello.py after-rename-py.txt
 
 
 -- hello.py --
 class Greeter:
+    def hello( self ):
+        """Hello prints a hello greeting"""
+        print( "Hello, 世界" )
+
+def main():
+    g = Greeter( )
+    g.hello( )
+
+if __name__=="__main__":
+    main( )
+-- after-format.txt --
+class Greeter:
     def hello(self):
         """Hello prints a hello greeting"""
         print("Hello, 世界")
 
+
 def main():
     g = Greeter()
     g.hello()
+
 
 if __name__ == "__main__":
     main()
@@ -77,9 +93,11 @@ class WorldGreeter:
         """Hello prints a hello greeting"""
         print("Hello, 世界")
 
+
 def main():
     g = WorldGreeter()
     g.hello()
+
 
 if __name__ == "__main__":
     main()

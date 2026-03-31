@@ -25,24 +25,27 @@ Install the latest release:
 	go install 9fans.net/acme-lsp/cmd/acme-lsp@latest
 	go install 9fans.net/acme-lsp/cmd/L@latest
 
-## LSP Servers
+## Language Servers
 
-There are [integration tests](cmd/L/testdata) with some LSP servers.
+There are [integration tests](cmd/L/testdata) with some language servers.
 We aim to support any servers that follow the LSP protocol.
-Following is a compatibility table between LSP servers and the
+Following is a compatibility table between language servers and the
 [L sub-commands](https://pkg.go.dev/9fans.net/acme-lsp/cmd/L):
 
 |                       |  fmt  |  def  | refs  | type  |  sig   |  hov  | impls | comp   | syms  |  rn   | wss |
 | :-------------------- | :---: | :---: | :---: | :---: | :----: | :---: | :---: | :----: | :---: | :---: | :-: |
 | [clangd][]            |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
-| [clojure-lsp][]       |  ✅   |  ✅   |  ✅   |  -    |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [clojure-lsp][]       |  ✅   |  ✅   |  ✅   |  U    |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [dart][dart-lsp]      |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [jdtls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ?     |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [kotlin-lsp][]        |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+| [pylsp][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  U    |  ✅    |  ✅   |  ✅   | U  |
 | [rust][rust-analyzer] |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
-| [ty][astral-ty]       |   -   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  -    |  ✅    |  ✅   |  ✅   | ✅  |
+| [ty][astral-ty]       |   U   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  U    |  ✅    |  ✅   |  ✅   | ✅  |
 | [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
+
+* U: Unsupported by the language server
 
 [astral-ty]: https://docs.astral.sh/ty/
 [clangd]: https://clangd.llvm.org/
@@ -51,6 +54,7 @@ Following is a compatibility table between LSP servers and the
 [gopls]: https://github.com/golang/tools/tree/master/gopls
 [jdtls]: https://github.com/eclipse-jdtls/eclipse.jdt.ls
 [kotlin-lsp]: https://github.com/Kotlin/kotlin-lsp
+[pylsp]: https://github.com/python-lsp/python-lsp-server
 [rust-analyzer]: https://rust-analyzer.github.io/
 [ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
 

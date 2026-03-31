@@ -39,6 +39,9 @@ jobs:
     - name: Install ty
       run: uv tool install ty@0.0.21
 
+    - name: Install pylsp
+      run: uv tool install 'python-lsp-server[all]@1.14.0'
+
     - name: Install typescript-language-server
       run: sudo npm install -g typescript-language-server@5.1.3 typescript@5.9.3
 
