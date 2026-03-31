@@ -85,6 +85,9 @@ jobs:
         unzip /tmp/clojure-lsp.zip -d /tmp/clojure-lsp
         sudo install /tmp/clojure-lsp/clojure-lsp /usr/local/bin/clojure-lsp
 
+    - name: Install roslyn-language-server
+      run: dotnet tool install --global roslyn-language-server --version 5.5.0-2.26103.6
+
     - name: Check gofmt
       run: |
         gofmt -l .

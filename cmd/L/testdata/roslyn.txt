@@ -1,0 +1,125 @@
+# C# Roslyn language server test
+
+# Start acme-lsp server
+env HOME=$WORK	# server crashes otherwise
+acme-lsp -headless -rootdir $WORK -workspaces $WORK -server '\.cs$:roslyn-language-server --stdio' &
+
+# Format file does not seem to work
+#env acmeaddr=$WORK/hello.cs:'#0'
+#L -headless fmt
+#cmp hello.cs after-format.txt
+
+# Definition of "HelloGreeter" from constructor call
+env acmeaddr=$WORK/hello.cs:'#394'
+L -headless def -p
+stdout 'hello\.cs:.*:class HelloGreeter : IGreeter'
+
+# References to "HelloGreeter" class definition
+env acmeaddr=$WORK/hello.cs:'#158'
+L -headless refs
+stdout 'hello\.cs:.*:class HelloGreeter : IGreeter'
+stdout 'hello\.cs:.*:        HelloGreeter g = new HelloGreeter\(\);'
+
+# Type definition of "g" variable
+env acmeaddr=$WORK/hello.cs:'#413'
+L -headless type -p
+stdout 'hello\.cs:.*:class HelloGreeter : IGreeter'
+
+# Signature help is not supported for parameterless methods in roslyn-language-server.
+env acmeaddr=$WORK/hello.cs:'#421'
+L -headless sig
+stdout 'void HelloGreeter.Hello\(\)'
+stdout 'Hello prints a hello greeting'
+
+# Hover over the "Hello" method call
+env acmeaddr=$WORK/hello.cs:'#418'
+L -headless hov
+stdout 'void HelloGreeter\.Hello\(\)'
+stdout 'Hello prints a hello greeting'
+
+# Implementations of "IGreeter" interface
+env acmeaddr=$WORK/hello.cs:'#14'
+L -headless impls
+stdout 'hello\.cs:.*:class HelloGreeter : IGreeter'
+
+# Completion in middle of method call "Hello"
+env acmeaddr=$WORK/hello.cs:'#418'
+L -headless comp
+stdout 'Hello'
+
+# Print all symbols in the file
+L -headless syms
+stdout 'IGreeter'
+stdout 'Hello\(\) : void Hello\(\) : void'
+stdout 'HelloGreeter'
+stdout 'Program Program'
+stdout 'Main\(\) : void Main\(\) : void'
+stdout '/hello\.cs:'
+
+# Query workspace symbols (returns nothing)
+#L -headless wss HelloGreeter
+#stdout 'hello\.cs:.*:class HelloGreeter : IGreeter'
+
+# Rename HelloGreeter to WorldGreeter
+env acmeaddr=$WORK/hello.cs:'#158'
+L -headless rn WorldGreeter
+cmp hello.cs after-rename.txt
+
+-- hello.cs --
+interface IGreeter
+{
+    /// <summary>Hello prints a greeting</summary>
+    void Hello();
+}
+
+/// <summary>HelloGreeter greets with hello</summary>
+class HelloGreeter : IGreeter
+{
+    /// <summary>Hello prints a hello greeting</summary>
+    public void Hello()
+    {
+        Console.WriteLine("Hello, 世界");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        HelloGreeter g = new HelloGreeter();
+        g.Hello();
+    }
+}
+-- after-rename.txt --
+interface IGreeter
+{
+    /// <summary>Hello prints a greeting</summary>
+    void Hello();
+}
+
+/// <summary>HelloGreeter greets with hello</summary>
+class WorldGreeter : IGreeter
+{
+    /// <summary>Hello prints a hello greeting</summary>
+    public void Hello()
+    {
+        Console.WriteLine("Hello, 世界");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        WorldGreeter g = new WorldGreeter();
+        g.Hello();
+    }
+}
+-- hello.csproj --
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

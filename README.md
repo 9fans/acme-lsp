@@ -40,7 +40,8 @@ Following is a compatibility table between language servers and the
 | [gopls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [jdtls][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ?     |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [kotlin-lsp][]        |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
-| [pylsp][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  U    |  ✅    |  ✅   |  ✅   | U  |
+| [pylsp][]             |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  U    |  ✅    |  ✅   |  ✅   | U   |
+| [roslyn][]            |  ?    |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ?   |
 | [rust][rust-analyzer] |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
 | [ty][astral-ty]       |   U   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  U    |  ✅    |  ✅   |  ✅   | ✅  |
 | [typescript][ts-lsp]  |  ✅   |  ✅   |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   |  ✅    |  ✅   |  ✅   | ✅  |
@@ -55,6 +56,7 @@ Following is a compatibility table between language servers and the
 [jdtls]: https://github.com/eclipse-jdtls/eclipse.jdt.ls
 [kotlin-lsp]: https://github.com/Kotlin/kotlin-lsp
 [pylsp]: https://github.com/python-lsp/python-lsp-server
+[roslyn]: https://www.nuget.org/packages/roslyn-language-server
 [rust-analyzer]: https://rust-analyzer.github.io/
 [ts-lsp]: https://github.com/typescript-language-server/typescript-language-server
 
