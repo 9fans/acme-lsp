@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -160,7 +159,7 @@ func Windows() ([]WinInfo, error) {
 		return nil, err
 	}
 	defer index.Close()
-	data, err := ioutil.ReadAll(index)
+	data, err := io.ReadAll(index)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +327,7 @@ func (w *Win) ReadAll(file string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(f)
+	return io.ReadAll(f)
 }
 
 func (w *Win) ID() int {

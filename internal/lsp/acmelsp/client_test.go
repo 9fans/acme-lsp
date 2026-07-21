@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -45,18 +44,18 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	}
 
 	// Create the module
-	dir, err := ioutil.TempDir("", "examplemod")
+	dir, err := os.MkdirTemp("", "examplemod")
 	if err != nil {
 		t.Fatalf("TempDir failed: %v", err)
 	}
 	defer os.RemoveAll(dir)
 
 	gofile := filepath.Join(dir, "main.go")
-	if err := ioutil.WriteFile(gofile, []byte(src), 0644); err != nil {
+	if err := os.WriteFile(gofile, []byte(src), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 	modfile := filepath.Join(dir, "go.mod")
-	if err := ioutil.WriteFile(modfile, []byte(goMod), 0644); err != nil {
+	if err := os.WriteFile(modfile, []byte(goMod), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
@@ -71,7 +70,7 @@ func testGoModule(t *testing.T, server string, src string, f func(t *testing.T, 
 	srv, err := execServer(cs, &ClientConfig{
 		Server:        &config.Server{},
 		RootDirectory: dir,
-		DiagWriter:    &mockDiagosticsWriter{ioutil.Discard},
+		DiagWriter:    &mockDiagosticsWriter{io.Discard},
 		Workspaces:    nil,
 	}, false)
 	if err != nil {
@@ -280,18 +279,18 @@ func main() {
 	var s string
 }
 `
-	dir, err := ioutil.TempDir("", "examplemod")
+	dir, err := os.MkdirTemp("", "examplemod")
 	if err != nil {
 		t.Fatalf("TempDir failed: %v", err)
 	}
 	defer os.RemoveAll(dir)
 
 	gofile := filepath.Join(dir, "main.go")
-	if err := ioutil.WriteFile(gofile, []byte(src), 0644); err != nil {
+	if err := os.WriteFile(gofile, []byte(src), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 	modfile := filepath.Join(dir, "go.mod")
-	if err := ioutil.WriteFile(modfile, []byte(goMod), 0644); err != nil {
+	if err := os.WriteFile(modfile, []byte(goMod), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
